@@ -1,7 +1,0 @@
-flows:
-  hello:
-    - action: log
-      message: 'Hello from ship!'
-    - action: myCustomAction
-    - action: log
-      message: 'Flow complete.'

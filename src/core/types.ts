@@ -1,6 +1,12 @@
+import { Connection, Org } from '@salesforce/core';
+
 /** Runtime context passed to every action during flow execution. */
 export type ActionContext = {
-  /** Logs a message to the CLI output. */
+  org: Org;
+  connection: Connection;
+  query(soql: string): Promise<Array<Record<string, unknown>>>;
+  /** Spawns the SF CLI with the given arguments, inheriting stdio so output passes through. */
+  runSf(argv: string[]): Promise<void>;
   log(message: string): void;
 };
 
@@ -34,6 +40,8 @@ export type FlowStep = {
 export type ShipConfig = {
   /** Directory used to resolve custom actions and other ship assets. Defaults to `.ship`. */
   shipDir?: string;
+  /** The SF CLI executable to use when calling `runSf`. Defaults to `sf`. */
+  cli?: string;
   /** Named flows, each consisting of an ordered list of steps to execute. */
   flows?: Record<string, FlowStep[]>;
 };
