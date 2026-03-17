@@ -8,7 +8,15 @@ Reads ship.yml from the current directory, finds the named flow, and executes it
 
 # flags.name.summary
 
-Name of the flow to run.
+Kebab-cased name of the flow to run, found in `ship.yml` such as `deploy-dev-org`.
+
+# flags.config.summary
+
+Path to the ship.yml config file.
+
+# flags.param.summary
+
+Flow parameter in key=value format.
 
 # examples
 

@@ -1,22 +1,20 @@
 import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { parse } from 'yaml';
 import { type ShipConfig } from './types.js';
 
 /**
- * Loads and parses the `ship.yml` configuration file from the given directory.
+ * Loads and parses a `ship.yml` configuration file.
  *
- * @param cwd - The directory to search for `ship.yml`. Defaults to `process.cwd()`.
+ * @param configPath - Path to the `ship.yml` file. Defaults to `ship.yml` in `process.cwd()`.
  * @returns The parsed {@link ShipConfig} object.
- * @throws {Error} If no `ship.yml` file is found in `cwd`.
+ * @throws {Error} If the file cannot be read.
  */
-export function loadConfig(cwd: string = process.cwd()): ShipConfig {
-  const configPath = join(cwd, 'ship.yml');
+export function loadConfig(configPath: string = 'ship.yml'): ShipConfig {
   let raw: string;
   try {
     raw = readFileSync(configPath, 'utf8');
   } catch {
-    throw new Error(`No ship.yml found in ${cwd}`);
+    throw new Error(`No ship.yml found at ${configPath}`);
   }
   return parse(raw) as ShipConfig;
 }

@@ -50,3 +50,5 @@ mock-project/
 # os specific files
 .DS_Store
 .idea
+
+.sfdx
