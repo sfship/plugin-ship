@@ -57,12 +57,19 @@ export function interpolate(
   getVar: (key: string) => unknown
 ): unknown {
   if (typeof value !== 'string') return value;
-  return value.replace(/\$\{\{\s*([\w.]+)\s*\}\}/g, (match, path: string) => {
+  let result = value;
+  for (const [match, path] of value.matchAll(/\$\{\{\s*([\w.]+)\s*\}\}/g)) {
     const [namespace, key] = path.split('.');
-    if (namespace === 'params' && key) return String(flowParams[key] ?? match);
-    if (namespace === 'context' && key) return String(getVar(key) ?? match);
-    return match;
-  });
+    const resolved =
+      namespace === 'params' && key && flowParams[key] !== undefined
+        ? String(flowParams[key])
+        : namespace === 'context' && key && getVar(key) !== undefined
+        ? String(getVar(key))
+        : null;
+    if (resolved === null) return null;
+    result = result.replace(match, resolved);
+  }
+  return result;
 }
 
 /**

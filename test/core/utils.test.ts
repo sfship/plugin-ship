@@ -23,8 +23,8 @@ describe('interpolate', () => {
     assert.equal(interpolate('${{ context.targetOrg }}', {}, getVar), 'my-org');
   });
 
-  it('leaves token intact when the value is missing', () => {
-    assert.equal(interpolate('${{ params.missing }}', {}, noVars), '${{ params.missing }}');
+  it('returns null when the token value is missing', () => {
+    assert.equal(interpolate('${{ params.missing }}', {}, noVars), null);
   });
 
   it('interpolates multiple tokens in one string', () => {
