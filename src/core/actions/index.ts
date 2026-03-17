@@ -1,14 +1,14 @@
 import { ActionDefinition } from '../types.js';
-import logAction from './log.js';
-import createScratchOrgAction from './create-scratch-org.js';
-import deleteScratchOrgAction from './delete-scratch-org.js';
-import deployMetadataAction from './deploy-metadata.js';
+import utilLog from './util/log.js';
+import orgScratchCreate from './org/scratch/create.js';
+import orgScratchDelete from './org/scratch/delete.js';
+import metadataDeploy from './metadata/deploy.js';
 
 const actions: Record<string, ActionDefinition> = {
-  log: logAction,
-  'create-scratch-org': createScratchOrgAction,
-  'delete-scratch-org': deleteScratchOrgAction,
-  'deploy-metadata': deployMetadataAction,
+  'util:log': utilLog,
+  'org:scratch:create': orgScratchCreate,
+  'org:scratch:delete': orgScratchDelete,
+  'metadata:deploy': metadataDeploy,
 };
 
 export default actions;

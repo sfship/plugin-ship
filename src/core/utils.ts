@@ -113,10 +113,11 @@ export function resolveAction(
   const builtin = builtins[actionName];
   if (builtin) return builtin;
 
-  const conventionPath = resolve(shipDir, 'actions', `${actionName}.js`);
+  const parts = actionName.split(':');
+  const conventionPath = resolve(shipDir, 'actions', ...parts.slice(0, -1), `${parts[parts.length - 1]}.js`);
   try {
     return loadActionFromPath(conventionPath);
   } catch {
-    throw new Error(`Unknown action: "${actionName}".`);
+    throw new Error(`Unknown action: "${actionName}". Looked for definition file in: ${conventionPath}`);
   }
 }

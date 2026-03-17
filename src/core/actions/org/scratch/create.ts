@@ -1,13 +1,13 @@
 import { readFileSync } from 'node:fs';
 import { resolve, basename, extname } from 'node:path';
 import { scratchOrgCreate, Org, ConfigAggregator, OrgConfigProperties } from '@salesforce/core';
-import { defineAction } from '../define-action.js';
-import { getShipDir, resolveOrgAlias } from '../utils.js';
+import { defineAction } from '../../../define-action.js';
+import { getShipDir, resolveOrgAlias } from '../../../utils.js';
 
 export default defineAction(async ({ cwd, config, params, log, set }) => {
   const shipDir = getShipDir(cwd, config);
   const scratchDef = String(params['scratch-def'] ?? '');
-  if (!scratchDef) throw new Error('create-scratch-org requires a `scratch-def` param');
+  if (!scratchDef) throw new Error('org:scratch:create requires a `scratch-def` param');
 
   const definitionPath = scratchDef.endsWith('.json')
     ? resolve(process.cwd(), scratchDef)
