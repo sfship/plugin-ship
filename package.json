@@ -46,8 +46,19 @@
       "@oclif/plugin-help"
     ],
     "topics": {
-      "hello": {
-        "description": "Commands to say hello."
+      "flow": {
+        "description": "Manage and run flows defined in ship.yml."
+      },
+      "action": {
+        "description": "Manage and run individual actions."
+      },
+      "service": {
+        "description": "Manage external service connections.",
+        "subtopics": {
+          "connect": {
+            "description": "Connect an external service."
+          }
+        }
       }
     },
     "flexibleTaxonomy": true

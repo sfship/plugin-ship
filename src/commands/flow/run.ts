@@ -2,9 +2,9 @@ import { resolve } from 'node:path';
 import { Args } from '@oclif/core';
 import { SfCommand, Flags } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
-import { loadConfig } from '../../../core/config.js';
-import { buildContext } from '../../../core/context.js';
-import { runFlow } from '../../../core/flow-runner.js';
+import { loadConfig } from '../../core/config.js';
+import { buildContext } from '../../core/context.js';
+import { runFlow } from '../../core/flow-runner.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('plugin-ship', 'ship.flow.run');

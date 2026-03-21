@@ -2,10 +2,10 @@ import { resolve } from 'node:path';
 import { Args } from '@oclif/core';
 import { SfCommand, Flags } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
-import { loadConfig } from '../../../core/config.js';
-import { buildContext } from '../../../core/context.js';
-import { resolveAction } from '../../../core/utils.js';
-import actions from '../../../core/actions/index.js';
+import { loadConfig } from '../../core/config.js';
+import { buildContext } from '../../core/context.js';
+import { resolveAction } from '../../core/utils.js';
+import actions from '../../core/actions/index.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('plugin-ship', 'ship.action.run');
