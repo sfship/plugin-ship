@@ -16,6 +16,7 @@
     "eslint-plugin-sf-plugin": "^1.18.6",
     "oclif": "^4.14.0",
     "ts-node": "^10.9.2",
+    "tsc-alias": "^1.8.16",
     "tsx": "^4.21.0",
     "typescript": "^5.4.5"
   },
@@ -91,7 +92,7 @@
       ]
     },
     "compile": {
-      "command": "tsc -p . --pretty --incremental",
+      "command": "tsc -p . --pretty --incremental && tsc-alias -p tsconfig.json",
       "files": [
         "src/**/*.ts",
         "**/tsconfig.json",
@@ -194,7 +195,11 @@
       "output": []
     }
   },
-  "exports": "./lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./core": "./lib/core/index.js",
+    "./core/*": "./lib/core/*.js"
+  },
   "type": "module",
   "author": "sfship"
 }

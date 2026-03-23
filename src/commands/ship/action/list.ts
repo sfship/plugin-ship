@@ -2,9 +2,9 @@ import { readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { SfCommand, Flags } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
-import { loadConfig } from '../../core/config.js';
-import { getShipDir } from '../../core/utils.js';
-import actions from '../../core/actions/index.js';
+import { loadConfig } from '@plugin-ship/core/config.js';
+import { getShipDir } from '@plugin-ship/core/utils.js';
+import actions from '@plugin-ship/core/actions/index.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('plugin-ship', 'ship.action.list');

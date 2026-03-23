@@ -19,16 +19,6 @@ export default defineAction(async ({ cwd, config, params, log, set }) => {
   const alias = String(params['alias'] ?? resolveOrgAlias(defName, shipDir, config.project?.name));
   const duration = params['duration'] ? Number(params['duration']) : 1;
 
-  try {
-    const existingOrg = await Org.create({ aliasOrUsername: alias });
-    log(`Scratch org ${alias} already exists, skipping.`);
-    set('targetOrg', existingOrg.getUsername() ?? alias);
-    return;
-  } catch (err) {
-    if (err instanceof Error && err.name !== 'NamedOrgNotFoundError') throw err;
-    // org doesn't exist, proceed with creation
-  }
-
   let hubOrg: Org;
   if (params['dev-hub']) {
     hubOrg = await Org.create({ aliasOrUsername: String(params['dev-hub']) });
@@ -38,6 +28,26 @@ export default defineAction(async ({ cwd, config, params, log, set }) => {
     if (!devHub)
       throw new Error('No dev hub found. Pass `dev-hub` param or set a default with `sf config set target-dev-hub`.');
     hubOrg = await Org.create({ aliasOrUsername: String(devHub) });
+  }
+
+  try {
+    const existingOrg = await Org.create({ aliasOrUsername: alias });
+    try {
+      await existingOrg.checkScratchOrg(hubOrg.getUsername());
+      log(`Scratch org ${alias} already exists, skipping.`);
+      set('targetOrg', existingOrg.getUsername() ?? alias);
+      return;
+    } catch (healthErr) {
+      if (healthErr instanceof Error && healthErr.name === 'NoResultsError') {
+        log(`Scratch org ${alias} is expired, removing and recreating.`);
+        await existingOrg.remove();
+      } else {
+        throw healthErr;
+      }
+    }
+  } catch (err) {
+    if (err instanceof Error && err.name !== 'NamedOrgNotFoundError') throw err;
+    // org doesn't exist, proceed with creation
   }
 
   const result = await scratchOrgCreate({

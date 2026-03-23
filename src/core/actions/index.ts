@@ -4,6 +4,7 @@ import orgScratchCreate from './org/scratch/create.js';
 import orgScratchDelete from './org/scratch/delete.js';
 import metadataDeploy from './metadata/deploy.js';
 import githubRepoInfo from './github/repo/info.js';
+import apexTestRun from './apex/test/run.js';
 
 const actions: Record<string, ActionDefinition> = {
   'util:log': utilLog,
@@ -11,6 +12,7 @@ const actions: Record<string, ActionDefinition> = {
   'org:scratch:delete': orgScratchDelete,
   'metadata:deploy': metadataDeploy,
   'github:repo:info': githubRepoInfo,
+  'apex:test:run': apexTestRun,
 };
 
 export default actions;
