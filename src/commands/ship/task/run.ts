@@ -6,20 +6,22 @@ import { load } from '@plugin-ship/core/config.loader.js';
 import { FlowContext } from '@plugin-ship/core/flow.js';
 import { Store } from '@plugin-ship/core/store.js';
 import { parseCliParams } from '@plugin-ship/core/param.js';
-import { runFlow } from '@plugin-ship/core/flow.runner.js';
 import { OrgRegistry } from '@plugin-ship/core/org.registry.js';
+import { resolveTask } from '@plugin-ship/core/flow.runner.js';
+import { TaskContext } from '@plugin-ship/core/task.js';
+import tasks from '@plugin-ship/core/tasks/index.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
-const messages = Messages.loadMessages('plugin-ship', 'ship.flow.run');
+const messages = Messages.loadMessages('plugin-ship', 'ship.action.run');
 
-/** Executes a named flow defined in `ship.yml`. */
-export default class FlowRun extends SfCommand<void> {
+/** Runs a single task directly, outside of a flow. */
+export default class TaskRun extends SfCommand<void> {
   public static readonly summary = messages.getMessage('summary');
   public static readonly description = messages.getMessage('description');
   public static readonly examples = messages.getMessages('examples');
 
   public static readonly args = {
-    flowName: Args.string({ description: messages.getMessage('flags.name.summary'), required: true }),
+    taskName: Args.string({ description: messages.getMessage('args.actionName.summary'), required: true }),
   };
 
   public static readonly flags = {
@@ -30,45 +32,31 @@ export default class FlowRun extends SfCommand<void> {
   public static readonly enableJsonFlag = false;
 
   /**
-   * Loads the ship.yml config, resolves the named flow, builds the flow context,
-   * and delegates execution to the flow runner.
+   * Loads the ship.yml config, resolves the named task, builds a flow context,
+   * validates params, and runs the task.
    *
-   * @throws If the config file cannot be read, is invalid, or the named flow is not defined.
+   * @throws If the config is invalid, the task cannot be resolved, or params fail validation.
    */
   public async run(): Promise<void> {
-    // Parse CLI args and flags from the command invocation
-    const { args, flags } = await this.parse(FlowRun);
+    const { args, flags } = await this.parse(TaskRun);
 
-    // Parse --param flags from "key=value" strings into a plain object
     const params = parseCliParams(flags.param ?? []);
-
-    // Load and parse the ship.yml config file from the specified path
     const config = load(flags.config);
-
-    // Look up the named flow — error early if it doesn't exist
-    const flow = config?.flows?.[args.flowName];
-    if (!flow) {
-      this.error(`Flow "${args.flowName}" not found in ${flags.config}.`, { exit: 1 });
-    }
-
-    // Get path for .ship directory
     const shipDir = resolve(flags.config, '..', config.dir ?? '.ship');
 
-    // Build the flow context passed to every step in the flow
     const context: FlowContext = {
       shipDir,
       config,
-      // Fresh store per run so steps can pipe data to one another
       store: new Store(),
-      // Org registry scoped to this flow run, keyed by project name for alias resolution
       orgs: new OrgRegistry(resolve(shipDir, 'orgs'), config.project.name),
-      // Delegate logging to the oclif command logger
       log: (message: string) => this.log(message),
-      // Resolved flow-level params from the CLI flags
       params,
     };
 
-    // Hand off to the runner which resolves and executes each step in order
-    await runFlow(args.flowName, flow, context);
+    const task = await resolveTask(args.taskName, shipDir, tasks);
+    const validatedParams = task.validate(params);
+    const taskContext: TaskContext = { flow: context, params: validatedParams };
+
+    await task.run(taskContext);
   }
 }

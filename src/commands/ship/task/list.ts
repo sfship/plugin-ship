@@ -2,9 +2,8 @@ import { readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { SfCommand, Flags } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
-import { loadConfig } from '@plugin-ship/core/config.js';
-import { getShipDir } from '@plugin-ship/core/utils.js';
-import actions from '@plugin-ship/core/actions/index.js';
+import { load, getShipDir } from '@plugin-ship/core/config.loader.js';
+import actions from '@plugin-ship/core/tasks/index.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('plugin-ship', 'ship.action.list');
@@ -23,10 +22,8 @@ export default class ActionList extends SfCommand<void> {
 
   public async run(): Promise<void> {
     const { flags } = await this.parse(ActionList);
-    const configPath = resolve(flags['config']);
-    const cwd = resolve(configPath, '..');
-    const config = loadConfig(configPath);
-    const shipDir = getShipDir(cwd, config);
+    const config = load(flags.config);
+    const shipDir = getShipDir(flags.config, config);
 
     this.log('Core actions:');
     for (const name of Object.keys(actions)) {

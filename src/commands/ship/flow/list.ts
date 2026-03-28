@@ -1,7 +1,6 @@
-import { resolve } from 'node:path';
 import { SfCommand, Flags } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
-import { loadConfig } from '@plugin-ship/core/config.js';
+import { load } from '@plugin-ship/core/config.loader.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('plugin-ship', 'ship.flow.list');
@@ -18,9 +17,10 @@ export default class FlowList extends SfCommand<void> {
 
   public static readonly enableJsonFlag = false;
 
+  /** Loads the ship.yml config and prints each flow name, one per line. */
   public async run(): Promise<void> {
     const { flags } = await this.parse(FlowList);
-    const config = loadConfig(resolve(flags['config']));
+    const config = load(flags.config);
     const flows = Object.keys(config.flows ?? {});
 
     if (flows.length === 0) {
