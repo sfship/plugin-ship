@@ -59,14 +59,15 @@ export async function resolveTask(taskName: string, shipDir: string, builtins: R
 export async function runFlow(flowName: string, flow: FlowDefinition, context: FlowContext): Promise<void> {
   context.log(`Running flow: ${flowName}`);
 
-  for (const step of flow.steps) {
-    const label = step.label ?? step.action;
-    context.log(`  → ${label}`);
+  const stepOutputs: Record<string, Record<string, unknown>> = {};
+
+  for (const [stepId, step] of Object.entries(flow.steps)) {
+    context.log(`  → ${stepId}`);
 
     // eslint-disable-next-line no-await-in-loop
-    const task = await resolveTask(step.action, context.shipDir, tasks);
+    const task = await resolveTask(step.task, context.shipDir, tasks);
 
-    const interpolated = interpolateParams(step.params ?? {}, context.params, context.store.get.bind(context.store));
+    const interpolated = interpolateParams(step.params ?? {}, context.params, stepOutputs);
 
     const params = task.validate(interpolated);
 
@@ -80,8 +81,10 @@ export async function runFlow(flowName: string, flow: FlowDefinition, context: F
       await task.run(taskContext);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
-      throw new Error(`Step "${label}" in flow "${flowName}" failed: ${message}`);
+      throw new Error(`Step "${stepId}" in flow "${flowName}" failed: ${message}`);
     }
+
+    stepOutputs[stepId] = Object.fromEntries(task.outputs.map((o) => [o.name, context.store.get(o.name)]));
   }
 
   context.log(`Flow "${flowName}" completed.`);

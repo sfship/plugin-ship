@@ -13,7 +13,7 @@ const ProjectGitConfigSchema = z.object({
   /** The main branch name. Defaults to `main`. */
   defaultBranch: z.string().optional(),
   /** The GitHub repository URL. */
-  repoUrl: z.string().url().optional(),
+  repoUrl: z.url().optional(),
 });
 
 /** Top-level project metadata within a ship config. */
@@ -28,20 +28,20 @@ const ProjectConfigSchema = z.object({
 
 /** A single step within a flow definition. */
 const FlowStepSchema = z.object({
-  /** The action to execute, e.g. "util:log" or "myCustomAction". */
-  action: z.string(),
-  /** Optional human-readable label for this step. */
-  label: z.string().optional(),
+  /** The task to execute, e.g. "util/log" or "org/scratch/create". */
+  task: z.string(),
   /** Parameters passed to the task. */
   params: z.record(z.string(), z.union([z.string(), z.number(), z.boolean()])).optional(),
 });
 
 /** Defines a named flow: its accepted params and the ordered steps to execute. */
 const FlowDefinitionSchema = z.object({
+  /** Human-readable description of what this flow does. */
+  description: z.string().optional(),
   /** Param names this flow accepts, passed as CLI flags when invoking the flow. */
   params: z.array(z.string()).optional(),
-  /** Ordered list of steps to execute. */
-  steps: z.array(FlowStepSchema),
+  /** Named steps to execute in definition order. The key is the step ID, used for output references. */
+  steps: z.record(z.string(), FlowStepSchema),
 });
 
 /**

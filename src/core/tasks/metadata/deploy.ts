@@ -16,20 +16,15 @@ export default new (class MetadataDeploy extends Task {
     {
       name: 'target-org',
       type: 'string',
-      required: false,
-      description: 'Org alias or username. Falls back to the "targetOrg" store value set by a prior step.',
+      required: true,
+      description: 'Org alias or username to deploy to.',
     },
   ];
 
   // eslint-disable-next-line class-methods-use-this
   public async run({ flow, params }: TaskContext): Promise<void> {
     const sourceDir = resolve(process.cwd(), (params['source-dir'] as string | undefined) ?? 'force-app');
-    const alias =
-      (flow.store.get('targetOrg') as string | undefined) ?? (params['target-org'] as string | undefined) ?? '';
-    if (!alias)
-      throw new Error(
-        'No target org for deployment. Set targetOrg via a prior step or pass --param target-org=<alias>.'
-      );
+    const alias = params['target-org'] as string;
 
     const componentSet = await ComponentSetBuilder.build({ sourcepath: [sourceDir] });
     const deploy = await componentSet.deploy({ usernameOrConnection: alias });

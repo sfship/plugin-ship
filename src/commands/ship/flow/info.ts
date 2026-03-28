@@ -1,0 +1,62 @@
+import { Args } from '@oclif/core';
+import { SfCommand, Flags, Ux, StandardColors } from '@salesforce/sf-plugins-core';
+import { Messages } from '@salesforce/core';
+import { load } from '@plugin-ship/core/config.loader.js';
+
+Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
+const messages = Messages.loadMessages('plugin-ship', 'ship.flow.info');
+
+/** Shows description, params, and steps for a flow. */
+export default class FlowInfo extends SfCommand<void> {
+  public static readonly summary = messages.getMessage('summary');
+  public static readonly description = messages.getMessage('description');
+  public static readonly examples = messages.getMessages('examples');
+
+  public static readonly args = {
+    flowName: Args.string({ description: messages.getMessage('args.flowName.summary'), required: true }),
+  };
+
+  public static readonly flags = {
+    config: Flags.file({ default: 'ship.yml', summary: messages.getMessage('flags.config.summary') }),
+  };
+
+  public static readonly enableJsonFlag = false;
+
+  public async run(): Promise<void> {
+    const { args, flags } = await this.parse(FlowInfo);
+
+    const config = load(flags.config);
+    const flow = config.flows?.[args.flowName];
+    if (!flow) {
+      this.error(`Flow "${args.flowName}" not found in ${flags.config}.`, { exit: 1 });
+    }
+
+    const ux = new Ux();
+
+    ux.styledHeader(args.flowName);
+
+    if (flow.description) {
+      this.log(flow.description);
+    }
+
+    if (flow.params && flow.params.length > 0) {
+      this.log('');
+      this.log(`${StandardColors.info('Params:')} ${flow.params.join(', ')}`);
+    }
+
+    this.log('');
+    ux.styledHeader('Steps');
+    ux.table({
+      data: Object.entries(flow.steps).map(([stepId, step], index) => ({
+        '#': index + 1,
+        id: stepId,
+        task: step.task,
+        params: step.params
+          ? Object.entries(step.params)
+              .map(([k, v]) => `${k}=${String(v)}`)
+              .join(', ')
+          : '—',
+      })),
+    });
+  }
+}

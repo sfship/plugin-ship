@@ -38,8 +38,8 @@ export default new (class ApexTestRun extends Task {
     {
       name: 'target-org',
       type: 'string',
-      required: false,
-      description: 'Org alias or username. Falls back to the "targetOrg" store value set by a prior step.',
+      required: true,
+      description: 'Org alias or username to run tests against.',
     },
     {
       name: 'test-level',
@@ -69,11 +69,7 @@ export default new (class ApexTestRun extends Task {
 
   // eslint-disable-next-line class-methods-use-this
   public async run({ flow, params }: TaskContext): Promise<void> {
-    const rawAlias =
-      (flow.store.get('targetOrg') as string | undefined) ?? (params['target-org'] as string | undefined) ?? '';
-    if (!rawAlias) throw new Error('No target org. Set targetOrg via a prior step or pass --param target-org=<alias>.');
-
-    const alias = flow.orgs.resolveAlias(rawAlias);
+    const alias = flow.orgs.resolveAlias(params['target-org'] as string);
     const org = await flow.orgs.getOrg(alias);
     const connection = org.getConnection();
 

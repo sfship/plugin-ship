@@ -1,15 +1,15 @@
 import { readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { SfCommand, Flags } from '@salesforce/sf-plugins-core';
+import { SfCommand, Flags, Ux, StandardColors } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
 import { load, getShipDir } from '@plugin-ship/core/config.loader.js';
-import actions from '@plugin-ship/core/tasks/index.js';
+import tasks from '@plugin-ship/core/tasks/index.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('plugin-ship', 'ship.action.list');
 
-/** Lists all available actions. */
-export default class ActionList extends SfCommand<void> {
+/** Lists all available tasks. */
+export default class TaskList extends SfCommand<void> {
   public static readonly summary = messages.getMessage('summary');
   public static readonly description = messages.getMessage('description');
   public static readonly examples = messages.getMessages('examples');
@@ -21,14 +21,18 @@ export default class ActionList extends SfCommand<void> {
   public static readonly enableJsonFlag = false;
 
   public async run(): Promise<void> {
-    const { flags } = await this.parse(ActionList);
+    const { flags } = await this.parse(TaskList);
     const config = load(flags.config);
     const shipDir = getShipDir(flags.config, config);
 
-    this.log('Core actions:');
-    for (const name of Object.keys(actions)) {
-      this.log(`  ${name}`);
-    }
+    const ux = new Ux();
+
+    ux.styledHeader('Built-in Tasks');
+    ux.table({
+      data: Object.values(tasks)
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .map((t) => ({ name: t.name, description: t.description })),
+    });
 
     let customFiles: string[] = [];
     try {
@@ -36,14 +40,21 @@ export default class ActionList extends SfCommand<void> {
         .filter((f) => f.endsWith('.js'))
         .map((f) => f.replace(/\.js$/, ''));
     } catch {
-      // no custom actions directory
+      // no custom tasks directory
     }
 
     if (customFiles.length > 0) {
-      this.log('Custom actions:');
-      for (const name of customFiles) {
-        this.log(`  ${name}`);
-      }
+      this.log('');
+      ux.styledHeader('Custom Tasks');
+      ux.table({ data: customFiles.sort().map((name) => ({ name })) });
     }
+
+    this.log(
+      StandardColors.info('Tip:') +
+        ' Run ' +
+        StandardColors.success('sf ship task info <name>') +
+        ' to see full details for a task.'
+    );
+    this.log('');
   }
 }

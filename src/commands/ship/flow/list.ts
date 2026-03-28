@@ -1,4 +1,4 @@
-import { SfCommand, Flags } from '@salesforce/sf-plugins-core';
+import { SfCommand, Flags, Ux, StandardColors } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
 import { load } from '@plugin-ship/core/config.loader.js';
 
@@ -17,19 +17,35 @@ export default class FlowList extends SfCommand<void> {
 
   public static readonly enableJsonFlag = false;
 
-  /** Loads the ship.yml config and prints each flow name, one per line. */
   public async run(): Promise<void> {
     const { flags } = await this.parse(FlowList);
     const config = load(flags.config);
-    const flows = Object.keys(config.flows ?? {});
+    const flows = Object.entries(config.flows ?? {});
+
+    const ux = new Ux();
+    ux.styledHeader(`Flows  (${config.project.name})`);
 
     if (flows.length === 0) {
       this.log('No flows defined in ship.yml.');
       return;
     }
 
-    for (const name of flows) {
-      this.log(name);
-    }
+    ux.table({
+      data: flows
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([name, flow]) => ({
+          name,
+          steps: Object.keys(flow.steps).length,
+          description: flow.description ?? '—',
+        })),
+    });
+
+    this.log(
+      StandardColors.info('Tip:') +
+        ' Run ' +
+        StandardColors.success('sf ship flow info <name>') +
+        ' to see full details for a flow.'
+    );
+    this.log('');
   }
 }
