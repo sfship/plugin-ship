@@ -68,7 +68,12 @@ export default class FlowRun extends SfCommand<void> {
       params,
     };
 
-    // Hand off to the runner which resolves and executes each step in order
-    await runFlow(args.flowName, flow, context);
+    // Hand off to the runner which resolves and executes each step in order.
+    // Errors are formatted and printed by the runner; catch here to suppress oclif's default error output.
+    try {
+      await runFlow(args.flowName, flow, context);
+    } catch {
+      process.exitCode = 1;
+    }
   }
 }

@@ -1,10 +1,10 @@
 import { resolve } from 'node:path';
 import { FlowContext } from '@plugin-ship/core/flow.js';
-import { TaskContext } from '@plugin-ship/core/task.js';
 import { FlowDefinition } from '@plugin-ship/core/config.js';
 import { Task } from '@plugin-ship/core/task.js';
 import tasks from '@plugin-ship/core/tasks/index.js';
 import { interpolateParams } from '@plugin-ship/core/interpolate.js';
+import { FlowRenderer } from '@plugin-ship/core/flow.renderer.js';
 
 /**
  * Dynamically loads a custom task from an absolute file path.
@@ -30,7 +30,7 @@ async function loadTaskFromPath(absolutePath: string): Promise<Task> {
  * 2. Convert slashes to path segments and look in `<shipDir>/actions/`,
  * e.g. "github/repo/info" -> "<shipDir>/actions/github/repo/info.js"
  *
- * @param taskName - The action name from the flow step, e.g. "github:repo:info".
+ * @param taskName - The action name from the flow step, e.g. "github/repo/info".
  * @param shipDir - Absolute path to the .ship directory.
  * @param builtins - Registry of built-in tasks.
  */
@@ -54,38 +54,53 @@ export async function resolveTask(taskName: string, shipDir: string, builtins: R
  * @param flowName - The name of the flow to run, as defined in ship.yml.
  * @param flow - The flow definition from the parsed config.
  * @param context - The flow-level context for this run.
- * @param builtins - Registry of built-in tasks.
+ * Renders a live step checklist when stdout is a TTY, plain logs otherwise.
  */
 export async function runFlow(flowName: string, flow: FlowDefinition, context: FlowContext): Promise<void> {
-  context.log(`Running flow: ${flowName}`);
+  const steps = Object.entries(flow.steps);
+  const useTTY = process.stdout.isTTY;
+  const renderer = useTTY ? new FlowRenderer(flowName, steps) : null;
+
+  if (renderer) {
+    renderer.attach(context);
+  } else {
+    context.log(`Running flow: ${flowName}`);
+  }
 
   const stepOutputs: Record<string, Record<string, unknown>> = {};
 
-  for (const [stepId, step] of Object.entries(flow.steps)) {
-    context.log(`  → ${stepId}`);
+  for (const [stepId, step] of steps) {
+    if (renderer) {
+      renderer.stepStart(stepId);
+    } else {
+      context.log(`  → ${stepId}`);
+    }
 
     // eslint-disable-next-line no-await-in-loop
     const task = await resolveTask(step.task, context.shipDir, tasks);
 
     const interpolated = interpolateParams(step.params ?? {}, context.params, stepOutputs);
-
     const params = task.validate(interpolated);
-
-    const taskContext: TaskContext = {
-      flow: context,
-      params,
-    };
 
     try {
       // eslint-disable-next-line no-await-in-loop
-      await task.run(taskContext);
+      await task.run({ flow: context, params });
     } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      throw new Error(`Step "${stepId}" in flow "${flowName}" failed: ${message}`);
+      const error = err instanceof Error ? err : new Error(String(err));
+      if (renderer) renderer.stepFailed(stepId, error);
+      throw new Error(`Step "${stepId}" in flow "${flowName}" failed: ${error.message}`);
     }
 
     stepOutputs[stepId] = Object.fromEntries(task.outputs.map((o) => [o.name, context.store.get(o.name)]));
+
+    if (renderer) {
+      renderer.stepComplete(stepId);
+    }
   }
 
-  context.log(`Flow "${flowName}" completed.`);
+  if (renderer) {
+    renderer.success();
+  } else {
+    context.log(`Flow "${flowName}" completed.`);
+  }
 }
