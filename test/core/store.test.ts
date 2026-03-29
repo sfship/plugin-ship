@@ -1,5 +1,5 @@
 import { strict as assert } from 'node:assert';
-import { Store } from '../../src/core/store.js';
+import { Store } from '@plugin-ship/core/store.js';
 
 describe('Store', () => {
   it('returns undefined for a key that has not been set', () => {

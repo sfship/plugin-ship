@@ -2,6 +2,10 @@
   "extends": "@salesforce/dev-config/tsconfig-test-strict-esm",
   "include": ["./**/*.ts"],
   "compilerOptions": {
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "paths": {
+      "@plugin-ship/core": ["../src/core/index.ts"],
+      "@plugin-ship/core/*": ["../src/core/*"]
+    }
   }
 }

@@ -62,10 +62,7 @@ export abstract class Task {
     try {
       return validate(rawParams, this.params);
     } catch (err) {
-      if (err instanceof Error) {
-        throw new Error(`Error validating task "${this.name}": ${err.message}`);
-      }
-      throw err;
+      throw new Error(`Error validating task "${this.name}": ${(err as Error).message}`);
     }
   }
 
