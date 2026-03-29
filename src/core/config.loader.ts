@@ -23,7 +23,7 @@ export function load(configPath: string = 'ship.yml'): ShipConfig {
   try {
     return ShipConfigSchema.parse(parsed);
   } catch (err) {
-    throw new Error(`Invalid ship.yml: ${err instanceof Error ? err.message : String(err)}`);
+    throw new Error(`Invalid ship.yml: ${(err as Error).message}`);
   }
 }
 
