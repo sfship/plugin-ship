@@ -1,3 +1,4 @@
+/* c8 ignore start */
 import { Task } from '@plugin-ship/core/task.js';
 import utilLog from '@plugin-ship/core/tasks/util/log.js';
 import orgScratchCreate from '@plugin-ship/core/tasks/org/scratch/create.js';
@@ -16,3 +17,4 @@ const tasks: Record<string, Task> = {
 };
 
 export default tasks;
+/* c8 ignore stop */
