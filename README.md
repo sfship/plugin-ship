@@ -145,3 +145,20 @@ yarn && yarn build
 # Link to the SF CLI for local testing
 sf plugins link .
 ```
+
+### Commit Types
+
+When making a commit, the format `{type}: my lowercase message` is enforced.
+
+| Type       | Description                                    |
+| ---------- | ---------------------------------------------- |
+| `feat`     | New feature                                    |
+| `fix`      | Bug fix                                        |
+| `chore`    | Maintenance (deps, config, tooling)            |
+| `refactor` | Code change that's neither a fix nor a feature |
+| `test`     | Adding or updating tests                       |
+| `docs`     | Documentation only                             |
+| `ci`       | CI/CD config changes                           |
+| `build`    | Changes to the build system                    |
+| `perf`     | Performance improvement                        |
+| `style`    | Formatting, whitespace (no logic change)       |
