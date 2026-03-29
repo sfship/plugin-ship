@@ -6,7 +6,6 @@ export default new (class UtilLog extends Task {
   public readonly name = 'util/log';
   public readonly description = 'Logs a message to the flow output.';
   public readonly params: ParamDefinition[] = [
-    /** The message to print. */
     { name: 'message', type: 'string', required: true, description: 'The message to log.' },
   ];
 

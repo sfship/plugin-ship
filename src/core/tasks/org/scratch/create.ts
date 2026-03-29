@@ -40,7 +40,7 @@ export default new (class OrgScratchCreate extends Task {
   ];
 
   // eslint-disable-next-line class-methods-use-this
-  public async run({ flow, params }: TaskContext): Promise<void> {
+  public async run({ flow, params, output }: TaskContext): Promise<void> {
     const scratchDef = params['scratch-def'] as string;
 
     const definitionPath = scratchDef.endsWith('.json')
@@ -68,7 +68,7 @@ export default new (class OrgScratchCreate extends Task {
       try {
         await existingOrg.checkScratchOrg(hubOrg.getUsername());
         flow.log(`Scratch org ${alias} already exists, skipping.`);
-        flow.store.set('targetOrg', existingOrg.getUsername() ?? alias);
+        output.set('targetOrg', existingOrg.getUsername() ?? alias);
         return;
       } catch (healthErr) {
         if (healthErr instanceof Error && healthErr.name === 'NoResultsError') {
@@ -93,6 +93,6 @@ export default new (class OrgScratchCreate extends Task {
 
     for (const warning of result.warnings) flow.log(warning);
     flow.log(`Created scratch org: ${result.username ?? alias}`);
-    flow.store.set('targetOrg', result.username ?? alias);
+    output.set('targetOrg', result.username ?? alias);
   }
 })();

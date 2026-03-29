@@ -1,9 +1,9 @@
 import { resolve } from 'node:path';
-import { FlowContext } from '@plugin-ship/core/flow.js';
+import { FlowContext } from '@plugin-ship/core/flow.context.js';
 import { FlowDefinition } from '@plugin-ship/core/config.js';
 import { Task } from '@plugin-ship/core/task.js';
 import tasks from '@plugin-ship/core/tasks/index.js';
-import { interpolateParams } from '@plugin-ship/core/interpolate.js';
+import { Store } from '@plugin-ship/core/store.js';
 import { FlowRenderer } from '@plugin-ship/core/flow.renderer.js';
 
 /**
@@ -58,49 +58,30 @@ export async function resolveTask(taskName: string, shipDir: string, builtins: R
  */
 export async function runFlow(flowName: string, flow: FlowDefinition, context: FlowContext): Promise<void> {
   const steps = Object.entries(flow.steps);
-  const useTTY = process.stdout.isTTY;
-  const renderer = useTTY ? new FlowRenderer(flowName, steps) : null;
-
-  if (renderer) {
-    renderer.attach(context);
-  } else {
-    context.log(`Running flow: ${flowName}`);
-  }
-
-  const stepOutputs: Record<string, Record<string, unknown>> = {};
+  const renderer = new FlowRenderer(flowName, steps, context);
+  const store = new Store(flow.steps);
 
   for (const [stepId, step] of steps) {
-    if (renderer) {
-      renderer.stepStart(stepId);
-    } else {
-      context.log(`  → ${stepId}`);
-    }
+    renderer.stepStart(stepId);
 
     // eslint-disable-next-line no-await-in-loop
     const task = await resolveTask(step.task, context.shipDir, tasks);
 
-    const interpolated = interpolateParams(step.params ?? {}, context.params, stepOutputs);
+    const interpolated = store.resolveParams(step.params ?? {}, { params: context.params, steps: store.getSteps() });
     const params = task.validate(interpolated);
+    const output = store.getTaskOutput(stepId);
 
     try {
       // eslint-disable-next-line no-await-in-loop
-      await task.run({ flow: context, params });
+      await task.run({ flow: context, params, output });
     } catch (err) {
       const error = err instanceof Error ? err : new Error(String(err));
-      if (renderer) renderer.stepFailed(stepId, error);
+      renderer.stepFailed(stepId, error);
       throw new Error(`Step "${stepId}" in flow "${flowName}" failed: ${error.message}`);
     }
 
-    stepOutputs[stepId] = Object.fromEntries(task.outputs.map((o) => [o.name, context.store.get(o.name)]));
-
-    if (renderer) {
-      renderer.stepComplete(stepId);
-    }
+    renderer.stepComplete(stepId);
   }
 
-  if (renderer) {
-    renderer.success();
-  } else {
-    context.log(`Flow "${flowName}" completed.`);
-  }
+  renderer.success();
 }

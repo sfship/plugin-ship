@@ -1,9 +1,10 @@
 import { ParamDefinition, Params, validate } from '@plugin-ship/core/param.js';
-import { FlowContext } from '@plugin-ship/core/flow.js';
+import { FlowContext } from '@plugin-ship/core/flow.context.js';
+import { TaskOutput } from '@plugin-ship/core/task.output.js';
 
-/** Describes a value this task writes to the flow store. */
+/** Describes a value this task writes to the flow outputs. */
 export type OutputDefinition = {
-  /** The store key this task writes to. */
+  /** The output key this task writes. */
   name: string;
   /** The type of the stored value. */
   type: 'string' | 'number' | 'boolean' | 'object';
@@ -16,10 +17,12 @@ export type OutputDefinition = {
  * Combines the broader flow context with the task's resolved, validated params.
  */
 export type TaskContext = {
-  /** The parent flow's context, including config, store, org registry, and logger. */
+  /** The parent flow's context, including config, org registry, and logger. */
   flow: FlowContext;
   /** The validated params for this task invocation. */
   params: Params;
+  /** Reads and writes named output values for this step. */
+  output: TaskOutput;
 };
 
 /* eslint-disable jsdoc/check-indentation */
@@ -39,7 +42,7 @@ export type TaskContext = {
  */
 /* eslint-enable jsdoc/check-indentation */
 export abstract class Task {
-  /** Values this task writes to the flow store, available to subsequent steps. */
+  /** Values this task writes to the flow outputs, available to subsequent steps. */
   public readonly outputs: OutputDefinition[] = [];
 
   /** Unique identifier for this task, used in flow definitions and error messages. */

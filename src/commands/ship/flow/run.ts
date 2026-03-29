@@ -3,8 +3,7 @@ import { Args } from '@oclif/core';
 import { SfCommand, Flags } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
 import { load } from '@plugin-ship/core/config.loader.js';
-import { FlowContext } from '@plugin-ship/core/flow.js';
-import { Store } from '@plugin-ship/core/store.js';
+import { FlowContext } from '@plugin-ship/core/flow.context.js';
 import { parseCliParams } from '@plugin-ship/core/param.js';
 import { runFlow } from '@plugin-ship/core/flow.runner.js';
 import { OrgRegistry } from '@plugin-ship/core/org.registry.js';
@@ -58,13 +57,8 @@ export default class FlowRun extends SfCommand<void> {
     const context: FlowContext = {
       shipDir,
       config,
-      // Fresh store per run so steps can pipe data to one another
-      store: new Store(),
-      // Org registry scoped to this flow run, keyed by project name for alias resolution
       orgs: new OrgRegistry(resolve(shipDir, 'orgs'), config.project.name),
-      // Delegate logging to the oclif command logger
       log: (message: string) => this.log(message),
-      // Resolved flow-level params from the CLI flags
       params,
     };
 

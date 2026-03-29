@@ -1,6 +1,6 @@
 import { resolve } from 'node:path';
 import { Args } from '@oclif/core';
-import { SfCommand, Flags, Ux } from '@salesforce/sf-plugins-core';
+import { SfCommand, Flags, Ux, StandardColors } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
 import { load } from '@plugin-ship/core/config.loader.js';
 import { resolveTask } from '@plugin-ship/core/flow.runner.js';
@@ -51,6 +51,9 @@ export default class TaskInfo extends SfCommand<void> {
     if (task.outputs.length > 0) {
       this.log('');
       ux.styledHeader('Outputs');
+      this.log(
+        StandardColors.info('Tip:') + ' Reference these outputs in subsequent steps using ${{ steps.<step-id>.<name> }}'
+      );
       ux.table({
         data: task.outputs.map((o) => ({
           name: o.name,

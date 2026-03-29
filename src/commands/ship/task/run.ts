@@ -3,12 +3,12 @@ import { Args } from '@oclif/core';
 import { SfCommand, Flags } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
 import { load } from '@plugin-ship/core/config.loader.js';
-import { FlowContext } from '@plugin-ship/core/flow.js';
-import { Store } from '@plugin-ship/core/store.js';
+import { FlowContext } from '@plugin-ship/core/flow.context.js';
 import { parseCliParams } from '@plugin-ship/core/param.js';
 import { OrgRegistry } from '@plugin-ship/core/org.registry.js';
 import { resolveTask } from '@plugin-ship/core/flow.runner.js';
 import { TaskContext } from '@plugin-ship/core/task.js';
+import { Store } from '@plugin-ship/core/store.js';
 import tasks from '@plugin-ship/core/tasks/index.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
@@ -47,7 +47,6 @@ export default class TaskRun extends SfCommand<void> {
     const context: FlowContext = {
       shipDir,
       config,
-      store: new Store(),
       orgs: new OrgRegistry(resolve(shipDir, 'orgs'), config.project.name),
       log: (message: string) => this.log(message),
       params,
@@ -55,7 +54,10 @@ export default class TaskRun extends SfCommand<void> {
 
     const task = await resolveTask(args.taskName, shipDir, tasks);
     const validatedParams = task.validate(params);
-    const taskContext: TaskContext = { flow: context, params: validatedParams };
+
+    const store = new Store();
+    const output = store.getTaskOutput(args.taskName);
+    const taskContext: TaskContext = { flow: context, params: validatedParams, output };
 
     await task.run(taskContext);
   }
