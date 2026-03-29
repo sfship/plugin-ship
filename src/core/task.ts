@@ -1,3 +1,4 @@
+import { pathToFileURL } from 'node:url';
 import { ParamDefinition, Params, validate } from '@plugin-ship/core/param.js';
 import { FlowContext } from '@plugin-ship/core/flow.context.js';
 import { TaskOutput } from '@plugin-ship/core/task.output.js';
@@ -51,6 +52,25 @@ export abstract class Task {
   public abstract readonly description: string;
   /** Schema describing the params this task accepts. */
   public abstract readonly params: ParamDefinition[];
+
+  /**
+   * Loads a task from a JS module file.
+   * The module must export a `Task` instance as its default export.
+   *
+   * @param path - Absolute path to the `.js` module file.
+   * @returns The task instance exported by the module.
+   * @throws If the file cannot be loaded or does not export a valid `Task` as default.
+   */
+  public static async fromModule(path: string): Promise<Task> {
+    const url = pathToFileURL(path).href;
+    const mod = (await import(url).catch(() => {
+      throw new Error(`File does not export a valid Task subclass as default: ${path}`);
+    })) as { default: unknown };
+    if (!(mod.default instanceof Task)) {
+      throw new Error(`File does not export a valid Task subclass as default: ${path}`);
+    }
+    return mod.default;
+  }
 
   /**
    * Validates raw param input against this task's param schema.

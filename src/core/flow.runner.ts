@@ -7,22 +7,6 @@ import { Store } from '@plugin-ship/core/store.js';
 import { FlowRenderer } from '@plugin-ship/core/flow.renderer.js';
 
 /**
- * Dynamically loads a custom task from an absolute file path.
- * Expects an `export default` of a Task subclass.
- *
- * @param absolutePath - Absolute path to the compiled `.js` task file.
- */
-async function loadTaskFromPath(absolutePath: string): Promise<Task> {
-  const mod = (await import(absolutePath)) as { default: new () => Task };
-
-  if (!mod.default || !(mod.default.prototype instanceof Task)) {
-    throw new Error(`${absolutePath} does not export a valid Task subclass as default`);
-  }
-
-  return new mod.default();
-}
-
-/**
  * Resolves a task by name.
  *
  * Resolution order:
@@ -38,11 +22,10 @@ export async function resolveTask(taskName: string, shipDir: string, builtins: R
   const builtin = builtins[taskName];
   if (builtin) return builtin;
 
-  const parts = taskName.split('/');
-  const taskPath = resolve(shipDir, 'actions', ...parts.slice(0, -1), `${parts[parts.length - 1]}.js`);
+  const taskPath = resolve(shipDir, 'actions', `${taskName}.js`);
 
   try {
-    return await loadTaskFromPath(taskPath);
+    return await Task.fromModule(taskPath);
   } catch {
     throw new Error(`Unknown task "${taskName}". Looked for definition file at: ${taskPath}`);
   }

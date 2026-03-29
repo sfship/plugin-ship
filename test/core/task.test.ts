@@ -1,4 +1,5 @@
 import { strict as assert } from 'node:assert';
+import { resolve } from 'node:path';
 import { Task } from '@plugin-ship/core/task.js';
 import { ParamDefinition } from '@plugin-ship/core/param.js';
 
@@ -50,5 +51,21 @@ describe('Task.validate', () => {
   it('omits optional params when not provided', () => {
     const result = task.validate({ 'required-param': 'hello' });
     assert.equal('optional-param' in result, false);
+  });
+});
+
+describe('Task.fromModule', () => {
+  it('returns instantiated Task when provided a module with valid Task default export', async () => {
+    const path = resolve('test/core/fixtures/stub-task.js');
+    assert.equal((await Task.fromModule(path)).name, 'stub-task');
+  });
+
+  it('throws when path does not exist', async () => {
+    await assert.rejects(Task.fromModule('/nonexistent/path/task.js'), Error);
+  });
+
+  it('throws when module default export is not a Task', async () => {
+    const path = resolve('test/core/fixtures/not-a-task.js');
+    await assert.rejects(Task.fromModule(path), Error);
   });
 });
