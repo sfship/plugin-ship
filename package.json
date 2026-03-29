@@ -39,7 +39,7 @@
     "sfdx",
     "sfdx-plugin"
   ],
-  "license": "BSD-3-Clause",
+  "license": "Apache-2.0",
   "oclif": {
     "commands": "./lib/commands",
     "bin": "sf",
@@ -48,17 +48,22 @@
       "@oclif/plugin-help"
     ],
     "topics": {
-      "flow": {
-        "description": "Manage and run flows defined in ship.yml."
-      },
-      "action": {
-        "description": "Manage and run individual actions."
-      },
-      "service": {
-        "description": "Manage external service connections.",
+      "ship": {
+        "description": "Manage and run the full development and release lifecycle.",
         "subtopics": {
-          "connect": {
-            "description": "Connect an external service."
+          "flow": {
+            "description": "Manage and run flows defined in ship.yml."
+          },
+          "task": {
+            "description": "Manage and run individual tasks."
+          },
+          "service": {
+            "description": "Manage external service connections.",
+            "subtopics": {
+              "connect": {
+                "description": "Connect an external service."
+              }
+            }
           }
         }
       }
