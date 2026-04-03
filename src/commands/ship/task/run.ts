@@ -2,14 +2,13 @@ import { resolve } from 'node:path';
 import { Args } from '@oclif/core';
 import { SfCommand, Flags } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
-import { load } from '@plugin-ship/core/config.loader.js';
+import { loadConfig } from '@plugin-ship/core/config.loader.js';
 import { FlowContext } from '@plugin-ship/core/flow.context.js';
-import { parseCliParams } from '@plugin-ship/core/param.js';
+import { parseCliParams, validateParams } from '@plugin-ship/core/param.js';
 import { OrgRegistry } from '@plugin-ship/core/org.registry.js';
-import { resolveTask } from '@plugin-ship/core/flow.runner.js';
+import { TaskRunner } from '@plugin-ship/core/task.runner.js';
 import { TaskContext } from '@plugin-ship/core/task.js';
 import { Store } from '@plugin-ship/core/store.js';
-import tasks from '@plugin-ship/core/tasks/index.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('plugin-ship', 'ship.action.run');
@@ -41,8 +40,8 @@ export default class TaskRun extends SfCommand<void> {
     const { args, flags } = await this.parse(TaskRun);
 
     const params = parseCliParams(flags.param ?? []);
-    const config = load(flags.config);
-    const shipDir = resolve(flags.config, '..', config.dir ?? '.ship');
+    const config = loadConfig(flags.config);
+    const shipDir = resolve(flags.config, '..', config.dir);
 
     const context: FlowContext = {
       shipDir,
@@ -52,8 +51,9 @@ export default class TaskRun extends SfCommand<void> {
       params,
     };
 
-    const task = await resolveTask(args.taskName, shipDir, tasks);
-    const validatedParams = task.validate(params);
+    const runner = new TaskRunner(shipDir);
+    const task = await runner.resolveTask(args.taskName);
+    const validatedParams = validateParams(params, task.params);
 
     const store = new Store();
     const output = store.getTaskOutput(args.taskName);

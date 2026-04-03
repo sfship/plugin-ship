@@ -13,6 +13,11 @@ const ANSI = {
   cursorUp: (n: number): string => `\x1b[${n}A`,
 };
 
+type OutputStream = {
+  isTTY: boolean | undefined;
+  write(chunk: string): boolean;
+};
+
 /**
  * Renders a live step checklist in TTY environments, or falls back to plain log
  * output in non-TTY environments (e.g. CI). The flow runner always calls the same
@@ -21,20 +26,26 @@ const ANSI = {
 export class FlowRenderer {
   private readonly steps: Array<[string, FlowStep]>;
   private readonly completed = new Set<string>();
-  private readonly tty = process.stdout.isTTY;
+  private readonly tty: boolean | undefined;
   private current: string | null = null;
   private context: FlowContext | null = null;
 
-  public constructor(private readonly flowName: string, steps: Array<[string, FlowStep]>, context: FlowContext) {
+  public constructor(
+    private readonly flowName: string,
+    steps: Array<[string, FlowStep]>,
+    context: FlowContext,
+    private readonly out: OutputStream = process.stdout
+  ) {
     this.steps = steps;
     this.context = context;
+    this.tty = out.isTTY;
     if (this.tty) {
       this.render();
       // eslint-disable-next-line no-param-reassign
       context.log = (message): void => {
         this.clear();
         const prefix = this.current ? `${ANSI.cyan}[${this.current}]${ANSI.reset} ` : '';
-        process.stdout.write(`${prefix}${message}\n`);
+        this.out.write(`${prefix}${message}\n`);
         this.render();
       };
     } else {
@@ -68,37 +79,35 @@ export class FlowRenderer {
     if (this.tty) {
       this.clear();
       this.render(stepId);
-      process.stdout.write('\n');
-      process.stdout.write(
-        `${ANSI.red}${ANSI.bold}✗ Flow "${this.flowName}" failed at step "${stepId}"${ANSI.reset}\n`
-      );
-      process.stdout.write('\n');
+      this.out.write('\n');
+      this.out.write(`${ANSI.red}${ANSI.bold}✗ Flow "${this.flowName}" failed at step "${stepId}"${ANSI.reset}\n`);
+      this.out.write('\n');
       for (const line of err.message.split('\n')) {
-        process.stdout.write(`  ${line}\n`);
+        this.out.write(`  ${line}\n`);
       }
       if (err.stack) {
-        process.stdout.write('\n');
+        this.out.write('\n');
         for (const line of err.stack.split('\n').slice(1)) {
-          process.stdout.write(`${ANSI.dim}  ${line.trim()}${ANSI.reset}\n`);
+          this.out.write(`${ANSI.dim}  ${line.trim()}${ANSI.reset}\n`);
         }
       }
-      process.stdout.write('\n');
+      this.out.write('\n');
     }
   }
 
   /** Prints the final success message. */
   public success(): void {
     if (this.tty) {
-      process.stdout.write('\n');
-      process.stdout.write(`${ANSI.green}${ANSI.bold}✓ Flow "${this.flowName}" finished successfully!${ANSI.reset}\n`);
-      process.stdout.write('\n');
+      this.out.write('\n');
+      this.out.write(`${ANSI.green}${ANSI.bold}✓ Flow "${this.flowName}" finished successfully!${ANSI.reset}\n`);
+      this.out.write('\n');
     } else {
       this.context?.log(`Flow "${this.flowName}" completed.`);
     }
   }
 
   private render(failed: string | null = null): void {
-    process.stdout.write(`  ${ANSI.dim}Flow:${ANSI.reset} ${ANSI.bold}${this.flowName}${ANSI.reset}\n`);
+    this.out.write(`  ${ANSI.dim}Flow:${ANSI.reset} ${ANSI.bold}${this.flowName}${ANSI.reset}\n`);
     for (const [stepId, step] of this.steps) {
       let marker: string;
       let color: string;
@@ -116,13 +125,13 @@ export class FlowRenderer {
         color = ANSI.dim;
       }
       const label = stepId.padEnd(20);
-      process.stdout.write(`  ${color}${marker}${ANSI.reset} ${label} ${ANSI.dim}(${step.task})${ANSI.reset}\n`);
+      this.out.write(`  ${color}${marker}${ANSI.reset} ${label} ${ANSI.dim}(${step.task})${ANSI.reset}\n`);
     }
   }
 
   private clear(): void {
     for (let i = 0; i < this.steps.length + 1; i++) {
-      process.stdout.write(`${ANSI.cursorUp(1)}${ANSI.clearLine}`);
+      this.out.write(`${ANSI.cursorUp(1)}${ANSI.clearLine}`);
     }
   }
 }

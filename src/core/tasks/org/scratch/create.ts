@@ -1,17 +1,15 @@
 import { readFileSync } from 'node:fs';
 import { resolve, basename, extname } from 'node:path';
 import { scratchOrgCreate, Org, ConfigAggregator, OrgConfigProperties } from '@salesforce/core';
-import { Task, TaskContext, OutputDefinition } from '@plugin-ship/core/task.js';
-import { ParamDefinition } from '@plugin-ship/core/param.js';
+import type { Task, TaskContext } from '@plugin-ship/core/task.js';
 
-export default new (class OrgScratchCreate extends Task {
-  public readonly name = 'org/scratch/create';
-  public readonly description = 'Creates a scratch org, or skips if a healthy one already exists under the same alias.';
-  public readonly outputs: OutputDefinition[] = [
+export default {
+  name: 'org/scratch/create',
+  description: 'Creates a scratch org, or skips if a healthy one already exists under the same alias.',
+  outputs: [
     { name: 'targetOrg', type: 'string', description: 'The username of the created (or existing) scratch org.' },
-  ];
-
-  public readonly params: ParamDefinition[] = [
+  ],
+  params: [
     {
       name: 'scratch-def',
       type: 'string',
@@ -37,10 +35,8 @@ export default new (class OrgScratchCreate extends Task {
       required: false,
       description: 'Set as default org after creation. Defaults to true.',
     },
-  ];
-
-  // eslint-disable-next-line class-methods-use-this
-  public async run({ flow, params, output }: TaskContext): Promise<void> {
+  ],
+  async run({ flow, params, output }: TaskContext): Promise<void> {
     const scratchDef = params['scratch-def'] as string;
 
     const definitionPath = scratchDef.endsWith('.json')
@@ -94,5 +90,5 @@ export default new (class OrgScratchCreate extends Task {
     for (const warning of result.warnings) flow.log(warning);
     flow.log(`Created scratch org: ${result.username ?? alias}`);
     output.set('targetOrg', result.username ?? alias);
-  }
-})();
+  },
+} satisfies Task;

@@ -28,7 +28,7 @@ export type ParamDefinition = {
  * @returns A fully resolved `Params` object containing only declared params.
  * @throws If a required param is missing or a value cannot be coerced to the declared type.
  */
-export function validate(rawParams: Record<string, unknown>, paramDefinitions: ParamDefinition[]): Params {
+export function validateParams(rawParams: Record<string, unknown>, paramDefinitions: ParamDefinition[]): Params {
   const resolved: Params = {};
 
   for (const definition of paramDefinitions) {
@@ -50,8 +50,7 @@ export function validate(rawParams: Record<string, unknown>, paramDefinitions: P
 }
 
 /**
- * Parses an array of "key=value" CLI flag strings into a Params object.
- * Values may contain "=" without issue, e.g. "url=https://example.com?foo=bar".
+ * Parses an array of "key=value" CLI flag strings into a Params object
  */
 export function parseCliParams(flags: string[]): Params {
   const entries = flags.map((flag) => {

@@ -63,7 +63,7 @@ export class Store {
 
   /** Returns all step outputs as a plain nested object, keyed by step ID. */
   public getSteps(): Record<string, Record<string, unknown>> {
-    return Object.fromEntries([...this.data.keys()].map((id) => [id, Object.fromEntries(this.data.get(id) ?? [])]));
+    return Object.fromEntries([...this.data.keys()].map((id) => [id, Object.fromEntries(this.data.get(id)!)]));
   }
 
   /**

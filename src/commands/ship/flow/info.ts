@@ -1,7 +1,7 @@
 import { Args } from '@oclif/core';
 import { SfCommand, Flags, Ux, StandardColors } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
-import { load } from '@plugin-ship/core/config.loader.js';
+import { loadConfig } from '@plugin-ship/core/config.loader.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('plugin-ship', 'ship.flow.info');
@@ -25,7 +25,7 @@ export default class FlowInfo extends SfCommand<void> {
   public async run(): Promise<void> {
     const { args, flags } = await this.parse(FlowInfo);
 
-    const config = load(flags.config);
+    const config = loadConfig(flags.config);
     const flow = config.flows?.[args.flowName];
     if (!flow) {
       this.error(`Flow "${args.flowName}" not found in ${flags.config}.`, { exit: 1 });

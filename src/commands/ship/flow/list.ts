@@ -1,6 +1,6 @@
 import { SfCommand, Flags, Ux, StandardColors } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
-import { load } from '@plugin-ship/core/config.loader.js';
+import { loadConfig } from '@plugin-ship/core/config.loader.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('plugin-ship', 'ship.flow.list');
@@ -19,7 +19,7 @@ export default class FlowList extends SfCommand<void> {
 
   public async run(): Promise<void> {
     const { flags } = await this.parse(FlowList);
-    const config = load(flags.config);
+    const config = loadConfig(flags.config);
     const flows = Object.entries(config.flows ?? {});
 
     const ux = new Ux();

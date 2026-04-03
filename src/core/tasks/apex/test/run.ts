@@ -1,5 +1,4 @@
-import { Task, TaskContext } from '@plugin-ship/core/task.js';
-import { ParamDefinition } from '@plugin-ship/core/param.js';
+import type { Task, TaskContext } from '@plugin-ship/core/task.js';
 
 type TestLevel = 'RunLocalTests' | 'RunAllTestsInOrg' | 'RunSpecifiedTests';
 
@@ -31,10 +30,10 @@ type ApexCodeCoverage = {
  * Runs Apex tests against the target org using the Tooling API (async).
  * Polls until the job completes, then reports results and optionally enforces a coverage threshold.
  */
-export default new (class ApexTestRun extends Task {
-  public readonly name = 'apex/test/run';
-  public readonly description = 'Runs Apex tests against the target org using the Tooling API.';
-  public readonly params: ParamDefinition[] = [
+export default {
+  name: 'apex/test/run',
+  description: 'Runs Apex tests against the target org using the Tooling API.',
+  params: [
     {
       name: 'target-org',
       type: 'string',
@@ -65,10 +64,8 @@ export default new (class ApexTestRun extends Task {
       required: false,
       description: 'Minimum org-wide coverage percentage (0–100). Fails the step if not met.',
     },
-  ];
-
-  // eslint-disable-next-line class-methods-use-this
-  public async run({ flow, params }: TaskContext): Promise<void> {
+  ],
+  async run({ flow, params }: TaskContext): Promise<void> {
     const alias = flow.orgs.resolveAlias(params['target-org'] as string);
     const org = await flow.orgs.getOrg(alias);
     const connection = org.getConnection();
@@ -160,5 +157,5 @@ export default new (class ApexTestRun extends Task {
         throw new Error(`Coverage ${pct}% is below the required minimum of ${minCoverage}%.`);
       }
     }
-  }
-})();
+  },
+} satisfies Task;

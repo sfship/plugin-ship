@@ -1,12 +1,11 @@
 import { resolve } from 'node:path';
 import { ComponentSetBuilder, ComponentStatus } from '@salesforce/source-deploy-retrieve';
-import { Task, TaskContext } from '@plugin-ship/core/task.js';
-import { ParamDefinition } from '@plugin-ship/core/param.js';
+import type { Task, TaskContext } from '@plugin-ship/core/task.js';
 
-export default new (class MetadataDeploy extends Task {
-  public readonly name = 'metadata/deploy';
-  public readonly description = 'Deploys metadata to a target org using the Salesforce source deploy API.';
-  public readonly params: ParamDefinition[] = [
+export default {
+  name: 'metadata/deploy',
+  description: 'Deploys metadata to a target org using the Salesforce source deploy API.',
+  params: [
     {
       name: 'source-dir',
       type: 'string',
@@ -19,10 +18,8 @@ export default new (class MetadataDeploy extends Task {
       required: true,
       description: 'Org alias or username to deploy to.',
     },
-  ];
-
-  // eslint-disable-next-line class-methods-use-this
-  public async run({ flow, params }: TaskContext): Promise<void> {
+  ],
+  async run({ flow, params }: TaskContext): Promise<void> {
     const sourceDir = resolve(process.cwd(), (params['source-dir'] as string | undefined) ?? 'force-app');
     const alias = params['target-org'] as string;
 
@@ -47,5 +44,5 @@ export default new (class MetadataDeploy extends Task {
     }
 
     flow.log(`Deployed ${result.response.numberComponentsDeployed} components successfully.`);
-  }
-})();
+  },
+} satisfies Task;

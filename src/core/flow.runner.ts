@@ -1,35 +1,10 @@
-import { resolve } from 'node:path';
 import { FlowContext } from '@plugin-ship/core/flow.context.js';
 import { FlowDefinition } from '@plugin-ship/core/config.js';
-import { Task } from '@plugin-ship/core/task.js';
-import tasks from '@plugin-ship/core/tasks/index.js';
+import { validateParams } from '@plugin-ship/core/param.js';
+import { TaskRunner } from '@plugin-ship/core/task.runner.js';
 import { Store } from '@plugin-ship/core/store.js';
 import { FlowRenderer } from '@plugin-ship/core/flow.renderer.js';
-
-/**
- * Resolves a task by name.
- *
- * Resolution order:
- * 1. Look up in the built-in task registry.
- * 2. Convert slashes to path segments and look in `<shipDir>/actions/`,
- * e.g. "github/repo/info" -> "<shipDir>/actions/github/repo/info.js"
- *
- * @param taskName - The action name from the flow step, e.g. "github/repo/info".
- * @param shipDir - Absolute path to the .ship directory.
- * @param builtins - Registry of built-in tasks.
- */
-export async function resolveTask(taskName: string, shipDir: string, builtins: Record<string, Task>): Promise<Task> {
-  const builtin = builtins[taskName];
-  if (builtin) return builtin;
-
-  const taskPath = resolve(shipDir, 'actions', `${taskName}.js`);
-
-  try {
-    return await Task.fromModule(taskPath);
-  } catch {
-    throw new Error(`Unknown task "${taskName}". Looked for definition file at: ${taskPath}`);
-  }
-}
+import { asError } from '@plugin-ship/core/error.utils.js';
 
 /**
  * Runs a named flow from the given context.
@@ -43,22 +18,23 @@ export async function runFlow(flowName: string, flow: FlowDefinition, context: F
   const steps = Object.entries(flow.steps);
   const renderer = new FlowRenderer(flowName, steps, context);
   const store = new Store(flow.steps);
+  const runner = new TaskRunner(context.shipDir);
 
   for (const [stepId, step] of steps) {
     renderer.stepStart(stepId);
 
     // eslint-disable-next-line no-await-in-loop
-    const task = await resolveTask(step.task, context.shipDir, tasks);
+    const task = await runner.resolveTask(step.task);
 
     const interpolated = store.resolveParams(step.params ?? {}, { params: context.params, steps: store.getSteps() });
-    const params = task.validate(interpolated);
+    const params = validateParams(interpolated, task.params);
     const output = store.getTaskOutput(stepId);
 
     try {
       // eslint-disable-next-line no-await-in-loop
       await task.run({ flow: context, params, output });
     } catch (err) {
-      const error = err instanceof Error ? err : new Error(String(err));
+      const error = asError(err);
       renderer.stepFailed(stepId, error);
       throw new Error(`Step "${stepId}" in flow "${flowName}" failed: ${error.message}`);
     }

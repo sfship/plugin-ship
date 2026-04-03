@@ -2,7 +2,9 @@ import { strict as assert } from 'node:assert';
 import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { OrgRegistry } from '@plugin-ship/core/org.registry.js';
+import esmock from 'esmock';
+import { OrgRegistry } from '../../src/core/org.registry.js';
+import type { OrgRegistry as OrgRegistryType } from '../../src/core/org.registry.js';
 
 const validDef = {
   edition: 'Developer',
@@ -58,5 +60,40 @@ describe('OrgRegistry.getDef', () => {
     const first = registry.getDef('dev');
     const second = registry.getDef('dev');
     assert.equal(first, second);
+  });
+});
+
+describe('OrgRegistry.getOrg', () => {
+  it('creates and returns an Org instance', async () => {
+    const fakeOrg = {};
+    const { OrgRegistry: MockedRegistry }: { OrgRegistry: typeof OrgRegistryType } = await esmock(
+      '../../src/core/org.registry.js',
+      { '@salesforce/core': { Org: { create: async () => fakeOrg } } }
+    );
+    const registry = new MockedRegistry(orgsDir);
+    const org = await registry.getOrg('dev');
+    assert.equal(org, fakeOrg);
+  });
+
+  it('returns the cached instance on subsequent calls', async () => {
+    let callCount = 0;
+    const fakeOrg = {};
+    const { OrgRegistry: MockedRegistry }: { OrgRegistry: typeof OrgRegistryType } = await esmock(
+      '../../src/core/org.registry.js',
+      {
+        '@salesforce/core': {
+          Org: {
+            create: async () => {
+              callCount++;
+              return fakeOrg;
+            },
+          },
+        },
+      }
+    );
+    const registry = new MockedRegistry(orgsDir);
+    await registry.getOrg('dev');
+    await registry.getOrg('dev');
+    assert.equal(callCount, 1);
   });
 });

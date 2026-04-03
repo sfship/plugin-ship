@@ -52,7 +52,7 @@ export const ShipConfigSchema = z.object({
   /** Project metadata. */
   project: ProjectConfigSchema,
   /** Directory used to resolve custom tasks, scratch-org defs, and other ship assets. Defaults to `.ship`. */
-  dir: z.string().optional(),
+  dir: z.string().default('.ship'),
   /** Named flows, each consisting of an ordered list of steps to execute. */
   flows: z.record(z.string(), FlowDefinitionSchema).optional(),
 });

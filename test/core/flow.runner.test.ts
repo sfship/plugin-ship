@@ -1,9 +1,7 @@
 import { strict as assert } from 'node:assert';
 import esmock from 'esmock';
-import { resolveTask } from '../../src/core/flow.runner.js';
-import { Task } from '../../src/core/task.js';
-import type { TaskContext } from '../../src/core/task.js';
 import { OrgRegistry } from '../../src/core/org.registry.js';
+import type { Task, TaskContext } from '../../src/core/task.js';
 import type { FlowContext } from '../../src/core/flow.context.js';
 import type { FlowDefinition } from '../../src/core/config.js';
 import type { runFlow as RunFlowFn } from '../../src/core/flow.runner.js';
@@ -25,59 +23,56 @@ const mockRenderer = {
 function makeContext(params: Params = {}): FlowContext {
   return {
     shipDir: '/ship',
-    config: { project: { name: 'test' } },
+    config: { project: { name: 'test' }, dir: '.ship' },
     orgs: new OrgRegistry('/orgs'),
     log: () => {},
     params,
   };
 }
 
-class NoopTask extends Task {
-  public readonly name = 'noop';
-  public readonly description = 'does nothing';
-  public readonly params = [];
-  // eslint-disable-next-line class-methods-use-this
-  public async run(): Promise<void> {}
+function makeTask(overrides: Partial<Task> = {}): Task {
+  return {
+    name: 'noop',
+    description: 'does nothing',
+    params: [],
+    // eslint-disable-next-line @typescript-eslint/require-await
+    async run(): Promise<void> {},
+    ...overrides,
+  };
 }
 
-describe('resolveTask', () => {
-  it('returns a builtin task by name', async () => {
-    const task = new NoopTask();
-    const resolved = await resolveTask('noop', '/ship', { noop: task });
-    assert.strictEqual(resolved, task);
-  });
-
-  it('throws for an unknown task', async () => {
-    await assert.rejects(() => resolveTask('unknown/task', '/ship', {}), /Unknown task "unknown\/task"/);
-  });
-});
+function makeMockRunner(tasks: Record<string, Task>) {
+  return {
+    TaskRunner: class {
+      // eslint-disable-next-line class-methods-use-this
+      public async resolveTask(taskName: string): Promise<Task> {
+        const task = tasks[taskName];
+        if (!task) throw new Error(`Unknown task "${taskName}"`);
+        return task;
+      }
+    },
+  };
+}
 
 describe('runFlow', () => {
   it('runs each step in order', async () => {
     const order: string[] = [];
 
-    class StepATask extends Task {
-      public readonly name = 'step-a';
-      public readonly description = '';
-      public readonly params = [];
-      // eslint-disable-next-line class-methods-use-this
-      public async run(): Promise<void> {
-        order.push('a');
-      }
-    }
-
-    class StepBTask extends Task {
-      public readonly name = 'step-b';
-      public readonly description = '';
-      public readonly params = [];
-      // eslint-disable-next-line class-methods-use-this
-      public async run(): Promise<void> {
-        order.push('b');
-      }
-    }
-
     const { runFlow }: { runFlow: typeof RunFlowFn } = await esmock('../../src/core/flow.runner.js', {
-      '../../src/core/tasks/index.js': { default: { 'step-a': new StepATask(), 'step-b': new StepBTask() } },
+      '../../src/core/task.runner.js': makeMockRunner({
+        'step-a': makeTask({
+          name: 'step-a',
+          async run() {
+            order.push('a');
+          },
+        }),
+        'step-b': makeTask({
+          name: 'step-b',
+          async run() {
+            order.push('b');
+          },
+        }),
+      }),
       '../../src/core/flow.renderer.js': mockRenderer,
     });
 
@@ -90,18 +85,15 @@ describe('runFlow', () => {
   });
 
   it('throws with step and flow name when a task fails', async () => {
-    class FailTask extends Task {
-      public readonly name = 'fail';
-      public readonly description = '';
-      public readonly params = [];
-      // eslint-disable-next-line class-methods-use-this
-      public async run(): Promise<void> {
-        throw new Error('boom');
-      }
-    }
-
     const { runFlow }: { runFlow: typeof RunFlowFn } = await esmock('../../src/core/flow.runner.js', {
-      '../../src/core/tasks/index.js': { default: { fail: new FailTask() } },
+      '../../src/core/task.runner.js': makeMockRunner({
+        fail: makeTask({
+          name: 'fail',
+          async run() {
+            throw new Error('boom');
+          },
+        }),
+      }),
       '../../src/core/flow.renderer.js': mockRenderer,
     });
 
@@ -116,18 +108,16 @@ describe('runFlow', () => {
   it('passes resolved params to the task', async () => {
     let receivedParams: Record<string, unknown> = {};
 
-    class ParamTask extends Task {
-      public readonly name = 'param-task';
-      public readonly description = '';
-      public readonly params = [{ name: 'msg', type: 'string' as const, required: true }];
-      // eslint-disable-next-line class-methods-use-this
-      public async run(ctx: TaskContext): Promise<void> {
-        receivedParams = ctx.params;
-      }
-    }
-
     const { runFlow }: { runFlow: typeof RunFlowFn } = await esmock('../../src/core/flow.runner.js', {
-      '../../src/core/tasks/index.js': { default: { 'param-task': new ParamTask() } },
+      '../../src/core/task.runner.js': makeMockRunner({
+        'param-task': makeTask({
+          name: 'param-task',
+          params: [{ name: 'msg', type: 'string', required: true }],
+          async run(ctx: TaskContext): Promise<void> {
+            receivedParams = ctx.params;
+          },
+        }),
+      }),
       '../../src/core/flow.renderer.js': mockRenderer,
     });
 

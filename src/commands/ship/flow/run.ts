@@ -2,7 +2,7 @@ import { resolve } from 'node:path';
 import { Args } from '@oclif/core';
 import { SfCommand, Flags } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
-import { load } from '@plugin-ship/core/config.loader.js';
+import { loadConfig } from '@plugin-ship/core/config.loader.js';
 import { FlowContext } from '@plugin-ship/core/flow.context.js';
 import { parseCliParams } from '@plugin-ship/core/param.js';
 import { runFlow } from '@plugin-ship/core/flow.runner.js';
@@ -42,7 +42,7 @@ export default class FlowRun extends SfCommand<void> {
     const params = parseCliParams(flags.param ?? []);
 
     // Load and parse the ship.yml config file from the specified path
-    const config = load(flags.config);
+    const config = loadConfig(flags.config);
 
     // Look up the named flow — error early if it doesn't exist
     const flow = config?.flows?.[args.flowName];
@@ -51,7 +51,7 @@ export default class FlowRun extends SfCommand<void> {
     }
 
     // Get path for .ship directory
-    const shipDir = resolve(flags.config, '..', config.dir ?? '.ship');
+    const shipDir = resolve(flags.config, '..', config.dir);
 
     // Build the flow context passed to every step in the flow
     const context: FlowContext = {

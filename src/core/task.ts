@@ -1,10 +1,9 @@
-import { pathToFileURL } from 'node:url';
-import { ParamDefinition, Params, validate } from '@plugin-ship/core/param.js';
+import { ParamDefinition, Params } from '@plugin-ship/core/param.js';
 import { FlowContext } from '@plugin-ship/core/flow.context.js';
 import { TaskOutput } from '@plugin-ship/core/task.output.js';
 
 /** Describes a value this task writes to the flow outputs. */
-export type OutputDefinition = {
+export type TaskOutputDefinition = {
   /** The output key this task writes. */
   name: string;
   /** The type of the stored value. */
@@ -26,69 +25,19 @@ export type TaskContext = {
   output: TaskOutput;
 };
 
-/* eslint-disable jsdoc/check-indentation */
 /**
- * Abstract base class for all tasks.
- * Subclasses must declare a `name`, `description`, and `params` schema,
- * and implement `run()` with the task's logic.
- *
- * @example
- * class DeployMetadataTask extends Task {
- *   public readonly name = 'deploy-metadata';
- *   public readonly description = 'Deploys metadata to an org';
- *   public readonly params = [{ name: 'targetOrg', type: 'string', required: true }];
- *
- *   public async run(context: TaskContext) { ... }
- * }
+ * The shape every task must satisfy — built-in or custom.
+ * Custom tasks are duck-typed against this at runtime.
  */
-/* eslint-enable jsdoc/check-indentation */
-export abstract class Task {
-  /** Values this task writes to the flow outputs, available to subsequent steps. */
-  public readonly outputs: OutputDefinition[] = [];
-
-  /** Unique identifier for this task, used in flow definitions and error messages. */
-  public abstract readonly name: string;
+export type Task = {
+  /** Unique identifier used in flow definitions and error messages. */
+  name: string;
   /** Human-readable description of what this task does. */
-  public abstract readonly description: string;
+  description: string;
   /** Schema describing the params this task accepts. */
-  public abstract readonly params: ParamDefinition[];
-
-  /**
-   * Loads a task from a JS module file.
-   * The module must export a `Task` instance as its default export.
-   *
-   * @param path - Absolute path to the `.js` module file.
-   * @returns The task instance exported by the module.
-   * @throws If the file cannot be loaded or does not export a valid `Task` as default.
-   */
-  public static async fromModule(path: string): Promise<Task> {
-    const url = pathToFileURL(path).href;
-    const mod = (await import(url).catch(() => {
-      throw new Error(`File does not export a valid Task subclass as default: ${path}`);
-    })) as { default: unknown };
-    if (!(mod.default instanceof Task)) {
-      throw new Error(`File does not export a valid Task subclass as default: ${path}`);
-    }
-    return mod.default;
-  }
-
-  /**
-   * Validates raw param input against this task's param schema.
-   * Called by the flow runner before `run()` to ensure all required params
-   * are present and correctly typed.
-   *
-   * @param rawParams - Unvalidated key/value pairs, typically from user input or flow config.
-   * @returns Validated and typed `Params` object.
-   * @throws If any required param is missing or a value has the wrong type.
-   */
-  public validate(rawParams: Record<string, unknown>): Params {
-    try {
-      return validate(rawParams, this.params);
-    } catch (err) {
-      throw new Error(`Error validating task "${this.name}": ${(err as Error).message}`);
-    }
-  }
-
+  params: ParamDefinition[];
+  /** Values this task writes to the flow outputs, available to subsequent steps. */
+  outputs?: TaskOutputDefinition[];
   /** Executes the task with a fully validated context. */
-  public abstract run(context: TaskContext): Promise<void>;
-}
+  run: (context: TaskContext) => Promise<void>;
+};

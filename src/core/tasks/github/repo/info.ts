@@ -1,6 +1,5 @@
-import { Task, TaskContext } from '@plugin-ship/core/task.js';
-import { ParamDefinition } from '@plugin-ship/core/param.js';
 import { getGithubToken } from '@plugin-ship/core/services/github.js';
+import type { Task, TaskContext } from '@plugin-ship/core/task.js';
 
 type GithubRepo = {
   full_name: string;
@@ -16,10 +15,10 @@ type GithubRepo = {
  * Reads the repo URL from `config.project.git.repoUrl`.
  * Uses the GitHub token stored by `sf ship service connect github`.
  */
-export default new (class GithubRepoInfo extends Task {
-  public readonly name = 'github/repo/info';
-  public readonly description = 'Fetches and logs basic repository info from the GitHub API.';
-  public readonly params: ParamDefinition[] = [
+export default {
+  name: 'github/repo/info',
+  description: 'Fetches and logs basic repository info from the GitHub API.',
+  params: [
     {
       name: 'github-alias',
       type: 'string',
@@ -32,10 +31,8 @@ export default new (class GithubRepoInfo extends Task {
       required: false,
       description: 'GitHub repository URL. Falls back to config.project.git.repoUrl.',
     },
-  ];
-
-  // eslint-disable-next-line class-methods-use-this
-  public async run({ flow, params }: TaskContext): Promise<void> {
+  ],
+  async run({ flow, params }: TaskContext): Promise<void> {
     const alias = String(params['github-alias'] ?? 'default');
     const token = getGithubToken(alias);
     if (!token) throw new Error(`No GitHub token found for alias "${alias}". Run: sf ship service connect github`);
@@ -62,5 +59,5 @@ export default new (class GithubRepoInfo extends Task {
     flow.log(`Visibility:      ${data.visibility}`);
     flow.log(`Stars:           ${data.stargazers_count}`);
     flow.log(`Open issues/PRs: ${data.open_issues_count}`);
-  }
-})();
+  },
+} satisfies Task;

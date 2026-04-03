@@ -1,9 +1,7 @@
-import { readdirSync } from 'node:fs';
-import { resolve } from 'node:path';
 import { SfCommand, Flags, Ux, StandardColors } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
-import { load, getShipDir } from '@plugin-ship/core/config.loader.js';
-import tasks from '@plugin-ship/core/tasks/index.js';
+import { loadConfig, getShipDir } from '@plugin-ship/core/config.loader.js';
+import { TaskRunner } from '@plugin-ship/core/task.runner.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('plugin-ship', 'ship.action.list');
@@ -22,31 +20,21 @@ export default class TaskList extends SfCommand<void> {
 
   public async run(): Promise<void> {
     const { flags } = await this.parse(TaskList);
-    const config = load(flags.config);
+    const config = loadConfig(flags.config);
     const shipDir = getShipDir(flags.config, config);
 
     const ux = new Ux();
+    const tasks = new TaskRunner(shipDir).list();
 
-    ux.styledHeader('Built-in Tasks');
-    ux.table({
-      data: Object.values(tasks)
-        .sort((a, b) => a.name.localeCompare(b.name))
-        .map((t) => ({ name: t.name, description: t.description })),
-    });
-
-    let customFiles: string[] = [];
-    try {
-      customFiles = readdirSync(resolve(shipDir, 'actions'))
-        .filter((f) => f.endsWith('.js'))
-        .map((f) => f.replace(/\.js$/, ''));
-    } catch {
-      // no custom tasks directory
+    const groups: Record<string, string[]> = {};
+    for (const name of tasks) {
+      const group = name.split('/')[0];
+      (groups[group] ??= []).push(name);
     }
 
-    if (customFiles.length > 0) {
-      this.log('');
-      ux.styledHeader('Custom Tasks');
-      ux.table({ data: customFiles.sort().map((name) => ({ name })) });
+    for (const group of Object.keys(groups).sort()) {
+      this.log(StandardColors.info(`\n=== ${group} ===`));
+      ux.table({ data: groups[group].map((name) => ({ name })) });
     }
 
     this.log(
@@ -55,6 +43,5 @@ export default class TaskList extends SfCommand<void> {
         StandardColors.success('sf ship task info <name>') +
         ' to see full details for a task.'
     );
-    this.log('');
   }
 }
