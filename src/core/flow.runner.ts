@@ -23,14 +23,13 @@ export async function runFlow(flowName: string, flow: FlowDefinition, context: F
   for (const [stepId, step] of steps) {
     renderer.stepStart(stepId);
 
-    // eslint-disable-next-line no-await-in-loop
-    const task = await runner.resolveTask(step.task);
-
-    const interpolated = store.resolveParams(step.params ?? {}, { params: context.params, steps: store.getSteps() });
-    const params = validateParams(interpolated, task.params);
-    const output = store.getTaskOutput(stepId);
-
     try {
+      // eslint-disable-next-line no-await-in-loop
+      const task = await runner.resolveTask(step.task);
+      const interpolated = store.resolveParams(step.params ?? {}, { params: context.params, steps: store.getSteps() });
+      const params = validateParams(interpolated, task.params);
+      const output = store.getTaskOutput(stepId);
+
       // eslint-disable-next-line no-await-in-loop
       await task.run({ flow: context, params, output });
     } catch (err) {

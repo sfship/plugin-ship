@@ -11,7 +11,7 @@ import { TaskContext } from '@plugin-ship/core/task.js';
 import { Store } from '@plugin-ship/core/store.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
-const messages = Messages.loadMessages('plugin-ship', 'ship.action.run');
+const messages = Messages.loadMessages('plugin-ship', 'ship.task.run');
 
 /** Runs a single task directly, outside of a flow. */
 export default class TaskRun extends SfCommand<void> {
@@ -20,7 +20,7 @@ export default class TaskRun extends SfCommand<void> {
   public static readonly examples = messages.getMessages('examples');
 
   public static readonly args = {
-    taskName: Args.string({ description: messages.getMessage('args.actionName.summary'), required: true }),
+    taskName: Args.string({ description: messages.getMessage('args.taskName.summary'), required: true }),
   };
 
   public static readonly flags = {

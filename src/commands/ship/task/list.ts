@@ -4,7 +4,7 @@ import { loadConfig, getShipDir } from '@plugin-ship/core/config.loader.js';
 import { TaskRunner } from '@plugin-ship/core/task.runner.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
-const messages = Messages.loadMessages('plugin-ship', 'ship.action.list');
+const messages = Messages.loadMessages('plugin-ship', 'ship.task.list');
 
 /** Lists all available tasks. */
 export default class TaskList extends SfCommand<void> {

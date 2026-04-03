@@ -7,7 +7,7 @@ import { TaskRunner } from '../../src/core/task.runner.js';
 const shipDir = resolve('test/core');
 
 describe('TaskRunner.resolve', () => {
-  it('loads a valid task from the actions directory', async () => {
+  it('loads a valid task from the tasks directory', async () => {
     const task = await new TaskRunner(shipDir).resolveTask('stub-task');
     assert.equal(task.name, 'stub-task');
   });
@@ -26,7 +26,7 @@ describe('TaskRunner.resolve', () => {
 });
 
 describe('TaskRunner.list', () => {
-  it('includes tasks from the actions directory', () => {
+  it('includes tasks from the tasks directory', () => {
     const tasks = new TaskRunner(shipDir).list();
     assert.ok(tasks.includes('stub-task'));
   });
@@ -36,7 +36,7 @@ describe('TaskRunner.list', () => {
     assert.ok(tasks.includes('util/log'));
   });
 
-  it('does not throw when the actions directory does not exist', () => {
+  it('does not throw when the tasks directory does not exist', () => {
     assert.doesNotThrow(() => new TaskRunner('/nonexistent').list());
   });
 });

@@ -4,7 +4,7 @@ Run a flow defined in ship.yml.
 
 # description
 
-Reads ship.yml from the current directory, finds the named flow, and executes its actions in sequence.
+Reads ship.yml from the current directory, finds the named flow, and executes its tasks in sequence.
 
 # flags.name.summary
 

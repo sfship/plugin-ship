@@ -80,7 +80,7 @@ EXAMPLES
 
 ### `sf ship task list`
 
-Lists all available tasks — built-in and any custom tasks in `.ship/actions/`.
+Lists all available tasks — built-in and any custom tasks in `.ship/tasks/`.
 
 ```
 USAGE

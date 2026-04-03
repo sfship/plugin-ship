@@ -31,8 +31,8 @@ function scanDir(dir: string): Set<string> {
   const names = new Set<string>();
   try {
     for (const file of listDir(dir, { recursive: true })) {
-      if (typeof file === 'string' && /\.(js|ts)$/.test(file) && !file.endsWith('.d.ts')) {
-        names.add(file.replace(/\.(js|ts)$/, '').replaceAll('\\', '/'));
+      if (typeof file === 'string' && /\.(mjs|js|ts)$/.test(file) && !file.endsWith('.d.ts')) {
+        names.add(file.replace(/\.(mjs|js|ts)$/, '').replaceAll('\\', '/'));
       }
     }
   } catch (err) {
@@ -44,19 +44,19 @@ function scanDir(dir: string): Set<string> {
 /**
  * Resolves and loads tasks by name.
  *
- * On construction, scans the consumer actions directory once and caches the
+ * On construction, scans the consumer tasks directory once and caches the
  * available task names. Resolution checks this cache before attempting a
  * filesystem load, so built-in-only flows pay no per-task filesystem cost.
  *
  * Resolution order:
- * 1. `<shipDir>/actions/<taskName>.js` — consumer tasks take priority, allowing built-ins to be overridden.
+ * 1. `<shipDir>/tasks/<taskName>.mjs` or `.js` — consumer tasks take priority, allowing built-ins to be overridden.
  * 2. `<builtinsDir>/<taskName>.js` — built-in tasks bundled with the plugin.
  */
 export class TaskRunner {
   private readonly consumerNames: Set<string>;
 
   public constructor(private readonly shipDir: string) {
-    this.consumerNames = scanDir(resolve(shipDir, 'actions'));
+    this.consumerNames = scanDir(resolve(shipDir, 'tasks'));
   }
 
   /** Lists all available task names. */
@@ -72,14 +72,18 @@ export class TaskRunner {
    * @throws If the task cannot be found in either location.
    */
   public async resolveTask(taskName: string): Promise<Task> {
-    const consumerPath = resolve(this.shipDir, 'actions', `${taskName}.js`);
     const builtinPath = resolve(builtinsDir, `${taskName}.js`);
 
-    const task =
-      (this.consumerNames.has(taskName) ? await loadFromPath(consumerPath) : null) ?? (await loadFromPath(builtinPath));
+    const consumerTask = this.consumerNames.has(taskName)
+      ? (await loadFromPath(resolve(this.shipDir, 'tasks', `${taskName}.mjs`))) ??
+        (await loadFromPath(resolve(this.shipDir, 'tasks', `${taskName}.js`)))
+      : null;
+    const task = consumerTask ?? (await loadFromPath(builtinPath));
 
     if (!task) {
-      throw new Error(`Unknown task "${taskName}". Looked for definition file at: ${consumerPath}`);
+      throw new Error(
+        `Unknown task "${taskName}". Looked for definition file at: ${resolve(this.shipDir, 'tasks', taskName)}`
+      );
     }
 
     return task;

@@ -1,10 +1,10 @@
 # summary
 
-List all available actions.
+List all available tasks.
 
 # description
 
-Prints built-in actions and any custom actions found in the `.ship/actions/` directory.
+Prints built-in tasks and any custom tasks found in the `.ship/tasks/` directory.
 
 # flags.config.summary
 
