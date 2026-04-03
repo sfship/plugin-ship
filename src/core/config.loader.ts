@@ -1,7 +1,7 @@
-import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { parse } from 'yaml';
 import { ShipConfig, ShipConfigSchema } from '@plugin-ship/core/config.js';
+import { readText } from '@plugin-ship/core/file.js';
 
 /**
  * Reads and parses a `ship.yml` config file, validating it against {@link ShipConfigSchema}.
@@ -13,7 +13,7 @@ import { ShipConfig, ShipConfigSchema } from '@plugin-ship/core/config.js';
 export function loadConfig(configPath: string = 'ship.yml'): ShipConfig {
   let raw: string;
   try {
-    raw = readFileSync(configPath, 'utf8');
+    raw = readText(configPath);
   } catch {
     throw new Error(`No ship.yml found at ${configPath}`);
   }

@@ -1,7 +1,7 @@
-import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { Org } from '@salesforce/core';
 import { ScratchOrgDef, ScratchOrgDefSchema } from '@plugin-ship/core/scratch-org.js';
+import { fileExists, readText } from '@plugin-ship/core/file.js';
 
 /**
  * Manages lazy-loaded Salesforce `Org` instances and scratch org definitions
@@ -28,7 +28,7 @@ export class OrgRegistry {
    */
   public resolveAlias(alias: string): string {
     const defPath = resolve(this.orgsDir, `${alias}.json`);
-    if (existsSync(defPath) && this.projectName) return `${this.projectName}:${alias}`;
+    if (fileExists(defPath) && this.projectName) return `${this.projectName}:${alias}`;
     return alias;
   }
 
@@ -56,11 +56,10 @@ export class OrgRegistry {
   public getDef(alias: string): ScratchOrgDef {
     if (!this.defs.has(alias)) {
       const defPath = resolve(this.orgsDir, `${alias}.json`);
-      if (!existsSync(defPath)) {
+      if (!fileExists(defPath)) {
         throw new Error(`No scratch org definition found for alias "${alias}" at ${defPath}`);
       }
-      const raw = readFileSync(defPath, 'utf8');
-      this.defs.set(alias, ScratchOrgDefSchema.parse(JSON.parse(raw)));
+      this.defs.set(alias, ScratchOrgDefSchema.parse(JSON.parse(readText(defPath))));
     }
     return this.defs.get(alias)!;
   }

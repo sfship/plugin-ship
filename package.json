@@ -3,6 +3,7 @@
   "description": "Salesforce CLI plugin for managing the full development and release lifecycle of second-generation managed and unlocked packages.",
   "version": "1.0.0",
   "dependencies": {
+    "@napi-rs/keyring": "^1.2.0",
     "@oclif/core": "^4",
     "@salesforce/core": "^8",
     "@salesforce/sf-plugins-core": "^12",

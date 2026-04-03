@@ -1,6 +1,6 @@
-import { readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { pathToFileURL, fileURLToPath } from 'node:url';
+import { listDir } from '@plugin-ship/core/file.js';
 import { Task } from '@plugin-ship/core/task.js';
 
 const builtinsDir = resolve(fileURLToPath(import.meta.url), '..', 'tasks');
@@ -30,13 +30,13 @@ async function loadFromPath(taskPath: string): Promise<Task | null> {
 function scanDir(dir: string): Set<string> {
   const names = new Set<string>();
   try {
-    for (const file of readdirSync(dir, { recursive: true })) {
+    for (const file of listDir(dir, { recursive: true })) {
       if (typeof file === 'string' && /\.(js|ts)$/.test(file) && !file.endsWith('.d.ts')) {
         names.add(file.replace(/\.(js|ts)$/, '').replaceAll('\\', '/'));
       }
     }
-  } catch {
-    // directory doesn't exist
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code !== 'ENOENT') throw err;
   }
   return names;
 }

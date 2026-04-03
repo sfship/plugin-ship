@@ -29,6 +29,8 @@ export class FlowRenderer {
   private readonly tty: boolean | undefined;
   private current: string | null = null;
   private context: FlowContext | null = null;
+  private spinnerFrame = 0;
+  private spinnerTimer: NodeJS.Timeout | null = null;
 
   public constructor(
     private readonly flowName: string,
@@ -57,8 +59,14 @@ export class FlowRenderer {
   public stepStart(stepId: string): void {
     this.current = stepId;
     if (this.tty) {
+      this.spinnerFrame = 0;
       this.clear();
       this.render();
+      this.spinnerTimer = setInterval(() => {
+        this.spinnerFrame = (this.spinnerFrame + 1) % 10;
+        this.clear();
+        this.render();
+      }, 80);
     } else {
       this.context?.log(`  → ${stepId}`);
     }
@@ -66,6 +74,7 @@ export class FlowRenderer {
 
   /** Marks the current step as completed. */
   public stepComplete(stepId: string): void {
+    this.stopSpinner();
     this.completed.add(stepId);
     this.current = null;
     if (this.tty) {
@@ -76,6 +85,7 @@ export class FlowRenderer {
 
   /** Marks a step as failed and prints the error. */
   public stepFailed(stepId: string, err: Error): void {
+    this.stopSpinner();
     if (this.tty) {
       this.clear();
       this.render(stepId);
@@ -106,6 +116,13 @@ export class FlowRenderer {
     }
   }
 
+  private stopSpinner(): void {
+    if (this.spinnerTimer) {
+      clearInterval(this.spinnerTimer);
+      this.spinnerTimer = null;
+    }
+  }
+
   private render(failed: string | null = null): void {
     this.out.write(`  ${ANSI.dim}Flow:${ANSI.reset} ${ANSI.bold}${this.flowName}${ANSI.reset}\n`);
     for (const [stepId, step] of this.steps) {
@@ -118,7 +135,7 @@ export class FlowRenderer {
         marker = '✓';
         color = ANSI.green;
       } else if (stepId === this.current) {
-        marker = '→';
+        marker = '⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏'[this.spinnerFrame];
         color = ANSI.yellow;
       } else {
         marker = '○';

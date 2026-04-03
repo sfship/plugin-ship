@@ -1,4 +1,5 @@
-import { SfCommand, Flags } from '@salesforce/sf-plugins-core';
+import { ux } from '@oclif/core';
+import { SfCommand, Flags, StandardColors, Ux } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
 import { setGithubToken } from '@plugin-ship/core/services/github.js';
 
@@ -74,11 +75,14 @@ export default class ServiceConnectGithub extends SfCommand<void> {
     const { flags } = await this.parse(ServiceConnectGithub);
     const deviceData = await requestDeviceCode();
 
-    this.log(`\nOpen ${deviceData.verification_uri} in your browser and enter the code:\n`);
-    this.log(`  ${deviceData.user_code}\n`);
-    this.log('Waiting for authorization...');
+    const sfUx = new Ux();
+    sfUx.styledHeader('Authorize GitHub');
+    this.log(`Go to: \x1b[36m${deviceData.verification_uri}\x1b[0m`);
+    this.log(`Code:  ${StandardColors.success(deviceData.user_code)}\n`);
 
+    ux.action.start('Waiting for authorization');
     const token = await pollForToken(deviceData.device_code, deviceData.interval * 1000);
+    ux.action.stop();
 
     const userResp = await fetch('https://api.github.com/user', {
       headers: { Authorization: `Bearer ${token}`, 'User-Agent': 'plugin-ship' },
@@ -90,7 +94,9 @@ export default class ServiceConnectGithub extends SfCommand<void> {
       .filter(Boolean);
 
     setGithubToken(token, user.login, flags.alias, scopes);
-    this.log(`\nConnected as ${user.login}${flags.alias !== 'default' ? ` (alias: ${flags.alias})` : ''}`);
+    this.log('');
+    this.log(StandardColors.success(`Connected to Github as "${user.login}"`));
     this.log(`Scopes: ${scopes.join(', ')}`);
+    this.log('');
   }
 }

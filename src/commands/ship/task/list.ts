@@ -43,5 +43,6 @@ export default class TaskList extends SfCommand<void> {
         StandardColors.success('sf ship task info <name>') +
         ' to see full details for a task.'
     );
+    this.log('');
   }
 }
