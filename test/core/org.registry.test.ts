@@ -1,97 +1,86 @@
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { resolve } from 'node:path';
 import esmock from 'esmock';
-import { OrgRegistry } from '../../src/core/org.registry.js';
 import type { OrgRegistry as OrgRegistryType } from '../../src/core/org.registry.js';
 
-const validDef = {
-  edition: 'Developer',
-  orgName: 'Test Org',
-};
+const ORGS_DIR = '/fake/orgs';
+const validDef = { edition: 'Developer', orgName: 'Test Org' };
+const files = new Map<string, string>();
 
-let orgsDir: string;
+let orgCreateStub: () => Promise<object> = async () => ({});
+
+const { OrgRegistry }: { OrgRegistry: typeof OrgRegistryType } = await esmock('../../src/core/org.registry.js', {
+  '../../src/core/file.js': {
+    fileExists: (path: string) => files.has(path),
+    readText: (path: string) => files.get(path),
+  },
+  '@salesforce/core': {
+    Org: { create: async () => orgCreateStub() },
+  },
+});
 
 beforeEach(() => {
-  orgsDir = mkdtempSync(join(tmpdir(), 'plugin-ship-test-'));
+  files.clear();
+  orgCreateStub = async () => ({});
 });
 
-afterEach(() => {
-  rmSync(orgsDir, { recursive: true, force: true });
-});
+function putFile(alias: string, content: object): void {
+  files.set(resolve(ORGS_DIR, `${alias}.json`), JSON.stringify(content));
+}
 
 describe('OrgRegistry.resolveAlias', () => {
   it('returns the alias as-is when no def file exists', () => {
-    const registry = new OrgRegistry(orgsDir, 'myproject');
-    assert.equal(registry.resolveAlias('dev'), 'dev');
+    assert.equal(new OrgRegistry(ORGS_DIR, 'myproject').resolveAlias('dev'), 'dev');
   });
 
   it('returns a qualified alias when a def file exists and project name is set', () => {
-    writeFileSync(join(orgsDir, 'dev.json'), JSON.stringify(validDef));
-    const registry = new OrgRegistry(orgsDir, 'myproject');
-    assert.equal(registry.resolveAlias('dev'), 'myproject:dev');
+    putFile('dev', validDef);
+    assert.equal(new OrgRegistry(ORGS_DIR, 'myproject').resolveAlias('dev'), 'myproject:dev');
   });
 
   it('returns the alias as-is when a def file exists but no project name is set', () => {
-    writeFileSync(join(orgsDir, 'dev.json'), JSON.stringify(validDef));
-    const registry = new OrgRegistry(orgsDir);
-    assert.equal(registry.resolveAlias('dev'), 'dev');
+    putFile('dev', validDef);
+    assert.equal(new OrgRegistry(ORGS_DIR).resolveAlias('dev'), 'dev');
   });
 });
 
 describe('OrgRegistry.getDef', () => {
   it('reads and returns a valid scratch org definition', () => {
-    writeFileSync(join(orgsDir, 'dev.json'), JSON.stringify(validDef));
-    const registry = new OrgRegistry(orgsDir, 'myproject');
-    const def = registry.getDef('dev');
+    putFile('dev', validDef);
+    const def = new OrgRegistry(ORGS_DIR).getDef('dev');
     assert.equal(def.edition, 'Developer');
     assert.equal(def.orgName, 'Test Org');
   });
 
   it('throws when no def file exists for the alias', () => {
-    const registry = new OrgRegistry(orgsDir, 'myproject');
-    assert.throws(() => registry.getDef('missing'), /No scratch org definition found for alias "missing"/);
+    assert.throws(
+      () => new OrgRegistry(ORGS_DIR).getDef('missing'),
+      /No scratch org definition found for alias "missing"/
+    );
   });
 
   it('caches the def after the first read', () => {
-    writeFileSync(join(orgsDir, 'dev.json'), JSON.stringify(validDef));
-    const registry = new OrgRegistry(orgsDir, 'myproject');
-    const first = registry.getDef('dev');
-    const second = registry.getDef('dev');
-    assert.equal(first, second);
+    putFile('dev', validDef);
+    const registry = new OrgRegistry(ORGS_DIR);
+    assert.equal(registry.getDef('dev'), registry.getDef('dev'));
   });
 });
 
 describe('OrgRegistry.getOrg', () => {
   it('creates and returns an Org instance', async () => {
     const fakeOrg = {};
-    const { OrgRegistry: MockedRegistry }: { OrgRegistry: typeof OrgRegistryType } = await esmock(
-      '../../src/core/org.registry.js',
-      { '@salesforce/core': { Org: { create: async () => fakeOrg } } }
-    );
-    const registry = new MockedRegistry(orgsDir);
-    const org = await registry.getOrg('dev');
+    orgCreateStub = async () => fakeOrg;
+    const org = await new OrgRegistry(ORGS_DIR).getOrg('dev');
     assert.equal(org, fakeOrg);
   });
 
   it('returns the cached instance on subsequent calls', async () => {
     let callCount = 0;
-    const fakeOrg = {};
-    const { OrgRegistry: MockedRegistry }: { OrgRegistry: typeof OrgRegistryType } = await esmock(
-      '../../src/core/org.registry.js',
-      {
-        '@salesforce/core': {
-          Org: {
-            create: async () => {
-              callCount++;
-              return fakeOrg;
-            },
-          },
-        },
-      }
-    );
-    const registry = new MockedRegistry(orgsDir);
+    orgCreateStub = async () => {
+      callCount++;
+      return {};
+    };
+    const registry = new OrgRegistry(ORGS_DIR);
     await registry.getOrg('dev');
     await registry.getOrg('dev');
     assert.equal(callCount, 1);

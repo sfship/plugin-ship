@@ -66,7 +66,7 @@ export class FlowRenderer {
         this.spinnerFrame = (this.spinnerFrame + 1) % 10;
         this.clear();
         this.render();
-      }, 80);
+      }, 80).unref();
     } else {
       this.context?.log(`  → ${stepId}`);
     }
