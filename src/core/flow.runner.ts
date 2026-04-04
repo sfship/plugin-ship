@@ -4,7 +4,7 @@ import { validateParams } from '@plugin-ship/core/param.js';
 import { TaskRunner } from '@plugin-ship/core/task.runner.js';
 import { Store } from '@plugin-ship/core/store.js';
 import { FlowRenderer } from '@plugin-ship/core/flow.renderer.js';
-import { asError } from '@plugin-ship/core/error.utils.js';
+import { asError, ExpectedError } from '@plugin-ship/core/error.utils.js';
 import { Task } from '@plugin-ship/core/task.js';
 
 /**
@@ -47,12 +47,15 @@ export async function runFlow(flowName: string, flow: FlowDefinition, context: F
       // eslint-disable-next-line no-await-in-loop
       await task.run({ flow: context, params, output });
     } catch (err) {
-      // Instantiate Error and pass to renderer for display
       const error = asError(err);
       renderer.stepFailed(stepId, error);
 
-      // Rethrow to signal error to the command
-      throw error;
+      if (error instanceof ExpectedError && error.message.startsWith('Missing required params')) {
+        error.message += `\nRequired params (add to step "${stepId}" in ship.yml)`;
+        throw error;
+      }
+
+      throw new Error(`Step "${stepId}" in flow "${flowName}" failed: ${error.message}`);
     }
 
     renderer.stepComplete(stepId);

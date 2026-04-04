@@ -1,6 +1,6 @@
 import { strict as assert } from 'node:assert';
 import { validateParams, parseCliParams } from '@plugin-ship/core/param.js';
-import { ParamDefinition } from '@plugin-ship/core/param.js';
+import { ParamDefinition } from '@plugin-ship/core/config.js';
 
 describe('validateParams', () => {
   it('returns an empty object when there are no param definitions', () => {

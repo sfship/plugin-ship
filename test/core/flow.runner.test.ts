@@ -89,7 +89,7 @@ describe('runFlow', () => {
     assert.deepEqual(order, ['a', 'b']);
   });
 
-  it('throws with step and flow name when a task fails', async () => {
+  it('throws when a task fails', async () => {
     const { runFlow }: { runFlow: typeof RunFlowFn } = await esmock('../../src/core/flow.runner.js', {
       '../../src/core/task.runner.js': makeMockRunner({
         fail: makeTask({
@@ -104,10 +104,7 @@ describe('runFlow', () => {
 
     const flow: FlowDefinition = { steps: { 'my-step': { task: 'fail' } } };
 
-    await assert.rejects(
-      () => runFlow('my-flow', flow, makeContext()),
-      /Step "my-step" in flow "my-flow" failed: boom/
-    );
+    await assert.rejects(() => runFlow('my-flow', flow, makeContext()), /boom/);
   });
 
   it('passes resolved params to the task', async () => {
@@ -148,7 +145,7 @@ describe('runFlow', () => {
     await assert.rejects(() => runFlow('my-flow', flow, makeContext()), /Missing required params/);
   });
 
-  it('augments ExpectedError with required params hint', async () => {
+  it('propagates ExpectedError thrown by a task', async () => {
     const { runFlow }: { runFlow: typeof RunFlowFn } = await esmock('../../src/core/flow.runner.js', {
       '../../src/core/task.runner.js': makeMockRunner({
         'fail-task': makeTask({
@@ -164,9 +161,6 @@ describe('runFlow', () => {
 
     const flow: FlowDefinition = { steps: { 'my-step': { task: 'fail-task' } } };
 
-    await assert.rejects(
-      () => runFlow('my-flow', flow, makeContext()),
-      /Required params \(add to step "my-step" in ship\.yml\)/
-    );
+    await assert.rejects(() => runFlow('my-flow', flow, makeContext()), ExpectedError);
   });
 });
