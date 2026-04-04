@@ -7,3 +7,10 @@
 export function asError(err: unknown): Error {
   return err instanceof Error ? err : new Error(String(err));
 }
+
+/**
+ * An error thrown when a known, user-facing failure occurs — invalid input,
+ * missing config, etc. The flow renderer suppresses the stack trace for these
+ * since they indicate a user mistake rather than an unexpected bug.
+ */
+export class ExpectedError extends Error {}

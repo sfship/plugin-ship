@@ -1,22 +1,11 @@
+import { ParamDefinition } from './config.js';
+import { ExpectedError } from './error.utils.js';
+
 /** A scalar value that can be passed as a task or flow param. */
 export type ParamValue = string | number | boolean;
 
 /** A resolved, validated set of params, keyed by param name. */
 export type Params = Record<string, ParamValue>;
-
-/** Declares a single param that a task or flow accepts. */
-export type ParamDefinition = {
-  /** The param's key name. */
-  name: string;
-  /** Expected primitive type; used for runtime type-checking. */
-  type: 'string' | 'number' | 'boolean';
-  /** If `true`, validation will throw when this param is absent and has no default. */
-  required?: boolean;
-  /** Fallback value used when the param is not provided. */
-  default?: unknown;
-  /** Human-readable description, used in help output. */
-  description?: string;
-};
 
 /**
  * Validates and coerces raw key/value input against a param schema.
@@ -31,16 +20,18 @@ export type ParamDefinition = {
 export function validateParams(rawParams: Record<string, unknown>, paramDefinitions: ParamDefinition[]): Params {
   const resolved: Params = {};
 
+  const missing = paramDefinitions.filter((d) => d.required && (rawParams[d.name] ?? d.default) === undefined);
+  if (missing.length) {
+    const list = missing.map((p) => `  ${p.name}`).join('\n');
+    throw new ExpectedError(`Missing required params:\n${list}`);
+  }
+
   for (const definition of paramDefinitions) {
     const val = rawParams[definition.name] ?? definition.default;
 
-    if (definition.required && val === undefined) {
-      throw new Error(`Missing required param "${definition.name}"`);
-    }
-
     if (val !== undefined) {
       if (!isParamValue(val)) {
-        throw new Error(`Param "${definition.name}" must be a string, number, or boolean`);
+        throw new ExpectedError(`Param "${definition.name}" must be a string, number, or boolean`);
       }
       resolved[definition.name] = coerce(val, definition);
     }
@@ -55,7 +46,7 @@ export function validateParams(rawParams: Record<string, unknown>, paramDefiniti
 export function parseCliParams(flags: string[]): Params {
   const entries = flags.map((flag) => {
     const i = flag.indexOf('=');
-    if (i === -1) throw new Error(`Invalid param format "${flag}", expected key=value`);
+    if (i === -1) throw new ExpectedError(`Invalid param format "${flag}", expected key=value`);
     const key = flag.slice(0, i);
     const value = flag.slice(i + 1);
     return [key, value] as const;
@@ -79,14 +70,14 @@ function coerce(val: ParamValue, definition: ParamDefinition): ParamValue {
 
   if (definition.type === 'number') {
     const n = Number(val);
-    if (isNaN(n)) throw new Error(`Param "${definition.name}" expected a number, got "${String(val)}"`);
+    if (isNaN(n)) throw new ExpectedError(`Param "${definition.name}" expected a number, got "${String(val)}"`);
     return n;
   }
 
   if (definition.type === 'boolean') {
     if (val === 'true') return true;
     if (val === 'false') return false;
-    throw new Error(`Param "${definition.name}" expected a boolean ("true" or "false"), got "${String(val)}"`);
+    throw new ExpectedError(`Param "${definition.name}" expected a boolean ("true" or "false"), got "${String(val)}"`);
   }
 
   // definition.type === 'string', val is number or boolean

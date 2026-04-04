@@ -14,7 +14,7 @@ describe('validateParams', () => {
 
   it('throws when a required param is missing', () => {
     const defs: ParamDefinition[] = [{ name: 'env', type: 'string', required: true }];
-    assert.throws(() => validateParams({}, defs), /Missing required param "env"/);
+    assert.throws(() => validateParams({}, defs), /Missing required params/);
   });
 
   it('throws when a param value is not a scalar', () => {

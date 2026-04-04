@@ -34,9 +34,10 @@ function makeOut(isTTY: boolean): { isTTY: boolean; write: (chunk: string) => bo
 }
 
 describe('FlowRenderer (non-TTY)', () => {
-  it('logs the flow name on construction', () => {
+  it('logs the flow name on start', () => {
     const { ctx, logs } = makeContext();
-    new FlowRenderer('my-flow', steps, ctx, makeOut(false));
+    const renderer = new FlowRenderer('my-flow', steps, ctx, makeOut(false));
+    renderer.start();
     assert.ok(logs.some((l) => l.includes('my-flow')));
   });
 
@@ -53,15 +54,32 @@ describe('FlowRenderer (non-TTY)', () => {
     renderer.success();
     assert.ok(logs.some((l) => l.includes('my-flow') && l.includes('completed')));
   });
+
+  it('logs a could not start message on failedBeforeStart', () => {
+    const { ctx, logs } = makeContext();
+    const renderer = new FlowRenderer('my-flow', steps, ctx, makeOut(false));
+    renderer.failedBeforeStart(new Error('bad param'));
+    assert.ok(logs.some((l) => l.includes('could not start') && l.includes('bad param')));
+  });
 });
 
 describe('FlowRenderer (TTY)', () => {
-  it('renders the flow name and steps on construction', () => {
+  it('renders the flow name on start', () => {
     const { ctx } = makeContext();
     const out = makeOut(true);
-    new FlowRenderer('my-flow', steps, ctx, out);
+    const renderer = new FlowRenderer('my-flow', steps, ctx, out);
+    renderer.start();
+    assert.ok(out.written.join('').includes('my-flow'));
+  });
+
+  it('renders the step list when the first step starts', () => {
+    const { ctx } = makeContext();
+    const out = makeOut(true);
+    const renderer = new FlowRenderer('my-flow', steps, ctx, out);
+    renderer.start();
+    out.written.length = 0;
+    renderer.stepStart('step-a');
     const output = out.written.join('');
-    assert.ok(output.includes('my-flow'));
     assert.ok(output.includes('step-a'));
     assert.ok(output.includes('step-b'));
   });
@@ -117,5 +135,29 @@ describe('FlowRenderer (TTY)', () => {
     assert.ok(output.includes('step-a'));
     assert.ok(output.includes('something went wrong'));
     assert.ok(output.includes('✗'));
+  });
+
+  it('stops the spinner and renders failure when stepFailed is called after stepStart', () => {
+    const { ctx } = makeContext();
+    const out = makeOut(true);
+    const renderer = new FlowRenderer('my-flow', steps, ctx, out);
+    renderer.stepStart('step-a');
+    out.written.length = 0;
+    renderer.stepFailed('step-a', new Error('oops'));
+    const output = out.written.join('');
+    assert.ok(output.includes('step-a'));
+    assert.ok(output.includes('✗'));
+  });
+
+  it('writes a failedBeforeStart message with the error', () => {
+    const { ctx } = makeContext();
+    const out = makeOut(true);
+    const renderer = new FlowRenderer('my-flow', steps, ctx, out);
+    renderer.start();
+    out.written.length = 0;
+    renderer.failedBeforeStart(new Error('bad param\ndetail'));
+    const output = out.written.join('');
+    assert.ok(output.includes('could not start'));
+    assert.ok(output.includes('bad param'));
   });
 });

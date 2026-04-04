@@ -1,6 +1,7 @@
-import { ParamDefinition, Params } from '@plugin-ship/core/param.js';
+import { Params } from '@plugin-ship/core/param.js';
 import { FlowContext } from '@plugin-ship/core/flow.context.js';
 import { TaskOutput } from '@plugin-ship/core/task.output.js';
+import { ParamDefinition } from '@plugin-ship/core/config.js';
 
 /** Describes a value this task writes to the flow outputs. */
 export type TaskOutputDefinition = {

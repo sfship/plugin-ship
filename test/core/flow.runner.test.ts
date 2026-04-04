@@ -1,5 +1,6 @@
 import { strict as assert } from 'node:assert';
 import esmock from 'esmock';
+import { ExpectedError } from '../../src/core/error.utils.js';
 import { OrgRegistry } from '../../src/core/org.registry.js';
 import type { Task, TaskContext } from '../../src/core/task.js';
 import type { FlowContext } from '../../src/core/flow.context.js';
@@ -9,6 +10,10 @@ import type { Params } from '../../src/core/param.js';
 
 const mockRenderer = {
   FlowRenderer: class {
+    // eslint-disable-next-line class-methods-use-this
+    public start(): void {}
+    // eslint-disable-next-line class-methods-use-this
+    public failedBeforeStart(): void {}
     // eslint-disable-next-line class-methods-use-this
     public stepStart(): void {}
     // eslint-disable-next-line class-methods-use-this
@@ -127,5 +132,41 @@ describe('runFlow', () => {
 
     await runFlow('my-flow', flow, makeContext({ greeting: 'hello' }));
     assert.equal(receivedParams['msg'], 'hello');
+  });
+
+  it('throws before any step when a required flow param is missing', async () => {
+    const { runFlow }: { runFlow: typeof RunFlowFn } = await esmock('../../src/core/flow.runner.js', {
+      '../../src/core/task.runner.js': makeMockRunner({}),
+      '../../src/core/flow.renderer.js': mockRenderer,
+    });
+
+    const flow: FlowDefinition = {
+      params: [{ name: 'env', type: 'string', required: true }],
+      steps: { 'my-step': { task: 'noop' } },
+    };
+
+    await assert.rejects(() => runFlow('my-flow', flow, makeContext()), /Missing required params/);
+  });
+
+  it('augments ExpectedError with required params hint', async () => {
+    const { runFlow }: { runFlow: typeof RunFlowFn } = await esmock('../../src/core/flow.runner.js', {
+      '../../src/core/task.runner.js': makeMockRunner({
+        'fail-task': makeTask({
+          name: 'fail-task',
+          params: [{ name: 'msg', type: 'string', required: true }],
+          async run() {
+            throw new ExpectedError('Missing required params:\n  msg');
+          },
+        }),
+      }),
+      '../../src/core/flow.renderer.js': mockRenderer,
+    });
+
+    const flow: FlowDefinition = { steps: { 'my-step': { task: 'fail-task' } } };
+
+    await assert.rejects(
+      () => runFlow('my-flow', flow, makeContext()),
+      /Required params \(add to step "my-step" in ship\.yml\)/
+    );
   });
 });

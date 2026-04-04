@@ -1,5 +1,6 @@
 import { FlowContext } from '@plugin-ship/core/flow.context.js';
 import { FlowStep } from '@plugin-ship/core/config.js';
+import { ExpectedError } from '@plugin-ship/core/error.utils.js';
 
 const ANSI = {
   reset: '\x1b[0m',
@@ -42,7 +43,6 @@ export class FlowRenderer {
     this.context = context;
     this.tty = out.isTTY;
     if (this.tty) {
-      this.render();
       // eslint-disable-next-line no-param-reassign
       context.log = (message): void => {
         this.clear();
@@ -50,8 +50,15 @@ export class FlowRenderer {
         this.out.write(`${prefix}${message}\n`);
         this.render();
       };
+    }
+  }
+
+  /** Prints the static flow title. Call once before any steps run. */
+  public start(): void {
+    if (this.tty) {
+      this.out.write(`\n  ${ANSI.dim}Flow:${ANSI.reset} ${ANSI.bold}${this.flowName}${ANSI.reset}\n\n`);
     } else {
-      context.log(`Running flow: ${this.flowName}`);
+      this.context?.log(`Running flow: ${this.flowName}`);
     }
   }
 
@@ -83,6 +90,20 @@ export class FlowRenderer {
     }
   }
 
+  /** Prints an error when the flow could not start (e.g. param validation failed). */
+  public failedBeforeStart(err: Error): void {
+    if (this.tty) {
+      this.out.write(`${ANSI.red}${ANSI.bold}✗ Flow "${this.flowName}" could not start${ANSI.reset}\n`);
+      this.out.write('\n');
+      for (const line of err.message.split('\n')) {
+        this.out.write(`  ${line}\n`);
+      }
+      this.out.write('\n');
+    } else {
+      this.context?.log(`Flow "${this.flowName}" could not start: ${err.message}`);
+    }
+  }
+
   /** Marks a step as failed and prints the error. */
   public stepFailed(stepId: string, err: Error): void {
     this.stopSpinner();
@@ -95,7 +116,7 @@ export class FlowRenderer {
       for (const line of err.message.split('\n')) {
         this.out.write(`  ${line}\n`);
       }
-      if (err.stack) {
+      if (!(err instanceof ExpectedError) && err.stack) {
         this.out.write('\n');
         for (const line of err.stack.split('\n').slice(1)) {
           this.out.write(`${ANSI.dim}  ${line.trim()}${ANSI.reset}\n`);
@@ -124,7 +145,6 @@ export class FlowRenderer {
   }
 
   private render(failed: string | null = null): void {
-    this.out.write(`  ${ANSI.dim}Flow:${ANSI.reset} ${ANSI.bold}${this.flowName}${ANSI.reset}\n`);
     for (const [stepId, step] of this.steps) {
       let marker: string;
       let color: string;
@@ -147,8 +167,8 @@ export class FlowRenderer {
   }
 
   private clear(): void {
-    for (let i = 0; i < this.steps.length + 1; i++) {
+    this.steps.forEach(() => {
       this.out.write(`${ANSI.cursorUp(1)}${ANSI.clearLine}`);
-    }
+    });
   }
 }
