@@ -28,7 +28,7 @@ export default class TaskInfo extends SfCommand<void> {
     const { args, flags } = await this.parse(TaskInfo);
 
     const config = loadConfig(flags.config);
-    const shipDir = resolve(flags.config, '..', config.dir);
+    const shipDir = resolve(config.dir);
     const task = await new TaskRunner(shipDir).resolveTask(args.taskName);
 
     const ux = new Ux();

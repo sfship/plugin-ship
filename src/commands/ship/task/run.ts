@@ -41,7 +41,7 @@ export default class TaskRun extends SfCommand<void> {
 
     const params = parseCliParams(flags.param ?? []);
     const config = loadConfig(flags.config);
-    const shipDir = resolve(flags.config, '..', config.dir);
+    const shipDir = resolve(config.dir);
 
     const context: FlowContext = {
       shipDir,

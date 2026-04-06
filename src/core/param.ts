@@ -53,7 +53,7 @@ export function validateParams(rawParams: Record<string, unknown>, paramDefiniti
 /**
  * Parses an array of "key=value" CLI flag strings into a Params object
  */
-export function parseCliParams(flags: string[]): Params {
+export function parseCliParams(flags: string[]): Record<string, string> {
   const entries = flags.map((flag) => {
     const i = flag.indexOf('=');
     if (i === -1) throw new ExpectedError(`Invalid param format "${flag}", expected key=value`);

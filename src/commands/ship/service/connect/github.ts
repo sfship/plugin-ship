@@ -55,7 +55,7 @@ async function pollForToken(deviceCode: string, interval: number): Promise<strin
   });
   const data = (await resp.json()) as TokenPollResponse;
   if (data.access_token) return data.access_token;
-  if (data.error === 'slow_down') return pollForToken(deviceCode, (data.interval ?? interval / 1000 + 5) * 1000);
+  if (data.error === 'slow_down') return pollForToken(deviceCode, ((data.interval ?? interval) / 1000 + 5) * 1000);
   if (data.error === 'authorization_pending') return pollForToken(deviceCode, interval);
   throw new Error(`GitHub authorization failed: ${data.error ?? 'unknown error'}`);
 }

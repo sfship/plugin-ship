@@ -29,8 +29,11 @@ function putFile(alias: string, content: object): void {
 }
 
 describe('OrgRegistry.resolveAlias', () => {
-  it('returns the alias as-is when no def file exists', () => {
-    assert.equal(new OrgRegistry(ORGS_DIR, 'myproject').resolveAlias('dev'), 'dev');
+  it('throws when no def file exists', () => {
+    assert.throws(
+      () => new OrgRegistry(ORGS_DIR, 'myproject').resolveAlias('dev'),
+      /No scratch org definition found for alias "dev"/
+    );
   });
 
   it('returns a qualified alias when a def file exists and project name is set', () => {
@@ -68,6 +71,7 @@ describe('OrgRegistry.getDef', () => {
 
 describe('OrgRegistry.getOrg', () => {
   it('creates and returns an Org instance', async () => {
+    putFile('dev', validDef);
     const fakeOrg = {};
     orgCreateStub = async () => fakeOrg;
     const org = await new OrgRegistry(ORGS_DIR).getOrg('dev');
@@ -75,6 +79,7 @@ describe('OrgRegistry.getOrg', () => {
   });
 
   it('returns the cached instance on subsequent calls', async () => {
+    putFile('dev', validDef);
     let callCount = 0;
     orgCreateStub = async () => {
       callCount++;

@@ -57,7 +57,7 @@ export default class FlowRun extends SfCommand<void> {
     }
 
     // Get path for .ship directory
-    const shipDir = resolve(flags.config, '..', config.dir);
+    const shipDir = resolve(config.dir);
 
     // Build the flow context passed to every step in the flow
     const context: FlowContext = {

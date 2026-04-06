@@ -1,4 +1,3 @@
-import { resolve } from 'node:path';
 import { parse } from 'yaml';
 import { ShipConfig, ShipConfigSchema } from '@plugin-ship/core/config.js';
 import { readText } from '@plugin-ship/core/file.js';
@@ -25,14 +24,4 @@ export function loadConfig(configPath: string = 'ship.yml'): ShipConfig {
   } catch (err) {
     throw new Error(`Invalid ship.yml: ${(err as Error).message}`);
   }
-}
-
-/**
- * Resolves the absolute path to the ship directory for a project.
- *
- * @param cwd - The working directory to resolve relative paths against.
- * @param config - The loaded ship configuration.
- */
-export function getShipDir(cwd: string, config: ShipConfig): string {
-  return resolve(cwd, config.dir);
 }

@@ -2,6 +2,7 @@ import { resolve } from 'node:path';
 import { Org } from '@salesforce/core';
 import { ScratchOrgDef, ScratchOrgDefSchema } from '@plugin-ship/core/scratch-org.js';
 import { fileExists, readText } from '@plugin-ship/core/file.js';
+import { ExpectedError } from './error.utils.js';
 
 /**
  * Manages lazy-loaded Salesforce `Org` instances and scratch org definitions
@@ -28,7 +29,9 @@ export class OrgRegistry {
    */
   public resolveAlias(alias: string): string {
     const defPath = resolve(this.orgsDir, `${alias}.json`);
-    if (fileExists(defPath) && this.projectName) return `${this.projectName}:${alias}`;
+    if (!fileExists(defPath))
+      throw new ExpectedError(`No scratch org definition found for alias "${alias}" at ${defPath}`);
+    if (this.projectName) return `${this.projectName}:${alias}`;
     return alias;
   }
 

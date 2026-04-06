@@ -1,5 +1,5 @@
 import { Args } from '@oclif/core';
-import { SfCommand, Flags, Ux, StandardColors } from '@salesforce/sf-plugins-core';
+import { SfCommand, Flags, Ux } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
 import { loadConfig } from '@plugin-ship/core/config.loader.js';
 
@@ -40,8 +40,16 @@ export default class FlowInfo extends SfCommand<void> {
     }
 
     if (flow.params && flow.params.length > 0) {
-      this.log('');
-      this.log(`${StandardColors.info('Params:')} ${flow.params.join(', ')}`);
+      ux.styledHeader('Params');
+      ux.table({
+        data: flow.params.map((p) => ({
+          name: p.name,
+          type: p.type,
+          required: p.required ? 'yes' : 'no',
+          default: p.default ?? '—',
+          description: p.description ?? '—',
+        })),
+      });
     }
 
     this.log('');

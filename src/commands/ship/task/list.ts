@@ -1,6 +1,7 @@
+import { resolve } from 'node:path';
 import { SfCommand, Flags, Ux, StandardColors } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
-import { loadConfig, getShipDir } from '@plugin-ship/core/config.loader.js';
+import { loadConfig } from '@plugin-ship/core/config.loader.js';
 import { TaskRunner } from '@plugin-ship/core/task.runner.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
@@ -21,7 +22,7 @@ export default class TaskList extends SfCommand<void> {
   public async run(): Promise<void> {
     const { flags } = await this.parse(TaskList);
     const config = loadConfig(flags.config);
-    const shipDir = getShipDir(flags.config, config);
+    const shipDir = resolve(config.dir);
 
     const ux = new Ux();
     const tasks = new TaskRunner(shipDir).list();
