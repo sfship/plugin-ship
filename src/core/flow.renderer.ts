@@ -33,6 +33,12 @@ export class FlowRenderer {
   private spinnerFrame = 0;
   private spinnerTimer: NodeJS.Timeout | null = null;
 
+  /**
+   * @param flowName - The name of the flow being rendered.
+   * @param steps - Ordered list of step entries from the flow definition.
+   * @param context - The flow context for this run.
+   * @param out - Output stream. Defaults to `process.stdout`; override in tests to capture output.
+   */
   public constructor(
     private readonly flowName: string,
     steps: Array<[string, FlowStep]>,
