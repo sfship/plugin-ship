@@ -5,7 +5,7 @@ import { Messages } from '@salesforce/core';
 import { loadConfig } from '@plugin-ship/core/config.loader.js';
 import { FlowContext } from '@plugin-ship/core/flow.context.js';
 import { parseCliParams } from '@plugin-ship/core/param.js';
-import { asError } from '@plugin-ship/core/error.utils.js';
+import { asError, handleError } from '@plugin-ship/core/error.utils.js';
 import { runFlow } from '@plugin-ship/core/flow.runner.js';
 import { OrgRegistry } from '@plugin-ship/core/org.registry.js';
 
@@ -72,8 +72,8 @@ export default class FlowRun extends SfCommand<void> {
     // Errors are formatted and printed by the runner; catch here to suppress oclif's default error output.
     try {
       await runFlow(args.flowName, flow, context);
-    } catch {
-      process.exitCode = 1;
+    } catch (err) {
+      handleError(err, (msg) => this.log(msg));
     }
   }
 }

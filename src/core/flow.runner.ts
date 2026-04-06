@@ -50,8 +50,8 @@ export async function runFlow(flowName: string, flow: FlowDefinition, context: F
       const error = asError(err);
       renderer.stepFailed(stepId, error);
 
-      if (error instanceof ExpectedError && error.message.startsWith('Missing required params')) {
-        error.message += `\nRequired params (add to step "${stepId}" in ship.yml)`;
+      if (error instanceof ExpectedError) {
+        error.message += `\n(step "${stepId}" in flow "${flowName}")`;
         throw error;
       }
 

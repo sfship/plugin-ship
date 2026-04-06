@@ -1,6 +1,8 @@
+import type { ZodError } from 'zod';
 import { parse } from 'yaml';
 import { ShipConfig, ShipConfigSchema } from '@plugin-ship/core/config.js';
 import { readText } from '@plugin-ship/core/file.js';
+import { ExpectedError, formatZodError } from './error.utils.js';
 
 /**
  * Reads and parses a `ship.yml` config file, validating it against {@link ShipConfigSchema}.
@@ -14,7 +16,7 @@ export function loadConfig(configPath: string = 'ship.yml'): ShipConfig {
   try {
     raw = readText(configPath);
   } catch {
-    throw new Error(`No ship.yml found at ${configPath}`);
+    throw new ExpectedError(`No ship.yml found at ${configPath}`);
   }
 
   const parsed = parse(raw) as unknown;
@@ -22,6 +24,6 @@ export function loadConfig(configPath: string = 'ship.yml'): ShipConfig {
   try {
     return ShipConfigSchema.parse(parsed);
   } catch (err) {
-    throw new Error(`Invalid ship.yml: ${(err as Error).message}`);
+    throw new ExpectedError(`Invalid ship.yml:\n${formatZodError(err as ZodError)}`);
   }
 }

@@ -60,7 +60,7 @@ export class OrgRegistry {
     if (!this.defs.has(alias)) {
       const defPath = resolve(this.orgsDir, `${alias}.json`);
       if (!fileExists(defPath)) {
-        throw new Error(`No scratch org definition found for alias "${alias}" at ${defPath}`);
+        throw new ExpectedError(`No scratch org definition found for alias "${alias}" at ${defPath}`);
       }
       this.defs.set(alias, ScratchOrgDefSchema.parse(JSON.parse(readText(defPath))));
     }

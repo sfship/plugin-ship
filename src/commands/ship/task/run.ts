@@ -1,6 +1,6 @@
 import { resolve } from 'node:path';
 import { Args } from '@oclif/core';
-import { SfCommand, Flags } from '@salesforce/sf-plugins-core';
+import { SfCommand, Flags, Ux } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
 import { loadConfig } from '@plugin-ship/core/config.loader.js';
 import { FlowContext } from '@plugin-ship/core/flow.context.js';
@@ -9,6 +9,7 @@ import { OrgRegistry } from '@plugin-ship/core/org.registry.js';
 import { TaskRunner } from '@plugin-ship/core/task.runner.js';
 import { TaskContext } from '@plugin-ship/core/task.js';
 import { Store } from '@plugin-ship/core/store.js';
+import { handleError } from '@plugin-ship/core/error.utils.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('plugin-ship', 'ship.task.run');
@@ -53,12 +54,19 @@ export default class TaskRun extends SfCommand<void> {
 
     const runner = new TaskRunner(shipDir);
     const task = await runner.resolveTask(args.taskName);
+
+    new Ux().styledHeader(`Task: ${task.name}`);
     const validatedParams = validateParams(params, task.params);
 
     const store = new Store();
     const output = store.getTaskOutput(args.taskName);
     const taskContext: TaskContext = { flow: context, params: validatedParams, output };
 
-    await task.run(taskContext);
+    try {
+      await task.run(taskContext);
+    } catch (err) {
+      handleError(err, (msg) => this.log(msg));
+    }
+    this.log('');
   }
 }
