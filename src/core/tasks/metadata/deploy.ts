@@ -1,9 +1,8 @@
 import { resolve } from 'node:path';
 import { ComponentSetBuilder, ComponentStatus } from '@salesforce/source-deploy-retrieve';
-import type { Task, TaskContext } from '@plugin-ship/core/task.js';
+import type { TaskContext, TaskDefinition } from '@plugin-ship/core/task.js';
 
 export default {
-  name: 'metadata/deploy',
   description: 'Deploys metadata to a target org using the Salesforce source deploy API.',
   params: [
     {
@@ -45,4 +44,4 @@ export default {
 
     flow.log(`Deployed ${result.response.numberComponentsDeployed} components successfully.`);
   },
-} satisfies Task;
+} satisfies TaskDefinition;

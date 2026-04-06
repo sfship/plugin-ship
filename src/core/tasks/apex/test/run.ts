@@ -1,4 +1,4 @@
-import type { Task, TaskContext } from '@plugin-ship/core/task.js';
+import type { TaskContext, TaskDefinition } from '@plugin-ship/core/task.js';
 
 type TestLevel = 'RunLocalTests' | 'RunAllTestsInOrg' | 'RunSpecifiedTests';
 
@@ -31,7 +31,6 @@ type ApexCodeCoverage = {
  * Polls until the job completes, then reports results and optionally enforces a coverage threshold.
  */
 export default {
-  name: 'apex/test/run',
   description: 'Runs Apex tests against the target org using the Tooling API.',
   params: [
     {
@@ -158,4 +157,4 @@ export default {
       }
     }
   },
-} satisfies Task;
+} satisfies TaskDefinition;

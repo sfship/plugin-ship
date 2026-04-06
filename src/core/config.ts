@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { ParamDefinitionSchema } from './param.js';
 
 /** Salesforce packaging metadata for the project. */
 const ProjectPackageConfigSchema = z.object({
@@ -24,15 +25,6 @@ const ProjectConfigSchema = z.object({
   package: ProjectPackageConfigSchema.optional(),
   /** Optional Git repository configuration. */
   git: ProjectGitConfigSchema.optional(),
-});
-
-/** Zod schema for a single param declaration, shared between task and flow definitions. */
-export const ParamDefinitionSchema = z.object({
-  name: z.string(),
-  type: z.enum(['string', 'number', 'boolean']).default('string'),
-  required: z.boolean().optional(),
-  default: z.union([z.string(), z.number(), z.boolean()]).optional(),
-  description: z.string().optional(),
 });
 
 /** A single step within a flow definition. */
@@ -68,7 +60,6 @@ export const ShipConfigSchema = z.object({
 
 export type FlowStep = z.infer<typeof FlowStepSchema>;
 export type FlowDefinition = z.infer<typeof FlowDefinitionSchema>;
-export type ParamDefinition = z.infer<typeof ParamDefinitionSchema>;
 export type ProjectConfig = z.infer<typeof ProjectConfigSchema>;
 export type ProjectPackageConfig = z.infer<typeof ProjectPackageConfigSchema>;
 export type ProjectGitConfig = z.infer<typeof ProjectGitConfigSchema>;

@@ -1,17 +1,17 @@
-import { Params } from '@plugin-ship/core/param.js';
+import { z } from 'zod';
+import { ParamDefinitionSchema, Params } from '@plugin-ship/core/param.js';
 import { FlowContext } from '@plugin-ship/core/flow.context.js';
 import { TaskOutput } from '@plugin-ship/core/task.output.js';
-import { ParamDefinition } from '@plugin-ship/core/config.js';
+
+/** Zod schema for a value this task writes to the flow outputs. */
+export const TaskOutputDefinitionSchema = z.object({
+  name: z.string(),
+  type: z.enum(['string', 'number', 'boolean', 'object']),
+  description: z.string(),
+});
 
 /** Describes a value this task writes to the flow outputs. */
-export type TaskOutputDefinition = {
-  /** The output key this task writes. */
-  name: string;
-  /** The type of the stored value. */
-  type: 'string' | 'number' | 'boolean' | 'object';
-  /** Human-readable description of the output value. */
-  description: string;
-};
+export type TaskOutputDefinition = z.infer<typeof TaskOutputDefinitionSchema>;
 
 /**
  * The runtime context passed to a task's `run()` method.
@@ -30,15 +30,21 @@ export type TaskContext = {
  * The shape every task must satisfy — built-in or custom.
  * Custom tasks are duck-typed against this at runtime.
  */
-export type Task = {
-  /** Unique identifier used in flow definitions and error messages. */
+export const TaskSchema = z.object({
+  description: z.string().default(''),
+  params: z.array(ParamDefinitionSchema).default([]),
+  outputs: z.array(TaskOutputDefinitionSchema).default([]),
+  run: z.function(),
+});
+
+/** The input shape a task file must export — fields with defaults are optional. */
+export type TaskDefinition = z.input<typeof TaskSchema>;
+
+/**
+ * A fully loaded task, with all fields normalized and `name` injected from the file path.
+ * This is the type the runner works with internally after loading a {@link TaskDefinition}.
+ */
+export type Task = Omit<z.infer<typeof TaskSchema>, 'run'> & {
   name: string;
-  /** Human-readable description of what this task does. */
-  description: string;
-  /** Schema describing the params this task accepts. */
-  params: ParamDefinition[];
-  /** Values this task writes to the flow outputs, available to subsequent steps. */
-  outputs?: TaskOutputDefinition[];
-  /** Executes the task with a fully validated context. */
   run: (context: TaskContext) => Promise<void>;
 };

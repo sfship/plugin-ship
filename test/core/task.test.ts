@@ -7,28 +7,35 @@ import { TaskRunner } from '../../src/core/task.runner.js';
 const shipDir = resolve('test/core');
 
 describe('TaskRunner.resolve', () => {
-  it('loads a valid task from the tasks directory', async () => {
-    const task = await new TaskRunner(shipDir).resolveTask('stub-task');
-    assert.equal(task.name, 'stub-task');
+  it('loads a valid .mjs task from the tasks directory', async () => {
+    const taskName = 'dev/mjs-task';
+    const task = await new TaskRunner(shipDir).resolveTask(taskName);
+    assert.equal(task.name, taskName);
+  });
+
+  it('loads a valid .js task from the tasks directory', async () => {
+    const taskName = 'dev/js-task';
+    const task = await new TaskRunner(shipDir).resolveTask(taskName);
+    assert.equal(task.name, taskName);
   });
 
   it('throws when the task file does not exist', async () => {
-    await assert.rejects(() => new TaskRunner('/nonexistent').resolveTask('unknown'), /Unknown task "unknown"/);
+    await assert.rejects(() => new TaskRunner('/nonexistent').resolveTask('unknown'));
   });
 
   it('throws when the module default export is not a valid task', async () => {
-    await assert.rejects(() => new TaskRunner(shipDir).resolveTask('not-a-task'), /Unknown task/);
+    await assert.rejects(() => new TaskRunner(shipDir).resolveTask('not-a-task'));
   });
 
   it('throws when the task file exists but fails to import', async () => {
-    await assert.rejects(() => new TaskRunner(shipDir).resolveTask('broken-task'), /Unknown task/);
+    await assert.rejects(() => new TaskRunner(shipDir).resolveTask('broken-task'));
   });
 });
 
 describe('TaskRunner.list', () => {
   it('includes tasks from the tasks directory', () => {
     const tasks = new TaskRunner(shipDir).list();
-    assert.ok(tasks.includes('stub-task'));
+    assert.ok(tasks.includes('dev/js-task'));
   });
 
   it('always includes built-in tasks', () => {

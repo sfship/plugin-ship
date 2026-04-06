@@ -1,8 +1,7 @@
 import { Org } from '@salesforce/core';
-import type { Task, TaskContext } from '@plugin-ship/core/task.js';
+import type { TaskContext, TaskDefinition } from '@plugin-ship/core/task.js';
 
 export default {
-  name: 'org/scratch/delete',
   description: 'Deletes a scratch org by alias.',
   params: [{ name: 'alias', type: 'string', required: true, description: 'The scratch org alias to delete.' }],
   async run({ flow, params }: TaskContext): Promise<void> {
@@ -11,4 +10,4 @@ export default {
     await scratchOrg.delete();
     flow.log(`Deleted scratch org: ${alias}`);
   },
-} satisfies Task;
+} satisfies TaskDefinition;

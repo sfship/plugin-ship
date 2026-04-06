@@ -1,10 +1,9 @@
 import { readFileSync } from 'node:fs';
 import { resolve, basename, extname } from 'node:path';
 import { scratchOrgCreate, Org, ConfigAggregator, OrgConfigProperties } from '@salesforce/core';
-import type { Task, TaskContext } from '@plugin-ship/core/task.js';
+import type { TaskContext, TaskDefinition } from '@plugin-ship/core/task.js';
 
 export default {
-  name: 'org/scratch/create',
   description: 'Creates a scratch org, or skips if a healthy one already exists under the same alias.',
   outputs: [
     { name: 'targetOrg', type: 'string', description: 'The username of the created (or existing) scratch org.' },
@@ -91,4 +90,4 @@ export default {
     flow.log(`Created scratch org: ${result.username ?? alias}`);
     output.set('targetOrg', result.username ?? alias);
   },
-} satisfies Task;
+} satisfies TaskDefinition;

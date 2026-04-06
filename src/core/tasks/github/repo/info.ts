@@ -1,5 +1,5 @@
 import { getGithubToken } from '@plugin-ship/core/services/github.js';
-import type { Task, TaskContext } from '@plugin-ship/core/task.js';
+import type { TaskDefinition, TaskContext } from '@plugin-ship/core/task.js';
 
 type GithubRepo = {
   full_name: string;
@@ -16,7 +16,6 @@ type GithubRepo = {
  * Uses the GitHub token stored by `sf ship service connect github`.
  */
 export default {
-  name: 'github/repo/info',
   description: 'Fetches and logs basic repository info from the GitHub API.',
   params: [
     {
@@ -60,4 +59,4 @@ export default {
     flow.log(`Stars:           ${data.stargazers_count}`);
     flow.log(`Open issues/PRs: ${data.open_issues_count}`);
   },
-} satisfies Task;
+} satisfies TaskDefinition;
