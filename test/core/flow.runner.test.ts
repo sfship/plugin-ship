@@ -40,6 +40,7 @@ function makeTask(overrides: Partial<Task> = {}): Task {
     name: 'noop',
     description: 'does nothing',
     params: [],
+    outputs: [],
     // eslint-disable-next-line @typescript-eslint/require-await
     async run(): Promise<void> {},
     ...overrides,
