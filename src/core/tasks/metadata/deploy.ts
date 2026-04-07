@@ -37,7 +37,7 @@ export default {
       const failures = result
         .getFileResponses()
         .filter((f) => f.state === ComponentStatus.Failed)
-        .map((f) => `  ${f.filePath}: ${'error' in f ? f.error : ''}`)
+        .map((f) => `  ${f.filePath ?? '(unknown)'}: ${'error' in f ? f.error : ''}`)
         .join('\n');
       throw new Error(`Deployment failed:\n${failures}`);
     }
