@@ -27,6 +27,7 @@ type OutputStream = {
 export class FlowRenderer {
   private readonly steps: Array<[string, FlowStep]>;
   private readonly completed = new Set<string>();
+  private readonly skipped = new Set<string>();
   private readonly tty: boolean | undefined;
   private current: string | null = null;
   private context: FlowContext | null = null;
@@ -110,6 +111,17 @@ export class FlowRenderer {
     }
   }
 
+  /** Marks a step as skipped due to a falsy condition. */
+  public stepSkipped(stepId: string): void {
+    this.skipped.add(stepId);
+    if (this.tty) {
+      this.clear();
+      this.render();
+    } else {
+      this.context?.log(`  — ${stepId} (skipped)`);
+    }
+  }
+
   /** Marks a step as failed and prints the error. */
   public stepFailed(stepId: string, err: Error): void {
     this.stopSpinner();
@@ -160,6 +172,9 @@ export class FlowRenderer {
       } else if (this.completed.has(stepId)) {
         marker = '✓';
         color = ANSI.green;
+      } else if (this.skipped.has(stepId)) {
+        marker = '—';
+        color = ANSI.dim;
       } else if (stepId === this.current) {
         marker = '⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏'[this.spinnerFrame];
         color = ANSI.yellow;
@@ -168,7 +183,8 @@ export class FlowRenderer {
         color = ANSI.dim;
       }
       const label = stepId.padEnd(20);
-      this.out.write(`  ${color}${marker}${ANSI.reset} ${label} ${ANSI.dim}(${step.task})${ANSI.reset}\n`);
+      const detail = this.skipped.has(stepId) ? 'skipped' : step.task;
+      this.out.write(`  ${color}${marker}${ANSI.reset} ${label} ${ANSI.dim}(${detail})${ANSI.reset}\n`);
     }
   }
 

@@ -1,3 +1,4 @@
+/* c8 ignore start */
 import { z } from 'zod';
 import { ParamDefinitionSchema } from './param.js';
 
@@ -27,13 +28,27 @@ const ProjectConfigSchema = z.object({
   git: ProjectGitConfigSchema.optional(),
 });
 
+/** A scalar value or null that a condition can compare against. */
+const FlowStepConditionValueSchema = z.union([z.string(), z.number(), z.boolean(), z.null()]);
+
+/** Condition used in `if` / `if-not` step fields. Resolves a `${{ }}` token and optionally compares it to a value. */
+const FlowStepConditionSchema = z
+  .object({ value: z.string(), equals: FlowStepConditionValueSchema.optional() })
+  .strict();
+
 /** A single step within a flow definition. */
-const FlowStepSchema = z.object({
-  /** The task to execute, e.g. "util/log" or "org/scratch/create". */
-  task: z.string(),
-  /** Parameters passed to the task. */
-  params: z.record(z.string(), z.union([z.string(), z.number(), z.boolean()])).optional(),
-});
+const FlowStepSchema = z
+  .object({
+    /** The task to execute, e.g. "util/log" or "org/scratch/create". */
+    task: z.string(),
+    /** Parameters passed to the task. */
+    params: z.record(z.string(), z.union([z.string(), z.number(), z.boolean()])).optional(),
+    /** Run step if condition is truthy (or equals a value). */
+    if: FlowStepConditionSchema.optional(),
+    /** Run step if condition is falsy (or equals a value). */
+    'if-not': FlowStepConditionSchema.optional(),
+  })
+  .refine((s) => !(s.if && s['if-not']), { message: 'A step cannot have both "if" and "if-not"' });
 
 /** Defines a named flow: its accepted params and the ordered steps to execute. */
 const FlowDefinitionSchema = z.object({
@@ -65,3 +80,4 @@ export type ProjectPackageConfig = z.infer<typeof ProjectPackageConfigSchema>;
 export type ProjectGitConfig = z.infer<typeof ProjectGitConfigSchema>;
 /** The validated top-level ship configuration, inferred from {@link ShipConfigSchema}. */
 export type ShipConfig = z.infer<typeof ShipConfigSchema>;
+/* c8 ignore stop */

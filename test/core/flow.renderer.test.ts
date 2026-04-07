@@ -160,4 +160,27 @@ describe('FlowRenderer (TTY)', () => {
     assert.ok(output.includes('could not start'));
     assert.ok(output.includes('bad param'));
   });
+
+  it('renders (skipped) instead of the task name for a skipped step', () => {
+    const { ctx } = makeContext();
+    const out = makeOut(true);
+    const renderer = new FlowRenderer('my-flow', steps, ctx, out);
+    renderer.start();
+    out.written.length = 0;
+    renderer.stepSkipped('step-a');
+    // Each step is written as a separate chunk — find the line for step-a
+    const stepALine = out.written.find((chunk) => chunk.includes('step-a'));
+    assert.ok(stepALine, 'step-a should be rendered');
+    assert.ok(stepALine.includes('(skipped)'), 'skipped step should show (skipped)');
+    assert.ok(!stepALine.includes('util/log'), 'skipped step should not show the task name');
+  });
+});
+
+describe('FlowRenderer (non-TTY) — stepSkipped', () => {
+  it('logs the skipped message for a step', () => {
+    const { ctx, logs } = makeContext();
+    const renderer = new FlowRenderer('my-flow', steps, ctx, makeOut(false));
+    renderer.stepSkipped('step-a');
+    assert.ok(logs.some((l) => l.includes('step-a') && l.includes('skipped')));
+  });
 });

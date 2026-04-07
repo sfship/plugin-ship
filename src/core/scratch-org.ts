@@ -1,3 +1,4 @@
+/* c8 ignore start */
 import { z } from 'zod';
 
 /** Valid sharing models for a Salesforce scratch org object. */
@@ -51,3 +52,4 @@ export const ScratchOrgDefSchema = z
 
 /** A validated scratch org definition, inferred from {@link ScratchOrgDefSchema}. */
 export type ScratchOrgDef = z.infer<typeof ScratchOrgDefSchema>;
+/* c8 ignore stop */

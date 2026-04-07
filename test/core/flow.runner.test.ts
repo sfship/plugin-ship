@@ -21,6 +21,8 @@ const mockRenderer = {
     // eslint-disable-next-line class-methods-use-this
     public stepFailed(): void {}
     // eslint-disable-next-line class-methods-use-this
+    public stepSkipped(): void {}
+    // eslint-disable-next-line class-methods-use-this
     public success(): void {}
   },
 };
@@ -163,5 +165,225 @@ describe('runFlow', () => {
     const flow: FlowDefinition = { steps: { 'my-step': { task: 'fail-task' } } };
 
     await assert.rejects(() => runFlow('my-flow', flow, makeContext()), ExpectedError);
+  });
+});
+
+describe('runFlow — conditional steps', () => {
+  async function loadRunFlow(tasks: Record<string, Task> = {}): Promise<typeof RunFlowFn> {
+    const { runFlow }: { runFlow: typeof RunFlowFn } = await esmock('../../src/core/flow.runner.js', {
+      '../../src/core/task.runner.js': makeMockRunner(tasks),
+      '../../src/core/flow.renderer.js': mockRenderer,
+    });
+    return runFlow;
+  }
+
+  it('skips a step when `if` condition resolves to falsy', async () => {
+    const ran: string[] = [];
+    const runFlow = await loadRunFlow({
+      noop: makeTask({
+        name: 'noop',
+        async run() {
+          ran.push('noop');
+        },
+      }),
+    });
+
+    const flow: FlowDefinition = {
+      steps: {
+        'conditional-step': { task: 'noop', if: { value: '${{ params.flag }}' } },
+      },
+    };
+
+    await runFlow('my-flow', flow, makeContext({ flag: '' }));
+    assert.deepEqual(ran, []);
+  });
+
+  it('runs a step when `if` condition resolves to truthy', async () => {
+    const ran: string[] = [];
+    const runFlow = await loadRunFlow({
+      noop: makeTask({
+        name: 'noop',
+        async run() {
+          ran.push('noop');
+        },
+      }),
+    });
+
+    const flow: FlowDefinition = {
+      steps: {
+        'conditional-step': { task: 'noop', if: { value: '${{ params.flag }}' } },
+      },
+    };
+
+    await runFlow('my-flow', flow, makeContext({ flag: 'yes' }));
+    assert.deepEqual(ran, ['noop']);
+  });
+
+  it('skips a step when `if` condition value does not equal the expected value', async () => {
+    const ran: string[] = [];
+    const runFlow = await loadRunFlow({
+      noop: makeTask({
+        name: 'noop',
+        async run() {
+          ran.push('noop');
+        },
+      }),
+    });
+
+    const flow: FlowDefinition = {
+      steps: {
+        'conditional-step': { task: 'noop', if: { value: '${{ params.env }}', equals: 'prod' } },
+      },
+    };
+
+    await runFlow('my-flow', flow, makeContext({ env: 'dev' }));
+    assert.deepEqual(ran, []);
+  });
+
+  it('runs a step when `if` condition value equals the expected value', async () => {
+    const ran: string[] = [];
+    const runFlow = await loadRunFlow({
+      noop: makeTask({
+        name: 'noop',
+        async run() {
+          ran.push('noop');
+        },
+      }),
+    });
+
+    const flow: FlowDefinition = {
+      steps: {
+        'conditional-step': { task: 'noop', if: { value: '${{ params.env }}', equals: 'prod' } },
+      },
+    };
+
+    await runFlow('my-flow', flow, makeContext({ env: 'prod' }));
+    assert.deepEqual(ran, ['noop']);
+  });
+
+  it('skips a step when `if-not` condition resolves to truthy', async () => {
+    const ran: string[] = [];
+    const runFlow = await loadRunFlow({
+      noop: makeTask({
+        name: 'noop',
+        async run() {
+          ran.push('noop');
+        },
+      }),
+    });
+
+    const flow: FlowDefinition = {
+      steps: {
+        'conditional-step': { task: 'noop', 'if-not': { value: '${{ params.flag }}' } },
+      },
+    };
+
+    await runFlow('my-flow', flow, makeContext({ flag: 'yes' }));
+    assert.deepEqual(ran, []);
+  });
+
+  it('runs a step when `if-not` condition resolves to falsy', async () => {
+    const ran: string[] = [];
+    const runFlow = await loadRunFlow({
+      noop: makeTask({
+        name: 'noop',
+        async run() {
+          ran.push('noop');
+        },
+      }),
+    });
+
+    const flow: FlowDefinition = {
+      steps: {
+        'conditional-step': { task: 'noop', 'if-not': { value: '${{ params.flag }}' } },
+      },
+    };
+
+    await runFlow('my-flow', flow, makeContext({ flag: '' }));
+    assert.deepEqual(ran, ['noop']);
+  });
+
+  it('skips a step when `if-not` condition value equals the excluded value', async () => {
+    const ran: string[] = [];
+    const runFlow = await loadRunFlow({
+      noop: makeTask({
+        name: 'noop',
+        async run() {
+          ran.push('noop');
+        },
+      }),
+    });
+
+    const flow: FlowDefinition = {
+      steps: {
+        'conditional-step': { task: 'noop', 'if-not': { value: '${{ params.env }}', equals: 'ci' } },
+      },
+    };
+
+    await runFlow('my-flow', flow, makeContext({ env: 'ci' }));
+    assert.deepEqual(ran, []);
+  });
+
+  it('runs a step when `if-not` condition value does not equal the excluded value', async () => {
+    const ran: string[] = [];
+    const runFlow = await loadRunFlow({
+      noop: makeTask({
+        name: 'noop',
+        async run() {
+          ran.push('noop');
+        },
+      }),
+    });
+
+    const flow: FlowDefinition = {
+      steps: {
+        'conditional-step': { task: 'noop', 'if-not': { value: '${{ params.env }}', equals: 'ci' } },
+      },
+    };
+
+    await runFlow('my-flow', flow, makeContext({ env: 'dev' }));
+    assert.deepEqual(ran, ['noop']);
+  });
+
+  it('resolves a literal (non-token) string in a condition', async () => {
+    const ran: string[] = [];
+    const runFlow = await loadRunFlow({
+      noop: makeTask({
+        name: 'noop',
+        async run() {
+          ran.push('noop');
+        },
+      }),
+    });
+
+    const flow: FlowDefinition = {
+      steps: {
+        'conditional-step': { task: 'noop', if: { value: 'always-truthy' } },
+      },
+    };
+
+    await runFlow('my-flow', flow, makeContext());
+    assert.deepEqual(ran, ['noop']);
+  });
+
+  it('treats a missing param token as null (falsy) for `if`', async () => {
+    const ran: string[] = [];
+    const runFlow = await loadRunFlow({
+      noop: makeTask({
+        name: 'noop',
+        async run() {
+          ran.push('noop');
+        },
+      }),
+    });
+
+    const flow: FlowDefinition = {
+      steps: {
+        'conditional-step': { task: 'noop', if: { value: '${{ params.missing }}' } },
+      },
+    };
+
+    await runFlow('my-flow', flow, makeContext());
+    assert.deepEqual(ran, []);
   });
 });

@@ -6,6 +6,33 @@ import { Store } from '@plugin-ship/core/store.js';
 import { FlowRenderer } from '@plugin-ship/core/flow.renderer.js';
 import { asError, ExpectedError } from '@plugin-ship/core/error.utils.js';
 import { Task } from '@plugin-ship/core/task.js';
+import { FlowStep } from '@plugin-ship/core/config.js';
+
+type StepCondition = NonNullable<FlowStep['if']>;
+
+function deepGet(root: unknown, keys: string[]): unknown {
+  let val: unknown = root;
+  for (const key of keys) {
+    if (val === null || typeof val !== 'object') return undefined;
+    val = (val as Record<string, unknown>)[key];
+  }
+  return val;
+}
+
+function resolveConditionValue(condition: StepCondition, context: Record<string, unknown>): unknown {
+  const match = condition.value.match(/^\$\{\{\s*([\w.-]+)\s*\}\}$/);
+  return match ? deepGet(context, match[1].split('.')) ?? null : condition.value;
+}
+
+function evaluateIf(condition: StepCondition, context: Record<string, unknown>): boolean {
+  const resolved = resolveConditionValue(condition, context);
+  return condition.equals !== undefined ? resolved === condition.equals : Boolean(resolved);
+}
+
+function evaluateIfNot(condition: StepCondition, context: Record<string, unknown>): boolean {
+  const resolved = resolveConditionValue(condition, context);
+  return condition.equals !== undefined ? resolved !== condition.equals : !resolved;
+}
 
 /**
  * Runs a named flow from the given context.
@@ -34,6 +61,16 @@ export async function runFlow(flowName: string, flow: FlowDefinition, context: F
   const runner = new TaskRunner(context.shipDir);
 
   for (const [stepId, step] of steps) {
+    const conditionContext = { params: context.params, steps: store.getSteps() };
+    if (step.if && !evaluateIf(step.if, conditionContext)) {
+      renderer.stepSkipped(stepId);
+      continue;
+    }
+    if (step['if-not'] && !evaluateIfNot(step['if-not'], conditionContext)) {
+      renderer.stepSkipped(stepId);
+      continue;
+    }
+
     renderer.stepStart(stepId);
 
     let task: Task | undefined;
