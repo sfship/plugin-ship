@@ -85,6 +85,14 @@ export async function runFlow(flowName: string, flow: FlowDefinition, context: F
       await task.run({ flow: context, params, output });
     } catch (err) {
       const error = asError(err);
+
+      if (step['ignore-failure']) {
+        renderer.stepIgnored(stepId, error);
+        store.set(stepId, 'failed', true);
+        store.set(stepId, 'error', error.message);
+        continue;
+      }
+
       renderer.stepFailed(stepId, error);
 
       if (error instanceof ExpectedError) {

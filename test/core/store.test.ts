@@ -36,14 +36,19 @@ describe('Store.resolveParams', () => {
     );
   });
 
-  it('returns null when the referenced value does not exist', () => {
+  it('returns null when a pure token references a missing value', () => {
     const store = new Store();
     assert.deepEqual(store.resolveParams({ x: '${{ params.missing }}' }, { params: {} }), { x: null });
   });
 
-  it('returns null when the referenced step output does not exist', () => {
+  it('returns null when a pure token references a missing step output', () => {
     const store = new Store();
     assert.deepEqual(store.resolveParams({ x: '${{ steps.missing.key }}' }, { steps: {} }), { x: null });
+  });
+
+  it('preserves surrounding text when a token in a mixed string is missing', () => {
+    const store = new Store();
+    assert.deepEqual(store.resolveParams({ msg: 'Error: ${{ steps.fail.error }}' }, { steps: {} }), { msg: 'Error: ' });
   });
 
   it('returns an empty object for empty params', () => {

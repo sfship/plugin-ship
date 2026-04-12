@@ -184,3 +184,38 @@ describe('FlowRenderer (non-TTY) — stepSkipped', () => {
     assert.ok(logs.some((l) => l.includes('step-a') && l.includes('skipped')));
   });
 });
+
+describe('FlowRenderer — stepIgnored', () => {
+  it('logs the ignored failure in non-TTY mode', () => {
+    const { ctx, logs } = makeContext();
+    const renderer = new FlowRenderer('my-flow', steps, ctx, makeOut(false));
+    renderer.stepIgnored('step-a', new Error('oops'));
+    assert.ok(logs.some((l) => l.includes('step-a') && l.includes('oops') && l.includes('ignored')));
+  });
+
+  it('renders the ⚠ marker for the ignored step in TTY mode', () => {
+    const { ctx } = makeContext();
+    const out = makeOut(true);
+    const renderer = new FlowRenderer('my-flow', steps, ctx, out);
+    renderer.stepStart('step-a');
+    out.written.length = 0;
+    renderer.stepIgnored('step-a', new Error('oops'));
+    const stepALine = out.written.find((chunk) => chunk.includes('step-a'));
+    assert.ok(stepALine, 'step-a should be rendered');
+    assert.ok(stepALine.includes('⚠'));
+  });
+
+  it('includes the ignored step warning in the success summary', () => {
+    const { ctx } = makeContext();
+    const out = makeOut(true);
+    const renderer = new FlowRenderer('my-flow', steps, ctx, out);
+    renderer.stepIgnored('step-a', new Error('something went wrong'));
+    out.written.length = 0;
+    renderer.success();
+    const output = out.written.join('');
+    assert.ok(output.includes('step-a'));
+    assert.ok(output.includes('something went wrong'));
+    assert.ok(output.includes('⚠'));
+    assert.ok(output.includes('✓'));
+  });
+});

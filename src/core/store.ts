@@ -24,11 +24,16 @@ function interpolate(value: unknown, context: Record<string, unknown>): unknown 
     );
   }
   if (typeof value !== 'string') return value;
+
+  // Pure token: preserve null so callers can distinguish "missing" from "empty"
+  const single = value.match(/^\$\{\{\s*([\w.-]+)\s*\}\}$/);
+  if (single) return deepGet(context, single[1].split('.')) ?? null;
+
+  // Mixed string: replace missing tokens with empty string, keep surrounding text
   let result = value;
   for (const [match, path] of value.matchAll(/\$\{\{\s*([\w.-]+)\s*\}\}/g)) {
     const raw = deepGet(context, path.split('.'));
-    if (raw == null) return null;
-    result = result.replace(match, String(raw));
+    result = result.replace(match, raw != null ? String(raw) : '');
   }
   return result;
 }

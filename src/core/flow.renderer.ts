@@ -28,6 +28,8 @@ export class FlowRenderer {
   private readonly steps: Array<[string, FlowStep]>;
   private readonly completed = new Set<string>();
   private readonly skipped = new Set<string>();
+  private readonly ignored = new Map<string, string>();
+  private hasRendered = false;
   private readonly tty: boolean | undefined;
   private current: string | null = null;
   private context: FlowContext | null = null;
@@ -122,6 +124,19 @@ export class FlowRenderer {
     }
   }
 
+  /** Marks a step as failed but ignored; warning is deferred to the success summary. */
+  public stepIgnored(stepId: string, err: Error): void {
+    this.stopSpinner();
+    this.ignored.set(stepId, err.message);
+    this.current = null;
+    if (this.tty) {
+      this.clear();
+      this.render();
+    } else {
+      this.context?.log(`  ⚠ Step "${stepId}" failed (ignored): ${err.message}`);
+    }
+  }
+
   /** Marks a step as failed and prints the error. */
   public stepFailed(stepId: string, err: Error): void {
     this.stopSpinner();
@@ -148,6 +163,10 @@ export class FlowRenderer {
   public success(): void {
     if (this.tty) {
       this.out.write('\n');
+      for (const [stepId, message] of this.ignored) {
+        this.out.write(`  ${ANSI.yellow}${ANSI.bold}⚠ Step "${stepId}" failed (ignored):${ANSI.reset} ${message}\n`);
+      }
+      if (this.ignored.size > 0) this.out.write('\n');
       this.out.write(`${ANSI.green}${ANSI.bold}✓ Flow "${this.flowName}" finished successfully!${ANSI.reset}\n`);
       this.out.write('\n');
     } else {
@@ -163,12 +182,16 @@ export class FlowRenderer {
   }
 
   private render(failed: string | null = null): void {
+    this.hasRendered = true;
     for (const [stepId, step] of this.steps) {
       let marker: string;
       let color: string;
       if (stepId === failed) {
         marker = '✗';
         color = ANSI.red;
+      } else if (this.ignored.has(stepId)) {
+        marker = '⚠';
+        color = ANSI.yellow;
       } else if (this.completed.has(stepId)) {
         marker = '✓';
         color = ANSI.green;
@@ -189,6 +212,7 @@ export class FlowRenderer {
   }
 
   private clear(): void {
+    if (!this.hasRendered) return;
     this.steps.forEach(() => {
       this.out.write(`${ANSI.cursorUp(1)}${ANSI.clearLine}`);
     });

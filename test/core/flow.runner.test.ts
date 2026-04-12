@@ -21,6 +21,8 @@ const mockRenderer = {
     // eslint-disable-next-line class-methods-use-this
     public stepFailed(): void {}
     // eslint-disable-next-line class-methods-use-this
+    public stepIgnored(): void {}
+    // eslint-disable-next-line class-methods-use-this
     public stepSkipped(): void {}
     // eslint-disable-next-line class-methods-use-this
     public success(): void {}
@@ -385,5 +387,99 @@ describe('runFlow — conditional steps', () => {
 
     await runFlow('my-flow', flow, makeContext());
     assert.deepEqual(ran, []);
+  });
+});
+
+describe('runFlow — ignore-failure', () => {
+  async function loadRunFlow(tasks: Record<string, Task> = {}): Promise<typeof RunFlowFn> {
+    const { runFlow }: { runFlow: typeof RunFlowFn } = await esmock('../../src/core/flow.runner.js', {
+      '../../src/core/task.runner.js': makeMockRunner(tasks),
+      '../../src/core/flow.renderer.js': mockRenderer,
+    });
+    return runFlow;
+  }
+
+  it('continues the flow when a step fails with ignore-failure', async () => {
+    const ran: string[] = [];
+    const runFlow = await loadRunFlow({
+      fail: makeTask({
+        name: 'fail',
+        async run() {
+          throw new Error('boom');
+        },
+      }),
+      noop: makeTask({
+        name: 'noop',
+        async run() {
+          ran.push('noop');
+        },
+      }),
+    });
+
+    const flow: FlowDefinition = {
+      steps: {
+        'fail-step': { task: 'fail', 'ignore-failure': true },
+        'next-step': { task: 'noop' },
+      },
+    };
+
+    await runFlow('my-flow', flow, makeContext());
+    assert.deepEqual(ran, ['noop']);
+  });
+
+  it('sets failed and error on the step output', async () => {
+    let receivedParams: Record<string, unknown> = {};
+    const runFlow = await loadRunFlow({
+      fail: makeTask({
+        name: 'fail',
+        async run() {
+          throw new Error('boom');
+        },
+      }),
+      'read-state': makeTask({
+        name: 'read-state',
+        params: [
+          { name: 'failed', type: 'string', required: false },
+          { name: 'error', type: 'string', required: false },
+        ],
+        async run(ctx: TaskContext) {
+          receivedParams = ctx.params;
+        },
+      }),
+    });
+
+    const flow: FlowDefinition = {
+      steps: {
+        'fail-step': { task: 'fail', 'ignore-failure': true },
+        'next-step': {
+          task: 'read-state',
+          params: {
+            failed: '${{ steps.fail-step.failed }}',
+            error: '${{ steps.fail-step.error }}',
+          },
+        },
+      },
+    };
+
+    await runFlow('my-flow', flow, makeContext());
+    assert.equal(receivedParams['failed'], 'true');
+    assert.equal(receivedParams['error'], 'boom');
+  });
+
+  it('still throws when a step fails without ignore-failure', async () => {
+    const runFlow = await loadRunFlow({
+      fail: makeTask({
+        name: 'fail',
+        async run() {
+          throw new Error('boom');
+        },
+      }),
+    });
+
+    const flow: FlowDefinition = {
+      steps: { 'fail-step': { task: 'fail' } },
+    };
+
+    await assert.rejects(() => runFlow('my-flow', flow, makeContext()), /boom/);
   });
 });

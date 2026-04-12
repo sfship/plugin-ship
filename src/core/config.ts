@@ -47,6 +47,8 @@ const FlowStepSchema = z
     if: FlowStepConditionSchema.optional(),
     /** Run step if condition is falsy (or equals a value). */
     'if-not': FlowStepConditionSchema.optional(),
+    /** Continue the flow if this step fails, storing failure state in step outputs. */
+    'ignore-failure': z.boolean().optional(),
   })
   .refine((s) => !(s.if && s['if-not']), { message: 'A step cannot have both "if" and "if-not"' });
 
