@@ -61,12 +61,12 @@ export async function runFlow(flowName: string, flow: FlowDefinition, context: F
   const runner = new TaskRunner(context.shipDir);
 
   for (const [stepId, step] of steps) {
-    const conditionContext = { params: context.params, steps: store.getSteps() };
-    if (step.if && !evaluateIf(step.if, conditionContext)) {
+    const interpolationContext = { params: context.params, steps: store.getSteps(), config: context.config };
+    if (step.if && !evaluateIf(step.if, interpolationContext)) {
       renderer.stepSkipped(stepId);
       continue;
     }
-    if (step['if-not'] && !evaluateIfNot(step['if-not'], conditionContext)) {
+    if (step['if-not'] && !evaluateIfNot(step['if-not'], interpolationContext)) {
       renderer.stepSkipped(stepId);
       continue;
     }
@@ -77,7 +77,7 @@ export async function runFlow(flowName: string, flow: FlowDefinition, context: F
     try {
       // eslint-disable-next-line no-await-in-loop
       task = await runner.resolveTask(step.task);
-      const interpolated = store.resolveParams(step.params ?? {}, { params: context.params, steps: store.getSteps() });
+      const interpolated = store.resolveParams(step.params ?? {}, interpolationContext);
       const params = validateParams(interpolated, task.params);
       const output = store.getTaskOutput(stepId);
 

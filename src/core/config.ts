@@ -1,6 +1,6 @@
 /* c8 ignore start */
 import { z } from 'zod';
-import { ParamDefinitionSchema } from './param.js';
+import { ParamDefinitionSchema, ParamValueSchema } from './param.js';
 
 /** Salesforce packaging metadata for the project. */
 const ProjectPackageConfigSchema = z.object({
@@ -42,7 +42,7 @@ const FlowStepSchema = z
     /** The task to execute, e.g. "util/log" or "org/scratch/create". */
     task: z.string(),
     /** Parameters passed to the task. */
-    params: z.record(z.string(), z.union([z.string(), z.number(), z.boolean()])).optional(),
+    params: z.record(z.string(), ParamValueSchema).optional(),
     /** Run step if condition is truthy (or equals a value). */
     if: FlowStepConditionSchema.optional(),
     /** Run step if condition is falsy (or equals a value). */

@@ -17,9 +17,12 @@ describe('validateParams', () => {
     assert.throws(() => validateParams({}, defs), /Missing required params/);
   });
 
-  it('throws when a param value is not a scalar', () => {
+  it('throws when a param value is not a valid type', () => {
     const defs: ParamDefinition[] = [{ name: 'env', type: 'string', required: true }];
-    assert.throws(() => validateParams({ env: { nested: true } }, defs), /must be a string, number, or boolean/);
+    assert.throws(
+      () => validateParams({ env: { nested: true } }, defs),
+      /must be a string, number, boolean, or record/
+    );
   });
 
   it('omits optional params that are not provided', () => {
@@ -67,6 +70,16 @@ describe('validateParams', () => {
       const defs: ParamDefinition[] = [{ name: 'label', type: 'string', required: true }];
       assert.deepEqual(validateParams({ label: 42 }, defs), { label: '42' });
     });
+
+    it('passes a record through when type is record', () => {
+      const defs: ParamDefinition[] = [{ name: 'tokens', type: 'record', required: true }];
+      assert.deepEqual(validateParams({ tokens: { FOO: 'bar' } }, defs), { tokens: { FOO: 'bar' } });
+    });
+
+    it('throws when a scalar is passed for a record-typed param', () => {
+      const defs: ParamDefinition[] = [{ name: 'tokens', type: 'record', required: true }];
+      assert.throws(() => validateParams({ tokens: 'oops' }, defs), /expected a record/);
+    });
   });
 });
 
@@ -89,5 +102,13 @@ describe('parseCliParams', () => {
 
   it('throws when a flag is missing "="', () => {
     assert.throws(() => parseCliParams(['invalid']), /Invalid param format/);
+  });
+
+  it('parses dotted notation into a nested record', () => {
+    assert.deepEqual(parseCliParams(['tokens.FOO=bar', 'tokens.BAZ=qux']), { tokens: { FOO: 'bar', BAZ: 'qux' } });
+  });
+
+  it('merges multiple dotted flags under the same parent', () => {
+    assert.deepEqual(parseCliParams(['tokens.A=1', 'tokens.B=2']), { tokens: { A: '1', B: '2' } });
   });
 });

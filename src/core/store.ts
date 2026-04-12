@@ -18,6 +18,11 @@ function deepGet(root: unknown, keys: string[]): unknown {
  * in a unified context object. Non-string values are returned unchanged.
  */
 function interpolate(value: unknown, context: Record<string, unknown>): unknown {
+  if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>).map(([k, v]) => [k, interpolate(v, context)])
+    );
+  }
   if (typeof value !== 'string') return value;
   let result = value;
   for (const [match, path] of value.matchAll(/\$\{\{\s*([\w.-]+)\s*\}\}/g)) {
