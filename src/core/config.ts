@@ -53,14 +53,23 @@ const FlowStepSchema = z
   .refine((s) => !(s.if && s['if-not']), { message: 'A step cannot have both "if" and "if-not"' });
 
 /** Defines a named flow: its accepted params and the ordered steps to execute. */
-export const FlowDefinitionSchema = z.object({
-  /** Human-readable description of what this flow does. */
-  description: z.string().optional(),
-  /** Params this flow accepts, passed as `--param key=value` CLI flags when invoking the flow. */
-  params: z.array(ParamDefinitionSchema).optional(),
-  /** Named steps to execute in definition order. The key is the step ID, used for output references. */
-  steps: z.record(z.string(), FlowStepSchema),
-});
+export const FlowDefinitionSchema = z
+  .object({
+    /** Human-readable description of what this flow does. */
+    description: z.string().optional(),
+    /** Params this flow accepts, passed as `--param key=value` CLI flags when invoking the flow. */
+    params: z.array(ParamDefinitionSchema).optional(),
+    /** Named steps to execute in definition order. The key is the step ID, used for output references. */
+    steps: z.record(z.string(), FlowStepSchema),
+    /** Steps that always run after `steps`, regardless of success or failure. */
+    finally: z.record(z.string(), FlowStepSchema).optional(),
+  })
+  .superRefine((flow, ctx) => {
+    const dup = Object.keys(flow.finally ?? {}).find((k) => k in flow.steps);
+    if (dup) {
+      ctx.addIssue({ code: 'custom', message: `Step ID "${dup}" appears in both "steps" and "finally"` });
+    }
+  });
 
 /**
  * Zod schema for the top-level `ship.config.json` (or equivalent).

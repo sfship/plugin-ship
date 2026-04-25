@@ -18,4 +18,16 @@ export type FlowContext = {
   log: (message: string) => void;
   /** The params the flow was invoked with. */
   params: Params;
+  /** True if any step has failed with ignore-failure during this flow run. */
+  hasFailures: boolean;
 };
+
+/**
+ * Creates a {@link FlowContext} with `hasFailures` initialised to `false`.
+ *
+ * @param init - All context fields except `hasFailures`.
+ * @returns A fully initialised {@link FlowContext}.
+ */
+export function createFlowContext(init: Omit<FlowContext, 'hasFailures'>): FlowContext {
+  return { hasFailures: false, ...init };
+}

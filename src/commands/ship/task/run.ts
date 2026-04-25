@@ -3,7 +3,7 @@ import { Args } from '@oclif/core';
 import { SfCommand, Flags, Ux } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
 import { loadConfig } from '@plugin-ship/core/config.loader.js';
-import { FlowContext } from '@plugin-ship/core/flow.context.js';
+import { createFlowContext } from '@plugin-ship/core/flow.context.js';
 import { parseCliParams, validateParams } from '@plugin-ship/core/param.js';
 import { OrgRegistry } from '@plugin-ship/core/org.registry.js';
 import { TaskRegistry } from '@plugin-ship/core/task.registry.js';
@@ -44,13 +44,13 @@ export default class TaskRun extends SfCommand<void> {
     const config = loadConfig(flags.config);
     const shipDir = resolve(config.dir);
 
-    const context: FlowContext = {
+    const context = createFlowContext({
       shipDir,
       config,
       orgs: new OrgRegistry(resolve(shipDir, 'orgs'), config.project.name),
       log: (message: string) => this.log(message),
       params,
-    };
+    });
 
     const runner = new TaskRegistry(shipDir);
     const task = await runner.resolveTask(args.taskName);

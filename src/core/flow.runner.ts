@@ -42,26 +42,25 @@ function evaluateIfNot(condition: StepCondition, context: Record<string, unknown
  * @param context - The flow-level context for this run.
  * Renders a live step checklist when stdout is a TTY, plain logs otherwise.
  */
-export async function runFlow(flowName: string, flow: FlowDefinition, context: FlowContext): Promise<void> {
-  const steps = Object.entries(flow.steps);
-  const renderer = new FlowRenderer(flowName, steps, context);
-  renderer.start();
+type StepError = { stepId: string; error: Error };
 
-  if (flow.params?.length) {
-    try {
-      // eslint-disable-next-line no-param-reassign
-      context.params = validateParams(context.params, flow.params);
-    } catch (err) {
-      renderer.failedBeforeStart(asError(err));
-      throw err;
-    }
-  }
+async function runSteps(
+  stepEntries: Array<[string, FlowStep]>,
+  flowName: string,
+  context: FlowContext,
+  store: Store,
+  runner: TaskRegistry,
+  renderer: FlowRenderer,
+  ignoreAllFailures = false
+): Promise<StepError | undefined> {
+  for (const [stepId, step] of stepEntries) {
+    const interpolationContext = {
+      params: context.params,
+      steps: store.getSteps(),
+      config: context.config,
+      flow: { hasFailures: context.hasFailures },
+    };
 
-  const store = new Store(flow.steps);
-  const runner = new TaskRegistry(context.shipDir);
-
-  for (const [stepId, step] of steps) {
-    const interpolationContext = { params: context.params, steps: store.getSteps(), config: context.config };
     if (step.if && !evaluateIf(step.if, interpolationContext)) {
       renderer.stepSkipped(stepId);
       continue;
@@ -86,25 +85,67 @@ export async function runFlow(flowName: string, flow: FlowDefinition, context: F
     } catch (err) {
       const error = asError(err);
 
-      if (step['ignore-failure']) {
+      if (step['ignore-failure'] ?? ignoreAllFailures) {
         renderer.stepIgnored(stepId, error);
         store.set(stepId, 'failed', true);
         store.set(stepId, 'error', error.message);
+        // eslint-disable-next-line no-param-reassign
+        context.hasFailures = true;
         continue;
       }
 
       renderer.stepFailed(stepId, error);
+      store.set(stepId, 'failed', true);
+      store.set(stepId, 'error', error.message);
+      // eslint-disable-next-line no-param-reassign
+      context.hasFailures = true;
 
-      if (error instanceof ExpectedError) {
-        error.message += `\n(step "${stepId}" in flow "${flowName}")`;
-        throw error;
-      }
-
-      throw new Error(`Step "${stepId}" in flow "${flowName}" failed: ${error.message}`);
+      error.message =
+        error instanceof ExpectedError
+          ? `${error.message}\n(step "${stepId}" in flow "${flowName}")`
+          : `Step "${stepId}" in flow "${flowName}" failed: ${error.message}`;
+      return { stepId, error };
     }
 
     renderer.stepComplete(stepId);
   }
 
+  return undefined;
+}
+
+/**
+ * Runs a named flow from the given context.
+ *
+ * @param flowName - The name of the flow to run, as defined in ship.yml.
+ * @param flow - The flow definition from the parsed config.
+ * @param context - The flow-level context for this run.
+ * Renders a live step checklist when stdout is a TTY, plain logs otherwise.
+ */
+export async function runFlow(flowName: string, flow: FlowDefinition, context: FlowContext): Promise<void> {
+  const steps = Object.entries(flow.steps);
+  const finallySteps = Object.entries(flow.finally ?? {});
+  const renderer = new FlowRenderer(flowName, steps, finallySteps, context);
+  renderer.start();
+
+  if (flow.params?.length) {
+    try {
+      // eslint-disable-next-line no-param-reassign
+      context.params = validateParams(context.params, flow.params);
+    } catch (err) {
+      renderer.failedBeforeStart(asError(err));
+      throw err;
+    }
+  }
+
+  const store = new Store(flow.steps);
+  const runner = new TaskRegistry(context.shipDir);
+
+  const hardError = await runSteps(steps, flowName, context, store, runner, renderer);
+  await runSteps(finallySteps, flowName, context, store, runner, renderer, true);
+
+  if (hardError) {
+    renderer.flowFailed(hardError.stepId, hardError.error);
+    throw new ExpectedError(hardError.error.message);
+  }
   renderer.success();
 }

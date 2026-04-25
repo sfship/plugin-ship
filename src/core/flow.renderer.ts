@@ -14,6 +14,8 @@ const ANSI = {
   cursorUp: (n: number): string => `\x1b[${n}A`,
 };
 
+const SPINNER = '⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏';
+
 type OutputStream = {
   isTTY: boolean | undefined;
   write(chunk: string): boolean;
@@ -25,11 +27,14 @@ type OutputStream = {
  * API — rendering mode is an internal detail of this class.
  */
 export class FlowRenderer {
-  private readonly steps: Array<[string, FlowStep]>;
+  private readonly mainSteps: Array<[string, FlowStep]>;
+  private readonly finallySteps: Array<[string, FlowStep]>;
   private readonly completed = new Set<string>();
+  private readonly failed = new Set<string>();
   private readonly skipped = new Set<string>();
   private readonly ignored = new Map<string, string>();
   private hasRendered = false;
+  private lastRenderLineCount = 0;
   private readonly tty: boolean | undefined;
   private current: string | null = null;
   private context: FlowContext | null = null;
@@ -38,17 +43,20 @@ export class FlowRenderer {
 
   /**
    * @param flowName - The name of the flow being rendered.
-   * @param steps - Ordered list of step entries from the flow definition.
+   * @param mainSteps - Ordered list of step entries from the flow's `steps` block.
+   * @param finallySteps - Ordered list of step entries from the flow's `finally` block.
    * @param context - The flow context for this run.
    * @param out - Output stream. Defaults to `process.stdout`; override in tests to capture output.
    */
   public constructor(
     private readonly flowName: string,
-    steps: Array<[string, FlowStep]>,
+    mainSteps: Array<[string, FlowStep]>,
+    finallySteps: Array<[string, FlowStep]>,
     context: FlowContext,
     private readonly out: OutputStream = process.stdout
   ) {
-    this.steps = steps;
+    this.mainSteps = mainSteps;
+    this.finallySteps = finallySteps;
     this.context = context;
     this.tty = out.isTTY;
     if (this.tty) {
@@ -79,7 +87,7 @@ export class FlowRenderer {
       this.clear();
       this.render();
       this.spinnerTimer = setInterval(() => {
-        this.spinnerFrame = (this.spinnerFrame + 1) % 10;
+        this.spinnerFrame = (this.spinnerFrame + 1) % SPINNER.length;
         this.clear();
         this.render();
       }, 80).unref();
@@ -137,12 +145,22 @@ export class FlowRenderer {
     }
   }
 
-  /** Marks a step as failed and prints the error. */
+  /** Marks a step as failed in the checklist. Call flowFailed() after finally steps complete to print the error. */
   public stepFailed(stepId: string, err: Error): void {
     this.stopSpinner();
+    this.failed.add(stepId);
+    this.current = null;
     if (this.tty) {
       this.clear();
-      this.render(stepId);
+      this.render();
+    } else {
+      this.context?.log(`  ✗ ${stepId} failed: ${err.message}`);
+    }
+  }
+
+  /** Prints the final error summary after all finally steps have run. */
+  public flowFailed(stepId: string, err: Error): void {
+    if (this.tty) {
       this.out.write('\n');
       this.out.write(`${ANSI.red}${ANSI.bold}✗ Flow "${this.flowName}" failed at step "${stepId}"${ANSI.reset}\n`);
       this.out.write('\n');
@@ -156,6 +174,8 @@ export class FlowRenderer {
         }
       }
       this.out.write('\n');
+    } else {
+      this.context?.log(`Flow "${this.flowName}" failed: ${err.message}`);
     }
   }
 
@@ -181,40 +201,62 @@ export class FlowRenderer {
     }
   }
 
-  private render(failed: string | null = null): void {
-    this.hasRendered = true;
-    for (const [stepId, step] of this.steps) {
-      let marker: string;
-      let color: string;
-      if (stepId === failed) {
-        marker = '✗';
-        color = ANSI.red;
-      } else if (this.ignored.has(stepId)) {
-        marker = '⚠';
-        color = ANSI.yellow;
-      } else if (this.completed.has(stepId)) {
-        marker = '✓';
-        color = ANSI.green;
-      } else if (this.skipped.has(stepId)) {
-        marker = '—';
-        color = ANSI.dim;
-      } else if (stepId === this.current) {
-        marker = '⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏'[this.spinnerFrame];
-        color = ANSI.yellow;
-      } else {
-        marker = '○';
-        color = ANSI.dim;
-      }
-      const label = stepId.padEnd(20);
-      const detail = this.skipped.has(stepId) ? 'skipped' : step.task;
-      this.out.write(`  ${color}${marker}${ANSI.reset} ${label} ${ANSI.dim}(${detail})${ANSI.reset}\n`);
+  private renderStepLine(stepId: string, step: FlowStep, writeLine: (s: string) => void): void {
+    let marker: string;
+    let color: string;
+    if (this.failed.has(stepId)) {
+      marker = '✗';
+      color = ANSI.red;
+    } else if (this.ignored.has(stepId)) {
+      marker = '⚠';
+      color = ANSI.yellow;
+    } else if (this.completed.has(stepId)) {
+      marker = '✓';
+      color = ANSI.green;
+    } else if (this.skipped.has(stepId)) {
+      marker = '—';
+      color = ANSI.dim;
+    } else if (stepId === this.current) {
+      marker = '→';
+      color = ANSI.cyan;
+    } else {
+      marker = '○';
+      color = ANSI.dim;
     }
+    const label = stepId.padEnd(20);
+    const detail = this.skipped.has(stepId) ? 'skipped' : step.task;
+    writeLine(`  ${color}${marker}${ANSI.reset} ${label} ${ANSI.dim}(${detail})${ANSI.reset}`);
+  }
+
+  private render(): void {
+    this.hasRendered = true;
+    let lineCount = 0;
+    const writeLine = (s: string): void => {
+      this.out.write(`${s}\n`);
+      lineCount++;
+    };
+
+    writeLine(`  ${ANSI.dim}Steps${ANSI.reset}`);
+    for (const [stepId, step] of this.mainSteps) this.renderStepLine(stepId, step, writeLine);
+
+    if (this.finallySteps.length > 0) {
+      writeLine('');
+      writeLine(`  ${ANSI.dim}Finally${ANSI.reset}`);
+      for (const [stepId, step] of this.finallySteps) this.renderStepLine(stepId, step, writeLine);
+    }
+
+    if (this.current) {
+      writeLine('');
+      writeLine(`  ${ANSI.yellow}${SPINNER[this.spinnerFrame]}${ANSI.reset}`);
+    }
+
+    this.lastRenderLineCount = lineCount;
   }
 
   private clear(): void {
     if (!this.hasRendered) return;
-    this.steps.forEach(() => {
+    for (let i = 0; i < this.lastRenderLineCount; i++) {
       this.out.write(`${ANSI.cursorUp(1)}${ANSI.clearLine}`);
-    });
+    }
   }
 }

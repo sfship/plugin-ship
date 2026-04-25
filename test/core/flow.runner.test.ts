@@ -3,7 +3,7 @@ import esmock from 'esmock';
 import { ExpectedError } from '../../src/core/error.utils.js';
 import { OrgRegistry } from '../../src/core/org.registry.js';
 import type { Task, TaskContext } from '../../src/core/task.js';
-import type { FlowContext } from '../../src/core/flow.context.js';
+import { createFlowContext, type FlowContext } from '../../src/core/flow.context.js';
 import type { FlowDefinition } from '../../src/core/config.js';
 import type { runFlow as RunFlowFn } from '../../src/core/flow.runner.js';
 import type { Params } from '../../src/core/param.js';
@@ -21,6 +21,8 @@ const mockRenderer = {
     // eslint-disable-next-line class-methods-use-this
     public stepFailed(): void {}
     // eslint-disable-next-line class-methods-use-this
+    public flowFailed(): void {}
+    // eslint-disable-next-line class-methods-use-this
     public stepIgnored(): void {}
     // eslint-disable-next-line class-methods-use-this
     public stepSkipped(): void {}
@@ -30,13 +32,13 @@ const mockRenderer = {
 };
 
 function makeContext(params: Params = {}): FlowContext {
-  return {
+  return createFlowContext({
     shipDir: '/ship',
     config: { project: { name: 'test' }, dir: '.ship' },
     orgs: new OrgRegistry('/orgs'),
     log: () => {},
     params,
-  };
+  });
 }
 
 function makeTask(overrides: Partial<Task> = {}): Task {

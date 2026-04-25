@@ -3,7 +3,7 @@ import { Args } from '@oclif/core';
 import { SfCommand, Flags } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
 import { loadConfig } from '@plugin-ship/core/config.loader.js';
-import { FlowContext } from '@plugin-ship/core/flow.context.js';
+import { createFlowContext } from '@plugin-ship/core/flow.context.js';
 import { FlowRegistry } from '@plugin-ship/core/flow.registry.js';
 import { parseCliParams } from '@plugin-ship/core/param.js';
 import { asError, ExpectedError } from '@plugin-ship/core/error.utils.js';
@@ -64,13 +64,13 @@ export default class FlowRun extends SfCommand<void> {
     }
 
     // Build the flow context passed to every step in the flow
-    const context: FlowContext = {
+    const context = createFlowContext({
       shipDir,
       config,
       orgs: new OrgRegistry(resolve(shipDir, 'orgs'), config.project.name),
       log: (message: string) => this.log(message),
       params,
-    };
+    });
 
     // Hand off to the runner which resolves and executes each step in order.
     // Errors are formatted and printed by the runner; catch here to suppress oclif's default error output.

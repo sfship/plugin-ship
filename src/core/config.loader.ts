@@ -19,7 +19,12 @@ export function loadConfig(configPath: string = 'ship.yml'): ShipConfig {
     throw new ExpectedError(`No ship.yml found at ${configPath}`);
   }
 
-  const parsed = parse(raw) as unknown;
+  let parsed: unknown;
+  try {
+    parsed = parse(raw);
+  } catch (err) {
+    throw new ExpectedError(`Invalid flow definition: ${(err as Error).message}`);
+  }
 
   try {
     return ShipConfigSchema.parse(parsed);

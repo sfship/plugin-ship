@@ -55,6 +55,11 @@ describe('loadConfig', () => {
     assert.throws(() => loadConfig('missing.yml'), /No ship\.yml found at missing\.yml/);
   });
 
+  it('throws when the YAML is unparseable', () => {
+    readTextStub = () => 'key: [unclosed';
+    assert.throws(() => loadConfig('ship.yml'), /Invalid flow definition/);
+  });
+
   it('throws when the YAML is missing required fields', () => {
     readTextStub = () => dedent`
       dir: .ship
