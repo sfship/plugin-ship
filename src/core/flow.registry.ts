@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { parse } from 'yaml';
 import type { ZodError } from 'zod';
 import { listDir, readText } from '@plugin-ship/core/file.js';
-import { FlowDefinition, FlowDefinitionSchema } from '@plugin-ship/core/config.js';
+import { FlowDefinition, FlowDefinitionSchema } from '@plugin-ship/core/flow.definition.js';
 import { ExpectedError, formatZodError } from './error.utils.js';
 
 const builtinsDir = resolve(fileURLToPath(import.meta.url), '..', 'flows');
@@ -37,15 +37,14 @@ function loadFromPath(flowPath: string): FlowDefinition {
  * Resolves flow definitions by name.
  *
  * On construction, scans both the built-in and consumer flow directories and
- * merges with flows defined inline in ship.yml. Later sources shadow earlier ones:
- * built-ins → .ship/flows/ → ship.yml.
+ * Later sources shadow earlier ones: built-ins → .ship/flows/.
  */
 export class FlowRegistry {
   private readonly shipDir: string;
   private readonly flows: Map<string, FlowDefinition>;
 
   /** @param shipDir - The ship directory for this project. Consumer flows are loaded from `<shipDir>/flows`. */
-  public constructor(shipDir: string, configFlows?: Record<string, FlowDefinition>) {
+  public constructor(shipDir: string) {
     this.shipDir = shipDir;
     this.flows = new Map();
 
@@ -54,8 +53,6 @@ export class FlowRegistry {
 
     for (const file of scanDir(resolve(shipDir, 'flows')))
       this.flows.set(file.replace(/\.yml$/, ''), loadFromPath(resolve(shipDir, 'flows', file)));
-
-    if (configFlows) for (const [name, def] of Object.entries(configFlows)) this.flows.set(name, def);
   }
 
   /** Lists all available flow names. */

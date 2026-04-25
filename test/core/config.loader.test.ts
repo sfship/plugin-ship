@@ -35,19 +35,6 @@ describe('loadConfig', () => {
     assert.equal(loadConfig('ship.yml').dir, '.custom');
   });
 
-  it('parses flows and steps', () => {
-    readTextStub = () => dedent`
-      project:
-        name: my-project
-      flows:
-        deploy:
-          steps:
-            run-tests:
-              task: util/log
-    `;
-    assert.equal(loadConfig('ship.yml').flows?.deploy.steps['run-tests'].task, 'util/log');
-  });
-
   it('throws when the file cannot be read', () => {
     readTextStub = () => {
       throw new Error('ENOENT');

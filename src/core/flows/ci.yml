@@ -1,0 +1,15 @@
+description: Run CI checks against a scratch org
+steps:
+  create-org:
+    task: org/scratch/create
+    params:
+      scratch-def: dev
+      duration: 1
+  deploy:
+    task: metadata/deploy
+    params:
+      target-org: ${{steps.create-org.target-org}}
+  test:
+    task: apex/test/run
+    params:
+      target-org: ${{steps.create-org.target-org}}

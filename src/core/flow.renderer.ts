@@ -1,5 +1,5 @@
 import { FlowContext } from '@plugin-ship/core/flow.context.js';
-import { FlowStep } from '@plugin-ship/core/config.js';
+import { FlowStep } from '@plugin-ship/core/flow.definition.js';
 import { ExpectedError } from '@plugin-ship/core/error.utils.js';
 
 const ANSI = {

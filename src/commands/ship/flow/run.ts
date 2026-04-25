@@ -47,7 +47,7 @@ export default class FlowRun extends SfCommand<void> {
     const shipDir = resolve(config.dir);
 
     // Look up the named flow — error early if it doesn't exist
-    const registry = new FlowRegistry(shipDir, config.flows);
+    const registry = new FlowRegistry(shipDir);
     let flow;
     try {
       flow = registry.resolveFlow(args.flowName);

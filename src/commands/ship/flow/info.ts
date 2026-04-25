@@ -29,7 +29,7 @@ export default class FlowInfo extends SfCommand<void> {
     const { args, flags } = await this.parse(FlowInfo);
 
     const config = loadConfig(flags.config);
-    const registry = new FlowRegistry(resolve(config.dir), config.flows);
+    const registry = new FlowRegistry(resolve(config.dir));
     let flow;
     try {
       flow = registry.resolveFlow(args.flowName);

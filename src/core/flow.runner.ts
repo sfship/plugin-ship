@@ -1,12 +1,11 @@
 import { FlowContext } from '@plugin-ship/core/flow.context.js';
-import { FlowDefinition } from '@plugin-ship/core/config.js';
+import { FlowDefinition, FlowStep } from '@plugin-ship/core/flow.definition.js';
 import { validateParams } from '@plugin-ship/core/param.js';
 import { TaskRegistry } from '@plugin-ship/core/task.registry.js';
 import { Store } from '@plugin-ship/core/store.js';
 import { FlowRenderer } from '@plugin-ship/core/flow.renderer.js';
 import { asError, ExpectedError } from '@plugin-ship/core/error.utils.js';
 import { Task } from '@plugin-ship/core/task.js';
-import { FlowStep } from '@plugin-ship/core/config.js';
 
 type StepCondition = NonNullable<FlowStep['if']>;
 

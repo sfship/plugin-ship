@@ -22,7 +22,7 @@ export default class FlowList extends SfCommand<void> {
   public async run(): Promise<void> {
     const { flags } = await this.parse(FlowList);
     const config = loadConfig(flags.config);
-    const registry = new FlowRegistry(resolve(config.dir), config.flows);
+    const registry = new FlowRegistry(resolve(config.dir));
     const names = registry.list();
 
     const ux = new Ux();
