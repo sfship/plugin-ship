@@ -1,8 +1,9 @@
 import { resolve } from 'node:path';
-import { SfCommand, Flags, Ux, StandardColors } from '@salesforce/sf-plugins-core';
+import { SfCommand, Flags, StandardColors } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
 import { loadConfig } from '@plugin-ship/core/config.loader.js';
 import { FlowRegistry } from '@plugin-ship/core/flow.registry.js';
+import { renderTree } from '@plugin-ship/core/tree.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('plugin-ship', 'ship.flow.list');
@@ -25,25 +26,17 @@ export default class FlowList extends SfCommand<void> {
     const registry = new FlowRegistry(resolve(config.dir));
     const names = registry.list();
 
-    const ux = new Ux();
-    ux.styledHeader(`Flows  (${config.project.name})`);
-
     if (names.length === 0) {
       this.log('No flows available.');
       return;
     }
 
-    ux.table({
-      data: names.map((name) => {
-        const flow = registry.resolveFlow(name);
-        return { name, steps: Object.keys(flow.steps).length, description: flow.description ?? '—' };
-      }),
-    });
-
+    this.log(renderTree(names));
+    this.log('');
     this.log(
       StandardColors.info('Tip:') +
         ' Run ' +
-        StandardColors.success('sf ship flow info <name>') +
+        StandardColors.success('sf ship flow info <path>') +
         ' to see full details for a flow.'
     );
     this.log('');

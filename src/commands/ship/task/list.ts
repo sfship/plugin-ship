@@ -1,8 +1,9 @@
 import { resolve } from 'node:path';
-import { SfCommand, Flags, Ux, StandardColors } from '@salesforce/sf-plugins-core';
+import { SfCommand, Flags, StandardColors } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
 import { loadConfig } from '@plugin-ship/core/config.loader.js';
 import { TaskRegistry } from '@plugin-ship/core/task.registry.js';
+import { renderTree } from '@plugin-ship/core/tree.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('plugin-ship', 'ship.task.list');
@@ -24,24 +25,13 @@ export default class TaskList extends SfCommand<void> {
     const config = loadConfig(flags.config);
     const shipDir = resolve(config.dir);
 
-    const ux = new Ux();
     const tasks = new TaskRegistry(shipDir).list();
-
-    const groups: Record<string, string[]> = {};
-    for (const name of tasks) {
-      const group = name.split('/')[0];
-      (groups[group] ??= []).push(name);
-    }
-
-    for (const group of Object.keys(groups).sort()) {
-      this.log(StandardColors.info(`\n=== ${group} ===`));
-      ux.table({ data: groups[group].map((name) => ({ name })) });
-    }
-
+    this.log(renderTree(tasks));
+    this.log('');
     this.log(
       StandardColors.info('Tip:') +
         ' Run ' +
-        StandardColors.success('sf ship task info <name>') +
+        StandardColors.success('sf ship task info <path>') +
         ' to see full details for a task.'
     );
     this.log('');
