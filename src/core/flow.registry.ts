@@ -6,7 +6,7 @@ import { listDir, readText } from '@plugin-ship/core/file.js';
 import { FlowDefinition, FlowDefinitionSchema } from '@plugin-ship/core/flow.definition.js';
 import { ExpectedError, formatZodError } from './error.utils.js';
 
-const builtinsDir = resolve(fileURLToPath(import.meta.url), '..', 'flows');
+export const builtinsDir = resolve(fileURLToPath(import.meta.url), '..', 'flows');
 
 function scanDir(dir: string): string[] {
   try {
