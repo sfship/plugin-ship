@@ -5,9 +5,7 @@ import type { TaskContext, TaskDefinition } from '@plugin-ship/core/task.js';
 
 export default {
   description: 'Creates a scratch org, or skips if a healthy one already exists under the same alias.',
-  outputs: [
-    { name: 'targetOrg', type: 'string', description: 'The username of the created (or existing) scratch org.' },
-  ],
+  outputs: [{ name: 'target-org', type: 'string', description: 'The alias of the created (or existing) scratch org.' }],
   params: [
     {
       name: 'scratch-def',
@@ -63,7 +61,7 @@ export default {
       try {
         await existingOrg.checkScratchOrg(hubOrg.getUsername());
         flow.log(`Scratch org ${alias} already exists, skipping.`);
-        output.set('targetOrg', existingOrg.getUsername() ?? alias);
+        output.set('target-org', alias);
         return;
       } catch (healthErr) {
         if (healthErr instanceof Error && healthErr.name === 'NoResultsError') {
@@ -88,6 +86,6 @@ export default {
 
     for (const warning of result.warnings) flow.log(warning);
     flow.log(`Created scratch org: ${result.username ?? alias}`);
-    output.set('targetOrg', result.username ?? alias);
+    output.set('target-org', alias);
   },
 } satisfies TaskDefinition;

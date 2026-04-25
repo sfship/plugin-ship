@@ -20,18 +20,18 @@ export class OrgRegistry {
   public constructor(private readonly orgsDir: string, private readonly projectName?: string) {}
 
   /**
-   * Resolves a raw alias to a qualified alias using the project naming convention.
-   * If a matching scratch org definition exists in the orgs directory,
-   * returns `<projectName>:<alias>`. Otherwise returns the alias as-is.
+   * Resolves an org identifier to a qualified alias or username for use with `Org.create()`.
    *
-   * @param alias - The raw alias, e.g. `"dev"`.
-   * @returns The qualified alias, e.g. `"myproject:dev"`, or the original alias if no def file exists.
+   * Resolution order:
+   * 1. If a def file exists in the orgs directory, qualifies as `<projectName>:<alias>`.
+   * 2. If the input contains `@`, treats it as a Salesforce username and returns as-is.
+   * 3. Otherwise assumes it is an SF CLI alias and returns as-is.
+   *
+   * @param alias - A project alias, Salesforce username, or SF CLI alias.
    */
   public resolveAlias(alias: string): string {
     const defPath = resolve(this.orgsDir, `${alias}.json`);
-    if (!fileExists(defPath))
-      throw new ExpectedError(`No scratch org definition found for alias "${alias}" at ${defPath}`);
-    if (this.projectName) return `${this.projectName}:${alias}`;
+    if (fileExists(defPath)) return this.projectName ? `${this.projectName}:${alias}` : alias;
     return alias;
   }
 

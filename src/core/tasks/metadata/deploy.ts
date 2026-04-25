@@ -1,6 +1,7 @@
 import { resolve } from 'node:path';
 import { ComponentSetBuilder, ComponentStatus } from '@salesforce/source-deploy-retrieve';
 import type { TaskContext, TaskDefinition } from '@plugin-ship/core/task.js';
+import { ExpectedError } from '@plugin-ship/core/error.utils.js';
 
 export default {
   description: 'Deploys metadata to a target org using the Salesforce source deploy API.',
@@ -22,8 +23,9 @@ export default {
     const sourceDir = resolve(process.cwd(), (params['source-dir'] as string | undefined) ?? 'force-app');
     const alias = params['target-org'] as string;
 
+    const org = await flow.orgs.getOrg(alias);
     const componentSet = await ComponentSetBuilder.build({ sourcepath: [sourceDir] });
-    const deploy = await componentSet.deploy({ usernameOrConnection: alias });
+    const deploy = await componentSet.deploy({ usernameOrConnection: org.getUsername() ?? alias });
 
     deploy.onUpdate((status) => {
       flow.log(
@@ -39,7 +41,7 @@ export default {
         .filter((f) => f.state === ComponentStatus.Failed)
         .map((f) => `  ${f.filePath ?? '(unknown)'}: ${'error' in f ? f.error : ''}`)
         .join('\n');
-      throw new Error(`Deployment failed:\n${failures}`);
+      throw new ExpectedError(`Deployment failed:\n${failures}`);
     }
 
     flow.log(`Deployed ${result.response.numberComponentsDeployed} components successfully.`);

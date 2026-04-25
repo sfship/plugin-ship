@@ -35,8 +35,9 @@ export default {
     {
       name: 'output-dir',
       type: 'string',
-      required: true,
-      description: 'Destination directory for the prepared source.',
+      required: false,
+      default: '.ship/tmp',
+      description: 'Destination directory for the prepared source. Defaults to ".ship/tmp".',
     },
     {
       name: 'tokens',
@@ -47,26 +48,29 @@ export default {
   ],
   outputs: [
     {
-      name: 'outputDir',
+      name: 'output-dir',
       type: 'string',
       description: 'Absolute path to the prepared source directory.',
     },
   ],
   async run({ flow, params, output }: TaskContext): Promise<void> {
     const sourceDir = resolve(process.cwd(), (params['source-dir'] as string | undefined) ?? 'force-app');
-    const outputDir = resolve(process.cwd(), params['output-dir'] as string);
-    const tokens = (params['tokens'] ?? {}) as Record<string, string>;
+    const outputDir = resolve(process.cwd(), (params['output-dir'] as string | undefined) ?? '.ship/tmp');
+    const ns = flow.config.project.package?.namespace ?? '';
+    const defaultTokens: Record<string, string> = {
+      NAMESPACE: ns ? `${ns}__` : '',
+      NAMESPACE_DOT: ns ? `${ns}.` : '',
+      NAMESPACE_OR_C: ns || 'c',
+    };
+    const tokens = { ...defaultTokens, ...((params['tokens'] as Record<string, string> | undefined) ?? {}) };
 
     flow.log(`Copying ${sourceDir} → ${outputDir}`);
     await cp(sourceDir, outputDir, { recursive: true, force: true });
 
     const files = await walkFiles(outputDir);
-
-    if (Object.keys(tokens).length > 0) {
-      await Promise.all(files.map((file) => replaceTokens(file, tokens)));
-    }
+    await Promise.all(files.map((file) => replaceTokens(file, tokens)));
 
     flow.log(`Prepared ${files.length} files`);
-    output.set('outputDir', outputDir);
+    output.set('output-dir', outputDir);
   },
 } satisfies TaskDefinition;

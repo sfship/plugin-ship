@@ -29,11 +29,8 @@ function putFile(alias: string, content: object): void {
 }
 
 describe('OrgRegistry.resolveAlias', () => {
-  it('throws when no def file exists', () => {
-    assert.throws(
-      () => new OrgRegistry(ORGS_DIR, 'myproject').resolveAlias('dev'),
-      /No scratch org definition found for alias "dev"/
-    );
+  it('returns the alias as-is when no def file exists', () => {
+    assert.equal(new OrgRegistry(ORGS_DIR, 'myproject').resolveAlias('dev'), 'dev');
   });
 
   it('returns a qualified alias when a def file exists and project name is set', () => {
