@@ -32,25 +32,28 @@ export default class TaskInfo extends SfCommand<void> {
     const task = await new TaskRegistry(shipDir).resolveTask(args.taskName);
 
     const ux = new Ux();
-    this.log(' ');
-    ux.styledHeader(task.name);
-    this.log(task.description);
-    this.log(' ');
+    this.log('');
+    this.log(`=== Task: ${StandardColors.success(args.taskName)}`);
+    this.log('');
+    this.log(`${StandardColors.info('Description:')} ${task.description}`);
 
-    ux.styledHeader('Params');
-    ux.table({
-      data: task.params.map((p) => ({
-        name: p.name,
-        type: p.type,
-        required: p.required ? 'yes' : 'no',
-        description: p.description,
-      })),
-    });
+    if (task.params.length > 0) {
+      this.log('');
+      this.log('=== Params');
+      ux.table({
+        data: task.params.map((p) => ({
+          name: p.name,
+          type: p.type,
+          required: p.required ? 'yes' : 'no',
+          description: p.description,
+        })),
+      });
+    }
 
     if (task.outputs && task.outputs.length > 0) {
-      ux.styledHeader('Outputs');
+      this.log('=== Outputs');
       this.log(
-        StandardColors.info('Tip:') + ' Reference these outputs in subsequent steps using ${{ steps.<step-id>.<name> }}'
+        StandardColors.info('Tip:') + ' Reference these in subsequent steps using ${{ steps.<step-id>.<output-name> }}'
       );
       ux.table({
         data: task.outputs.map((o) => ({
@@ -60,5 +63,13 @@ export default class TaskInfo extends SfCommand<void> {
         })),
       });
     }
+
+    const requiredParams = task.params
+      .filter((p) => p.required)
+      .map((p) => `--param ${p.name}=<${p.name}>`)
+      .join(' ');
+    const exampleCmd = [`sf ship task run ${args.taskName}`, requiredParams].filter(Boolean).join(' ');
+    this.log(StandardColors.info('Tip:') + ' Run ' + StandardColors.success(exampleCmd) + ' to execute this task.');
+    this.log('');
   }
 }

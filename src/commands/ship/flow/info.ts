@@ -1,6 +1,6 @@
 import { resolve } from 'node:path';
 import { Args } from '@oclif/core';
-import { SfCommand, Flags, Ux } from '@salesforce/sf-plugins-core';
+import { SfCommand, Flags, Ux, StandardColors } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
 import { loadConfig } from '@plugin-ship/core/config.loader.js';
 import { FlowRegistry } from '@plugin-ship/core/flow.registry.js';
@@ -39,14 +39,17 @@ export default class FlowInfo extends SfCommand<void> {
 
     const ux = new Ux();
 
-    ux.styledHeader(args.flowName);
+    this.log('');
+    this.log(`=== Flow: ${StandardColors.success(args.flowName)}`);
 
     if (flow.description) {
-      this.log(flow.description);
+      this.log('');
+      this.log(`${StandardColors.info('Description:')} ${flow.description}`);
     }
 
     if (flow.params && flow.params.length > 0) {
-      ux.styledHeader('Params');
+      this.log('');
+      this.log('=== Params');
       ux.table({
         data: flow.params.map((p) => ({
           name: p.name,
@@ -59,7 +62,7 @@ export default class FlowInfo extends SfCommand<void> {
     }
 
     this.log('');
-    ux.styledHeader('Steps');
+    this.log('=== Steps');
     ux.table({
       data: Object.entries(flow.steps).map(([stepId, step], index) => ({
         '#': index + 1,
@@ -72,5 +75,13 @@ export default class FlowInfo extends SfCommand<void> {
           : '—',
       })),
     });
+
+    const requiredParams = (flow.params ?? [])
+      .filter((p) => p.required)
+      .map((p) => `--param ${p.name}=<${p.name}>`)
+      .join(' ');
+    const exampleCmd = [`sf ship flow run ${args.flowName}`, requiredParams].filter(Boolean).join(' ');
+    this.log(StandardColors.info('Tip:') + ' Run ' + StandardColors.success(exampleCmd) + ' to execute this flow.');
+    this.log('');
   }
 }
