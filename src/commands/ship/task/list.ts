@@ -2,7 +2,7 @@ import { resolve } from 'node:path';
 import { SfCommand, Flags, Ux, StandardColors } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
 import { loadConfig } from '@plugin-ship/core/config.loader.js';
-import { TaskRunner } from '@plugin-ship/core/task.runner.js';
+import { TaskRegistry } from '@plugin-ship/core/task.registry.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('plugin-ship', 'ship.task.list');
@@ -25,7 +25,7 @@ export default class TaskList extends SfCommand<void> {
     const shipDir = resolve(config.dir);
 
     const ux = new Ux();
-    const tasks = new TaskRunner(shipDir).list();
+    const tasks = new TaskRegistry(shipDir).list();
 
     const groups: Record<string, string[]> = {};
     for (const name of tasks) {

@@ -3,7 +3,7 @@ import { Args } from '@oclif/core';
 import { SfCommand, Flags, Ux, StandardColors } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
 import { loadConfig } from '@plugin-ship/core/config.loader.js';
-import { TaskRunner } from '@plugin-ship/core/task.runner.js';
+import { TaskRegistry } from '@plugin-ship/core/task.registry.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('plugin-ship', 'ship.task.info');
@@ -29,7 +29,7 @@ export default class TaskInfo extends SfCommand<void> {
 
     const config = loadConfig(flags.config);
     const shipDir = resolve(config.dir);
-    const task = await new TaskRunner(shipDir).resolveTask(args.taskName);
+    const task = await new TaskRegistry(shipDir).resolveTask(args.taskName);
 
     const ux = new Ux();
     this.log(' ');

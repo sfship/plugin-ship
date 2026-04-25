@@ -53,7 +53,7 @@ function makeTask(overrides: Partial<Task> = {}): Task {
 
 function makeMockRunner(tasks: Record<string, Task>) {
   return {
-    TaskRunner: class {
+    TaskRegistry: class {
       // eslint-disable-next-line class-methods-use-this
       public async resolveTask(taskName: string): Promise<Task> {
         const task = tasks[taskName];
@@ -69,7 +69,7 @@ describe('runFlow', () => {
     const order: string[] = [];
 
     const { runFlow }: { runFlow: typeof RunFlowFn } = await esmock('../../src/core/flow.runner.js', {
-      '../../src/core/task.runner.js': makeMockRunner({
+      '../../src/core/task.registry.js': makeMockRunner({
         'step-a': makeTask({
           name: 'step-a',
           async run() {
@@ -96,7 +96,7 @@ describe('runFlow', () => {
 
   it('throws when a task fails', async () => {
     const { runFlow }: { runFlow: typeof RunFlowFn } = await esmock('../../src/core/flow.runner.js', {
-      '../../src/core/task.runner.js': makeMockRunner({
+      '../../src/core/task.registry.js': makeMockRunner({
         fail: makeTask({
           name: 'fail',
           async run() {
@@ -116,7 +116,7 @@ describe('runFlow', () => {
     let receivedParams: Record<string, unknown> = {};
 
     const { runFlow }: { runFlow: typeof RunFlowFn } = await esmock('../../src/core/flow.runner.js', {
-      '../../src/core/task.runner.js': makeMockRunner({
+      '../../src/core/task.registry.js': makeMockRunner({
         'param-task': makeTask({
           name: 'param-task',
           params: [{ name: 'msg', type: 'string', required: true }],
@@ -138,7 +138,7 @@ describe('runFlow', () => {
 
   it('throws before any step when a required flow param is missing', async () => {
     const { runFlow }: { runFlow: typeof RunFlowFn } = await esmock('../../src/core/flow.runner.js', {
-      '../../src/core/task.runner.js': makeMockRunner({}),
+      '../../src/core/task.registry.js': makeMockRunner({}),
       '../../src/core/flow.renderer.js': mockRenderer,
     });
 
@@ -152,7 +152,7 @@ describe('runFlow', () => {
 
   it('propagates ExpectedError thrown by a task', async () => {
     const { runFlow }: { runFlow: typeof RunFlowFn } = await esmock('../../src/core/flow.runner.js', {
-      '../../src/core/task.runner.js': makeMockRunner({
+      '../../src/core/task.registry.js': makeMockRunner({
         'fail-task': makeTask({
           name: 'fail-task',
           params: [{ name: 'msg', type: 'string', required: true }],
@@ -173,7 +173,7 @@ describe('runFlow', () => {
 describe('runFlow — conditional steps', () => {
   async function loadRunFlow(tasks: Record<string, Task> = {}): Promise<typeof RunFlowFn> {
     const { runFlow }: { runFlow: typeof RunFlowFn } = await esmock('../../src/core/flow.runner.js', {
-      '../../src/core/task.runner.js': makeMockRunner(tasks),
+      '../../src/core/task.registry.js': makeMockRunner(tasks),
       '../../src/core/flow.renderer.js': mockRenderer,
     });
     return runFlow;
@@ -393,7 +393,7 @@ describe('runFlow — conditional steps', () => {
 describe('runFlow — ignore-failure', () => {
   async function loadRunFlow(tasks: Record<string, Task> = {}): Promise<typeof RunFlowFn> {
     const { runFlow }: { runFlow: typeof RunFlowFn } = await esmock('../../src/core/flow.runner.js', {
-      '../../src/core/task.runner.js': makeMockRunner(tasks),
+      '../../src/core/task.registry.js': makeMockRunner(tasks),
       '../../src/core/flow.renderer.js': mockRenderer,
     });
     return runFlow;

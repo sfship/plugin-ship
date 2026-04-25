@@ -1,6 +1,8 @@
+import { resolve } from 'node:path';
 import { SfCommand, Flags, Ux, StandardColors } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
 import { loadConfig } from '@plugin-ship/core/config.loader.js';
+import { FlowRegistry } from '@plugin-ship/core/flow.registry.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('plugin-ship', 'ship.flow.list');
@@ -20,24 +22,22 @@ export default class FlowList extends SfCommand<void> {
   public async run(): Promise<void> {
     const { flags } = await this.parse(FlowList);
     const config = loadConfig(flags.config);
-    const flows = Object.entries(config.flows ?? {});
+    const registry = new FlowRegistry(resolve(config.dir), config.flows);
+    const names = registry.list();
 
     const ux = new Ux();
     ux.styledHeader(`Flows  (${config.project.name})`);
 
-    if (flows.length === 0) {
-      this.log('No flows defined in ship.yml.');
+    if (names.length === 0) {
+      this.log('No flows available.');
       return;
     }
 
     ux.table({
-      data: flows
-        .sort(([a], [b]) => a.localeCompare(b))
-        .map(([name, flow]) => ({
-          name,
-          steps: Object.keys(flow.steps).length,
-          description: flow.description ?? '—',
-        })),
+      data: names.map((name) => {
+        const flow = registry.resolveFlow(name);
+        return { name, steps: Object.keys(flow.steps).length, description: flow.description ?? '—' };
+      }),
     });
 
     this.log(

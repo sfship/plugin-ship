@@ -38,7 +38,7 @@ function scanDir(dir: string): Set<string> {
  * On construction, scans both the built-in and consumer task directories and
  * builds a name → path map. Consumer tasks shadow built-ins of the same name.
  */
-export class TaskRunner {
+export class TaskRegistry {
   private readonly shipDir: string;
   private readonly tasks: Map<string, string>;
 

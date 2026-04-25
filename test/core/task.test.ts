@@ -1,50 +1,50 @@
-// Tests for task.ts, task.runner.ts, and task.output.ts
+// Tests for task.ts, task.registry.ts, and task.output.ts
 import { strict as assert } from 'node:assert';
 import { resolve } from 'node:path';
 import { Store } from '@plugin-ship/core/store.js';
-import { TaskRunner } from '../../src/core/task.runner.js';
+import { TaskRegistry } from '../../src/core/task.registry.js';
 
 const shipDir = resolve('test/core');
 
-describe('TaskRunner.resolve', () => {
+describe('TaskRegistry.resolve', () => {
   it('loads a valid .mjs task from the tasks directory', async () => {
     const taskName = 'dev/mjs-task';
-    const task = await new TaskRunner(shipDir).resolveTask(taskName);
+    const task = await new TaskRegistry(shipDir).resolveTask(taskName);
     assert.equal(task.name, taskName);
   });
 
   it('loads a valid .js task from the tasks directory', async () => {
     const taskName = 'dev/js-task';
-    const task = await new TaskRunner(shipDir).resolveTask(taskName);
+    const task = await new TaskRegistry(shipDir).resolveTask(taskName);
     assert.equal(task.name, taskName);
   });
 
   it('throws when the task file does not exist', async () => {
-    await assert.rejects(() => new TaskRunner('/nonexistent').resolveTask('unknown'));
+    await assert.rejects(() => new TaskRegistry('/nonexistent').resolveTask('unknown'));
   });
 
   it('throws when the module default export is not a valid task', async () => {
-    await assert.rejects(() => new TaskRunner(shipDir).resolveTask('not-a-task'));
+    await assert.rejects(() => new TaskRegistry(shipDir).resolveTask('not-a-task'));
   });
 
   it('throws when the task file exists but fails to import', async () => {
-    await assert.rejects(() => new TaskRunner(shipDir).resolveTask('broken-task'));
+    await assert.rejects(() => new TaskRegistry(shipDir).resolveTask('broken-task'));
   });
 });
 
-describe('TaskRunner.list', () => {
+describe('TaskRegistry.list', () => {
   it('includes tasks from the tasks directory', () => {
-    const tasks = new TaskRunner(shipDir).list();
+    const tasks = new TaskRegistry(shipDir).list();
     assert.ok(tasks.includes('dev/js-task'));
   });
 
   it('always includes built-in tasks', () => {
-    const tasks = new TaskRunner('/nonexistent').list();
+    const tasks = new TaskRegistry('/nonexistent').list();
     assert.ok(tasks.includes('util/log'));
   });
 
   it('does not throw when the tasks directory does not exist', () => {
-    assert.doesNotThrow(() => new TaskRunner('/nonexistent').list());
+    assert.doesNotThrow(() => new TaskRegistry('/nonexistent').list());
   });
 });
 

@@ -6,7 +6,7 @@ import { loadConfig } from '@plugin-ship/core/config.loader.js';
 import { FlowContext } from '@plugin-ship/core/flow.context.js';
 import { parseCliParams, validateParams } from '@plugin-ship/core/param.js';
 import { OrgRegistry } from '@plugin-ship/core/org.registry.js';
-import { TaskRunner } from '@plugin-ship/core/task.runner.js';
+import { TaskRegistry } from '@plugin-ship/core/task.registry.js';
 import { TaskContext } from '@plugin-ship/core/task.js';
 import { Store } from '@plugin-ship/core/store.js';
 import { handleError } from '@plugin-ship/core/error.utils.js';
@@ -52,7 +52,7 @@ export default class TaskRun extends SfCommand<void> {
       params,
     };
 
-    const runner = new TaskRunner(shipDir);
+    const runner = new TaskRegistry(shipDir);
     const task = await runner.resolveTask(args.taskName);
 
     new Ux().styledHeader(`Task: ${task.name}`);

@@ -1,7 +1,10 @@
+import { resolve } from 'node:path';
 import { Args } from '@oclif/core';
 import { SfCommand, Flags, Ux } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
 import { loadConfig } from '@plugin-ship/core/config.loader.js';
+import { FlowRegistry } from '@plugin-ship/core/flow.registry.js';
+import { asError } from '@plugin-ship/core/error.utils.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('plugin-ship', 'ship.flow.info');
@@ -26,9 +29,12 @@ export default class FlowInfo extends SfCommand<void> {
     const { args, flags } = await this.parse(FlowInfo);
 
     const config = loadConfig(flags.config);
-    const flow = config.flows?.[args.flowName];
-    if (!flow) {
-      this.error(`Flow "${args.flowName}" not found in ${flags.config}.`, { exit: 1 });
+    const registry = new FlowRegistry(resolve(config.dir), config.flows);
+    let flow;
+    try {
+      flow = registry.resolveFlow(args.flowName);
+    } catch (err) {
+      this.error(asError(err).message, { exit: 1 });
     }
 
     const ux = new Ux();

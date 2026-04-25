@@ -1,7 +1,7 @@
 import { FlowContext } from '@plugin-ship/core/flow.context.js';
 import { FlowDefinition } from '@plugin-ship/core/config.js';
 import { validateParams } from '@plugin-ship/core/param.js';
-import { TaskRunner } from '@plugin-ship/core/task.runner.js';
+import { TaskRegistry } from '@plugin-ship/core/task.registry.js';
 import { Store } from '@plugin-ship/core/store.js';
 import { FlowRenderer } from '@plugin-ship/core/flow.renderer.js';
 import { asError, ExpectedError } from '@plugin-ship/core/error.utils.js';
@@ -58,7 +58,7 @@ export async function runFlow(flowName: string, flow: FlowDefinition, context: F
   }
 
   const store = new Store(flow.steps);
-  const runner = new TaskRunner(context.shipDir);
+  const runner = new TaskRegistry(context.shipDir);
 
   for (const [stepId, step] of steps) {
     const interpolationContext = { params: context.params, steps: store.getSteps(), config: context.config };

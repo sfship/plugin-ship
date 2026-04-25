@@ -53,7 +53,7 @@ const FlowStepSchema = z
   .refine((s) => !(s.if && s['if-not']), { message: 'A step cannot have both "if" and "if-not"' });
 
 /** Defines a named flow: its accepted params and the ordered steps to execute. */
-const FlowDefinitionSchema = z.object({
+export const FlowDefinitionSchema = z.object({
   /** Human-readable description of what this flow does. */
   description: z.string().optional(),
   /** Params this flow accepts, passed as `--param key=value` CLI flags when invoking the flow. */

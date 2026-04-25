@@ -4,6 +4,7 @@ import { SfCommand, Flags } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
 import { loadConfig } from '@plugin-ship/core/config.loader.js';
 import { FlowContext } from '@plugin-ship/core/flow.context.js';
+import { FlowRegistry } from '@plugin-ship/core/flow.registry.js';
 import { parseCliParams } from '@plugin-ship/core/param.js';
 import { asError, ExpectedError } from '@plugin-ship/core/error.utils.js';
 import { runFlow } from '@plugin-ship/core/flow.runner.js';
@@ -42,10 +43,16 @@ export default class FlowRun extends SfCommand<void> {
     // Load and parse the ship.yml config file from the specified path
     const config = loadConfig(flags.config);
 
+    // Get path for .ship directory
+    const shipDir = resolve(config.dir);
+
     // Look up the named flow — error early if it doesn't exist
-    const flow = config?.flows?.[args.flowName];
-    if (!flow) {
-      this.error(`Flow "${args.flowName}" not found in ${flags.config}.`, { exit: 1 });
+    const registry = new FlowRegistry(shipDir, config.flows);
+    let flow;
+    try {
+      flow = registry.resolveFlow(args.flowName);
+    } catch (err) {
+      this.error(asError(err).message, { exit: 1 });
     }
 
     // Parse --param flags — invalid format (missing =) is a CLI-layer error
@@ -55,9 +62,6 @@ export default class FlowRun extends SfCommand<void> {
     } catch (err) {
       this.error(asError(err).message, { exit: 1 });
     }
-
-    // Get path for .ship directory
-    const shipDir = resolve(config.dir);
 
     // Build the flow context passed to every step in the flow
     const context: FlowContext = {
