@@ -29,7 +29,7 @@ function loadFromPath(flowPath: string): FlowDefinition {
   const parsed = parse(raw) as unknown;
   const result = FlowDefinitionSchema.safeParse(parsed);
   if (!result.success)
-    throw new ExpectedError(`Invalid flow at ${flowPath}: ${formatZodError(result.error as ZodError)}`);
+    throw new ExpectedError(`Invalid flow definition at ${flowPath}:\n${formatZodError(result.error as ZodError)}`);
   return result.data;
 }
 
