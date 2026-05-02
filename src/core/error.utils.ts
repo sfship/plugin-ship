@@ -10,13 +10,35 @@ export function asError(err: unknown): Error {
   return err instanceof Error ? err : new Error(String(err));
 }
 
+type RawIssue = { code: string; path: Array<string | number>; message: string; errors?: RawIssue[][] };
+
+function formatIssue(issue: RawIssue, pathPrefix: Array<string | number> = []): string {
+  const fullPath = [...pathPrefix, ...issue.path].join('.');
+  const label = fullPath || '(root)';
+
+  if (issue.code === 'invalid_union' && issue.errors?.length) {
+    const variants = issue.errors
+      .map((variantIssues) => {
+        const first = variantIssues[0];
+        if (!first) return null;
+        const variantPath = [...pathPrefix, ...issue.path, ...first.path].join('.');
+        return `      ${variantPath || '(root)'}: ${first.message}`;
+      })
+      .filter(Boolean)
+      .join('\n');
+    return `  - ${label}: Invalid input — expected one of:\n${variants}`;
+  }
+
+  return `  - ${label}: ${issue.message}`;
+}
+
 /**
- * Formats ZodError, used for validating user-defined objects
+ * Formats a ZodError into a human-readable string for display in CLI output.
  *
- * @param err - ZodError.
+ * @param err - The ZodError to format.
  */
 export function formatZodError(err: ZodError): string {
-  return err.issues.map((i) => `  - ${i.path.join('.')}: ${i.message}`).join('\n');
+  return err.issues.map((i) => formatIssue(i as RawIssue)).join('\n');
 }
 
 /**

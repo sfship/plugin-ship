@@ -47,6 +47,8 @@ export const ShipGitHubDependencySchema = z.object({
   subfolder: z.string().optional(),
   /** Strip namespace tokens from metadata before deploying. Only meaningful with `subfolder`. */
   unmanaged: z.boolean().optional(),
+  /** Human-readable label for this dependency, used to name the repo's own package step in log output. */
+  name: z.string().optional(),
 });
 
 /** A plugin-ship 1GP managed package dependency identified by namespace and version number. */
