@@ -1,5 +1,6 @@
 /* c8 ignore start */
 import { z } from 'zod';
+import { ShipDependencySchema, ShipDependency } from './config.dependency.js';
 
 /** Salesforce packaging metadata for the project. */
 const ProjectPackageConfigSchema = z.object({
@@ -8,30 +9,6 @@ const ProjectPackageConfigSchema = z.object({
   /** The package namespace. */
   namespace: z.string().optional(),
 });
-
-/** A GitHub repository dependency — fetches ship.yml or cumulusci.yml to resolve the full dependency tree. */
-const GitHubDependencySchema = z.object({
-  github: z.string(),
-  type: z.enum(['ship', 'cci']).default('ship'),
-  tag: z.string().optional(),
-  subfolder: z.string().optional(),
-  unmanaged: z.boolean().optional(),
-});
-
-/** A 1GP managed package dependency identified by namespace and version. */
-const NamespaceDependencySchema = z.object({
-  namespace: z.string(),
-  version: z.string(),
-  name: z.string().optional(),
-});
-
-/** A 2GP or unlocked package dependency identified by version ID. */
-const PackageIdDependencySchema = z.object({
-  id: z.string(),
-  name: z.string().optional(),
-});
-
-const DependencySchema = z.union([GitHubDependencySchema, NamespaceDependencySchema, PackageIdDependencySchema]);
 
 /** Git/GitHub configuration for the project. */
 const ProjectGitConfigSchema = z.object({
@@ -52,7 +29,7 @@ const ProjectConfigSchema = z.object({
 });
 
 /**
- * Zod schema for the top-level `ship.config.json` (or equivalent).
+ * Zod schema for the top-level `ship.yml`.
  * Defines the project and optional ship directory override.
  */
 export const ShipConfigSchema = z.object({
@@ -61,13 +38,10 @@ export const ShipConfigSchema = z.object({
   /** Directory used to resolve custom tasks, scratch-org defs, and other ship assets. Defaults to `.ship`. */
   dir: z.string().default('.ship'),
   /** Dependencies to install before deploying or packaging. */
-  dependencies: z.array(DependencySchema).optional(),
+  dependencies: z.array(ShipDependencySchema).optional(),
 });
 
-export type GitHubDependency = z.infer<typeof GitHubDependencySchema>;
-export type NamespaceDependency = z.infer<typeof NamespaceDependencySchema>;
-export type PackageIdDependency = z.infer<typeof PackageIdDependencySchema>;
-export type Dependency = z.infer<typeof DependencySchema>;
+export type { ShipDependency };
 export type ProjectConfig = z.infer<typeof ProjectConfigSchema>;
 export type ProjectPackageConfig = z.infer<typeof ProjectPackageConfigSchema>;
 export type ProjectGitConfig = z.infer<typeof ProjectGitConfigSchema>;

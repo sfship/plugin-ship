@@ -1,4 +1,4 @@
-import { ShipConfig } from '@plugin-ship/core/config.js';
+import { ShipConfig } from '@plugin-ship/core/config.ship.js';
 import { Params } from '@plugin-ship/core/param.js';
 import { OrgRegistry } from '@plugin-ship/core/org.registry.js';
 

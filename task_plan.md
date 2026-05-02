@@ -92,7 +92,7 @@ dependencies:
       myorg/my-other-package
       # type defaults to ship — reads ship.yml
     tag: v1.2.0 # optional: pin to a specific release instead of latest
-  - id: 04tXXXXXXXXXXXXX
+  - versionId: 04tXXXXXXXXXXXXX
     name: Some Simple Package # plain package ID, no config fetched, no recursion
 ```
 
