@@ -128,4 +128,51 @@ describe('resolveDependencies', () => {
       assert.deepEqual(steps, [{ kind: 'package-id', versionId: '04tCCCCCCCCCCCCCCC', name: 'Nested' }]);
     });
   });
+
+  describe('pinned tag', () => {
+    it('fetches release by tag when tag is specified', async () => {
+      const captured: string[] = [];
+      global.fetch = async (input: string | URL | Request): Promise<Response> => {
+        captured.push(String(input));
+        const url = String(input);
+        if (url.includes('/releases/tags/'))
+          return { ok: true, status: 200, json: async () => ({ tag_name: 'v1.0' }) } as Response;
+        if (url.includes('/git/refs/tags/'))
+          return { ok: true, status: 200, json: async () => ({ object: { type: 'tag', sha: 'abc' } }) } as Response;
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ message: 'version_id: 04tAAAAAAAAAAAAAAA\n\ndependencies: []' }),
+        } as Response;
+      };
+      await resolveDependencies([{ github: 'org/repo', type: 'cci', tag: 'v1.0' }]);
+      assert.ok(captured.some((u) => u.includes('/releases/tags/v1.0')));
+    });
+  });
+
+  describe('subfolder dep', () => {
+    it('returns a metadata step without making network calls', async () => {
+      global.fetch = async () => {
+        throw new Error('fetch should not be called');
+      };
+      const steps = await resolveDependencies([
+        { github: 'org/repo', type: 'cci', subfolder: 'unpackaged/pre', unmanaged: true },
+      ]);
+      assert.deepEqual(steps, [
+        { kind: 'metadata', repoUrl: 'https://github.com/org/repo', subfolder: 'unpackaged/pre', unmanaged: true },
+      ]);
+    });
+  });
+
+  describe('parseCciTagMessage', () => {
+    it('returns own version ID with empty deps when tag message dependencies JSON is malformed', async () => {
+      stubFetch(
+        ['/releases/latest', 200, { tag_name: 'rel/1.0' }],
+        ['/git/refs/tags/', 200, { object: { type: 'tag', sha: 'abc123' } }],
+        ['/git/tags/abc123', 200, { message: 'version_id: 04tAAAAAAAAAAAAAAA\n\ndependencies: [invalid' }]
+      );
+      const steps = await resolveDependencies([{ github: 'org/repo', type: 'cci', name: 'My Package' }]);
+      assert.deepEqual(steps, [{ kind: 'package-id', versionId: '04tAAAAAAAAAAAAAAA', name: 'My Package' }]);
+    });
+  });
 });

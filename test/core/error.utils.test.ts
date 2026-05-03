@@ -1,5 +1,6 @@
 import { strict as assert } from 'node:assert';
-import { asError, handleError, ExpectedError } from '@plugin-ship/core/error.utils.js';
+import { z } from 'zod';
+import { asError, handleError, ExpectedError, formatZodError } from '@plugin-ship/core/error.utils.js';
 
 describe('asError', () => {
   it('returns thrown Errors as is', () => {
@@ -32,5 +33,23 @@ describe('handleError', () => {
       () => handleError(original, () => {}),
       (err) => err === original
     );
+  });
+});
+
+describe('formatZodError', () => {
+  it('formats a simple field error', () => {
+    const result = z.object({ name: z.string() }).safeParse({ name: 42 });
+    assert.ok(!result.success);
+    assert.match(formatZodError(result.error), /name/);
+  });
+
+  it('formats a union error with one line per variant', () => {
+    const schema = z.union([z.object({ github: z.string() }), z.object({ versionId: z.string() })]);
+    const result = schema.safeParse({ unrelated: true });
+    assert.ok(!result.success);
+    const msg = formatZodError(result.error);
+    assert.match(msg, /expected one of/);
+    assert.match(msg, /github/);
+    assert.match(msg, /versionId/);
   });
 });
