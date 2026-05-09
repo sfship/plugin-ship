@@ -59,21 +59,34 @@ export class FlowRenderer {
     this.finallySteps = finallySteps;
     this.context = context;
     this.tty = out.isTTY;
+    const originalLog = context.log;
     if (this.tty) {
       // eslint-disable-next-line no-param-reassign
       context.log = (message): void => {
         this.clear();
+        const ts = `${ANSI.dim}${FlowRenderer.timestamp()}${ANSI.reset} `;
         const prefix = this.current ? `${ANSI.cyan}[${this.current}]${ANSI.reset} ` : '';
-        this.out.write(`${prefix}${message}\n`);
+        this.out.write(`${ts}${prefix}${message}\n`);
         this.render();
       };
+    } else {
+      // eslint-disable-next-line no-param-reassign
+      context.log = (message): void => originalLog(`${FlowRenderer.timestamp()} ${message}`);
     }
   }
 
-  /** Prints the static flow title. Call once before any steps run. */
+  private static timestamp(): string {
+    const now = new Date();
+    const h = String(now.getHours()).padStart(2, '0');
+    const m = String(now.getMinutes()).padStart(2, '0');
+    const s = String(now.getSeconds()).padStart(2, '0');
+    return `${h}:${m}:${s}`;
+  }
+
+  /** Prints the initial render. Call once before any steps run. */
   public start(): void {
     if (this.tty) {
-      this.out.write(`\n  ${ANSI.dim}Flow:${ANSI.reset} ${ANSI.bold}${this.flowName}${ANSI.reset}\n\n`);
+      this.render();
     } else {
       this.context?.log(`Running flow: ${this.flowName}`);
     }
@@ -236,6 +249,8 @@ export class FlowRenderer {
       lineCount++;
     };
 
+    writeLine(`  ${ANSI.dim}${'─'.repeat(40)}${ANSI.reset}`);
+    writeLine(`  ${ANSI.dim}Flow:${ANSI.reset} ${ANSI.bold}${this.flowName}${ANSI.reset}`);
     writeLine(`  ${ANSI.dim}Steps${ANSI.reset}`);
     for (const [stepId, step] of this.mainSteps) this.renderStepLine(stepId, step, writeLine);
 
