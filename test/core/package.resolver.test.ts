@@ -11,7 +11,7 @@ const { resolveDependencies }: Resolver = await esmock('../../src/core/package.r
 
 // ---- fetch helpers -------------------------------------------------------
 
-type RouteBody = Record<string, unknown> | string;
+type RouteBody = Record<string, unknown> | unknown[] | string;
 type Route = [pattern: string | RegExp, status: number, body: RouteBody];
 
 function stubFetch(...routes: Route[]): void {
