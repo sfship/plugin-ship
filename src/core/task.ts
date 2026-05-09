@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { ParamDefinitionSchema, Params } from '@plugin-ship/core/param.js';
+import { ParamDefinitionSchema, Params } from '@plugin-ship/core/task.param.schema.js';
 import { FlowContext } from '@plugin-ship/core/flow.context.js';
 import { TaskOutput } from '@plugin-ship/core/task.output.js';
 

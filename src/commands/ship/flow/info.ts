@@ -4,7 +4,7 @@ import { SfCommand, Flags, Ux, StandardColors } from '@salesforce/sf-plugins-cor
 import { Messages } from '@salesforce/core';
 import { loadConfig } from '@plugin-ship/core/config.loader.js';
 import { FlowRegistry } from '@plugin-ship/core/flow.registry.js';
-import { asError } from '@plugin-ship/core/error.utils.js';
+import { asError } from '@plugin-ship/core/util.error.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('plugin-ship', 'ship.flow.info');

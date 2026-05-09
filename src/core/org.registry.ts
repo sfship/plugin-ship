@@ -1,8 +1,8 @@
 import { resolve } from 'node:path';
 import { Org } from '@salesforce/core';
-import { ScratchOrgDef, ScratchOrgDefSchema } from '@plugin-ship/core/scratch-org.js';
-import { fileExists, readText } from '@plugin-ship/core/file.js';
-import { ExpectedError } from './error.utils.js';
+import { ScratchOrgDef, ScratchOrgDefSchema } from '@plugin-ship/core/org.scratch.schema.js';
+import { fileExists, readText } from '@plugin-ship/core/util.file.js';
+import { ExpectedError } from './util.error.js';
 
 /**
  * Manages lazy-loaded Salesforce `Org` instances and scratch org definitions

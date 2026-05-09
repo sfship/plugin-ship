@@ -1,4 +1,5 @@
 import type { TaskContext, TaskDefinition } from '@plugin-ship/core/task.js';
+import { ExpectedError } from '@plugin-ship/core/util.error.js';
 
 type TestLevel = 'RunLocalTests' | 'RunAllTestsInOrg' | 'RunSpecifiedTests';
 
@@ -138,7 +139,7 @@ export default {
       const summary = failures
         .map((f) => `  ✗ ${f.ApexClass.Name}.${f.MethodName}\n    ${f.Message ?? ''}\n    ${f.StackTrace ?? ''}`)
         .join('\n');
-      throw new Error(`${failures.length} Apex test(s) failed:\n${summary}`);
+      throw new ExpectedError(`${failures.length} Apex test(s) failed:\n${summary}`);
     }
 
     flow.log(`All ${passed} tests passed.`);
@@ -153,7 +154,7 @@ export default {
       const pct = totalLines > 0 ? Math.floor((totalCovered / totalLines) * 100) : 0;
       flow.log(`Org-wide coverage: ${pct}%`);
       if (pct < minCoverage) {
-        throw new Error(`Coverage ${pct}% is below the required minimum of ${minCoverage}%.`);
+        throw new ExpectedError(`Coverage ${pct}% is below the required minimum of ${minCoverage}%.`);
       }
     }
   },

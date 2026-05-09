@@ -5,9 +5,10 @@
   "dependencies": {
     "@napi-rs/keyring": "^1.2.0",
     "@oclif/core": "^4",
-    "@salesforce/core": "^8",
+    "@salesforce/core": "^8.2.7",
     "@salesforce/sf-plugins-core": "^12",
     "@salesforce/source-deploy-retrieve": "^12.31.21",
+    "jszip": "^3.10.1",
     "yaml": "^2.8.2",
     "zod": "^4.3.6"
   },
@@ -81,12 +82,13 @@
     "clean-all": "sf-clean all",
     "compile": "wireit",
     "docs": "sf-docs",
+    "fix-license": "eslint src test --fix --rule \"header/header: [2]\"",
     "format": "wireit",
     "link-check": "wireit",
     "lint": "wireit",
-    "prepare": "sf-install",
     "postpack": "sf-clean --ignore-signing-artifacts",
     "prepack": "sf-prepack",
+    "prepare": "sf-install",
     "test": "wireit",
     "test:nuts": "c8 mocha \"**/*.nut.ts\" --slow 4500 --timeout 600000 --parallel",
     "test:only": "wireit",
@@ -99,7 +101,6 @@
     "build": {
       "dependencies": [
         "compile",
-        "copy-assets",
         "lint"
       ]
     },
@@ -172,8 +173,7 @@
         "src/**/*.ts",
         "**/tsconfig.json",
         ".mocha*",
-        "!*.nut.ts",
-        ".c8rc"
+        "!*.nut.ts"
       ],
       "output": []
     },
@@ -207,7 +207,7 @@
       "output": []
     },
     "link-check": {
-      "command": "node -e \"process.exit(process.env.CI ? 0 : 1)\" || linkinator \"**/*.md\" --skip \"CHANGELOG.md|node_modules|test/|confluence.internal.salesforce.com|my.salesforce.com|%s\" --markdown --retry --directory-listing --verbosity error",
+      "command": "node -e \"process.exit(process.env.CI ? 0 : 1)\" || linkinator \"**/*.md\" --skip \"CHANGELOG.md|node_modules|test/|confluence.internal.salesforce.com|my.salesforce.com|localhost|%s\" --markdown --retry --directory-listing --verbosity error",
       "files": [
         "./*.md",
         "./!(CHANGELOG).md",

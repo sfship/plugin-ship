@@ -1,6 +1,6 @@
 /* c8 ignore start */
 import { z } from 'zod';
-import { ShipDependencySchema, ShipDependency } from './config.dependency.js';
+import { ShipDependencySchema, ShipDependency } from './config.dependency.schema.js';
 
 /** Salesforce packaging metadata for the project. */
 const ProjectPackageConfigSchema = z.object({

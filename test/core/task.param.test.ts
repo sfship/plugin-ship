@@ -1,6 +1,6 @@
 import { strict as assert } from 'node:assert';
-import { validateParams, parseCliParams } from '@plugin-ship/core/param.js';
-import { ParamDefinition } from '@plugin-ship/core/param.js';
+import { validateParams, parseCliParams } from '@plugin-ship/core/task.param.js';
+import { ParamDefinition } from '@plugin-ship/core/task.param.schema.js';
 
 describe('validateParams', () => {
   it('returns an empty object when there are no param definitions', () => {
@@ -79,6 +79,14 @@ describe('validateParams', () => {
     it('throws when a scalar is passed for a record-typed param', () => {
       const defs: ParamDefinition[] = [{ name: 'tokens', type: 'record', required: true }];
       assert.throws(() => validateParams({ tokens: 'oops' }, defs), /expected a record/);
+    });
+
+    it('throws when an array is passed as a param value', () => {
+      const defs: ParamDefinition[] = [{ name: 'env', type: 'string', required: true }];
+      assert.throws(
+        () => validateParams({ env: [] as unknown as string }, defs),
+        /must be a string, number, boolean, or record/
+      );
     });
   });
 });

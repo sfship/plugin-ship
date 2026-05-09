@@ -1,5 +1,5 @@
-import { ShipConfig } from '@plugin-ship/core/config.ship.js';
-import { Params } from '@plugin-ship/core/param.js';
+import { ShipConfig } from '@plugin-ship/core/config.ship.schema.js';
+import { Params } from '@plugin-ship/core/task.param.schema.js';
 import { OrgRegistry } from '@plugin-ship/core/org.registry.js';
 
 /**

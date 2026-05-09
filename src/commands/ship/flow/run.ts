@@ -5,8 +5,8 @@ import { Messages } from '@salesforce/core';
 import { loadConfig } from '@plugin-ship/core/config.loader.js';
 import { createFlowContext } from '@plugin-ship/core/flow.context.js';
 import { FlowRegistry } from '@plugin-ship/core/flow.registry.js';
-import { parseCliParams } from '@plugin-ship/core/param.js';
-import { asError, ExpectedError } from '@plugin-ship/core/error.utils.js';
+import { parseCliParams } from '@plugin-ship/core/task.param.js';
+import { asError, ExpectedError } from '@plugin-ship/core/util.error.js';
 import { runFlow } from '@plugin-ship/core/flow.runner.js';
 import { OrgRegistry } from '@plugin-ship/core/org.registry.js';
 

@@ -1,6 +1,6 @@
 import { strict as assert } from 'node:assert';
 import { z } from 'zod';
-import { asError, handleError, ExpectedError, formatZodError } from '@plugin-ship/core/error.utils.js';
+import { asError, handleError, ExpectedError, formatZodError } from '@plugin-ship/core/util.error.js';
 
 describe('asError', () => {
   it('returns thrown Errors as is', () => {
@@ -51,5 +51,13 @@ describe('formatZodError', () => {
     assert.match(msg, /expected one of/);
     assert.match(msg, /github/);
     assert.match(msg, /versionId/);
+  });
+
+  it('uses (root) when a union error occurs at the root level', () => {
+    const schema = z.union([z.string(), z.number()]);
+    const result = schema.safeParse(null);
+    assert.ok(!result.success);
+    const msg = formatZodError(result.error);
+    assert.match(msg, /\(root\)/);
   });
 });

@@ -1,10 +1,10 @@
 import { FlowContext } from '@plugin-ship/core/flow.context.js';
-import { FlowDefinition, FlowStep } from '@plugin-ship/core/flow.definition.js';
-import { validateParams } from '@plugin-ship/core/param.js';
+import { FlowDefinition, FlowStep } from '@plugin-ship/core/flow.definition.schema.js';
+import { validateParams } from '@plugin-ship/core/task.param.js';
 import { TaskRegistry } from '@plugin-ship/core/task.registry.js';
-import { Store } from '@plugin-ship/core/store.js';
+import { Store } from '@plugin-ship/core/flow.store.js';
 import { FlowRenderer } from '@plugin-ship/core/flow.renderer.js';
-import { asError, ExpectedError } from '@plugin-ship/core/error.utils.js';
+import { asError, ExpectedError } from '@plugin-ship/core/util.error.js';
 import { Task } from '@plugin-ship/core/task.js';
 
 type StepCondition = NonNullable<FlowStep['if']>;
@@ -12,6 +12,7 @@ type StepCondition = NonNullable<FlowStep['if']>;
 function deepGet(root: unknown, keys: string[]): unknown {
   let val: unknown = root;
   for (const key of keys) {
+    // c8 ignore next — val === null guards against tasks setting null outputs at intermediate paths
     if (val === null || typeof val !== 'object') return undefined;
     val = (val as Record<string, unknown>)[key];
   }

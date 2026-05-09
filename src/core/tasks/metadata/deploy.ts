@@ -1,7 +1,7 @@
 import { resolve } from 'node:path';
 import { ComponentSetBuilder, ComponentStatus } from '@salesforce/source-deploy-retrieve';
 import type { TaskContext, TaskDefinition } from '@plugin-ship/core/task.js';
-import { ExpectedError } from '@plugin-ship/core/error.utils.js';
+import { ExpectedError } from '@plugin-ship/core/util.error.js';
 
 export default {
   description: 'Deploys metadata to a target org using the Salesforce source deploy API.',

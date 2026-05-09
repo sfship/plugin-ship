@@ -3,7 +3,7 @@ import { SfCommand, Flags, StandardColors } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
 import { loadConfig } from '@plugin-ship/core/config.loader.js';
 import { TaskRegistry } from '@plugin-ship/core/task.registry.js';
-import { renderTree } from '@plugin-ship/core/tree.js';
+import { renderTree } from '@plugin-ship/core/util.tree.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('plugin-ship', 'ship.task.list');

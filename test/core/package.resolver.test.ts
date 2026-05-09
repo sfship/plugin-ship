@@ -1,12 +1,12 @@
 /* eslint-disable camelcase */
 import { strict as assert } from 'node:assert';
 import esmock from 'esmock';
-import type { resolveDependencies as ResolveFn } from '@plugin-ship/core/dependency.resolver.js';
+import type { resolveDependencies as ResolveFn } from '@plugin-ship/core/package.resolver.js';
 
 type Resolver = { resolveDependencies: typeof ResolveFn };
 
-const { resolveDependencies }: Resolver = await esmock('../../src/core/dependency.resolver.js', {
-  '../../src/core/services/github.js': { getGithubToken: () => undefined },
+const { resolveDependencies }: Resolver = await esmock('../../src/core/package.resolver.js', {
+  '../../src/core/service.github.js': { getGithubToken: () => undefined },
 });
 
 // ---- fetch helpers -------------------------------------------------------
@@ -52,13 +52,6 @@ describe('resolveDependencies', () => {
     });
   });
 
-  describe('namespace dep', () => {
-    it('returns a package-namespace step', async () => {
-      const steps = await resolveDependencies([{ namespace: 'npsp', version: '3.232' }]);
-      assert.deepEqual(steps, [{ kind: 'package-namespace', namespace: 'npsp', version: '3.232' }]);
-    });
-  });
-
   describe('CCI GitHub dep', () => {
     const tagMsg = cciTagMessage('04tAAAAAAAAAAAAAAA', [
       { version_id: '04tBBBBBBBBBBBBBBB', package_name: 'Transitive' },
@@ -68,7 +61,9 @@ describe('resolveDependencies', () => {
       stubFetch(
         ['/releases/latest', 200, { tag_name: 'rel/1.0' }],
         ['/git/refs/tags/', 200, { object: { type: 'tag', sha: 'abc123' } }],
-        ['/git/tags/abc123', 200, { message: tagMsg }]
+        ['/git/tags/abc123', 200, { message: tagMsg }],
+        ['raw.githubusercontent.com', 404, ''],
+        ['/contents/', 404, {}]
       );
     });
 
@@ -104,11 +99,31 @@ describe('resolveDependencies', () => {
       await assert.rejects(() => resolveDependencies([{ github: 'org/repo', type: 'cci' }]), /No GitHub release found/);
     });
 
+    it('includes the tag in the error when a pinned tag has no release', async () => {
+      stubFetch(['/releases/tags/v9.0', 404, {}]);
+      await assert.rejects(
+        () => resolveDependencies([{ github: 'org/repo', type: 'cci', tag: 'v9.0' }]),
+        /No GitHub release found for org\/repo@v9\.0/
+      );
+    });
+
+    it('throws when fetchGitTag returns null (lightweight tag)', async () => {
+      stubFetch(
+        ['/releases/latest', 200, { tag_name: 'rel/1.0' }],
+        ['/git/refs/tags/', 404, {}],
+        ['raw.githubusercontent.com', 404, ''],
+        ['/contents/', 404, {}]
+      );
+      await assert.rejects(() => resolveDependencies([{ github: 'org/repo', type: 'cci' }]), /No CCI release metadata/);
+    });
+
     it('throws when the tag has no CCI metadata', async () => {
       stubFetch(
         ['/releases/latest', 200, { tag_name: 'rel/1.0' }],
         ['/git/refs/tags/', 200, { object: { type: 'tag', sha: 'abc123' } }],
-        ['/git/tags/abc123', 200, { message: 'just a plain release message' }]
+        ['/git/tags/abc123', 200, { message: 'just a plain release message' }],
+        ['raw.githubusercontent.com', 404, ''],
+        ['/contents/', 404, {}]
       );
       await assert.rejects(() => resolveDependencies([{ github: 'org/repo', type: 'cci' }]), /No CCI release metadata/);
     });
@@ -127,6 +142,34 @@ describe('resolveDependencies', () => {
       const steps = await resolveDependencies([{ github: 'org/other', type: 'ship' }]);
       assert.deepEqual(steps, [{ kind: 'package-id', versionId: '04tCCCCCCCCCCCCCCC', name: 'Nested' }]);
     });
+
+    it('throws when ship.yml is missing', async () => {
+      stubFetch(['/releases/latest', 200, { tag_name: 'v1.0' }], ['raw.githubusercontent.com', 404, '']);
+      await assert.rejects(() => resolveDependencies([{ github: 'org/other', type: 'ship' }]), /ship\.yml not found/);
+    });
+
+    it('throws when ship.yml fails schema validation', async () => {
+      stubFetch(
+        ['/releases/latest', 200, { tag_name: 'v1.0' }],
+        ['raw.githubusercontent.com', 200, 'not_a_valid_ship_yml: true']
+      );
+      await assert.rejects(() => resolveDependencies([{ github: 'org/other', type: 'ship' }]), /Invalid ship\.yml/);
+    });
+
+    it('throws on circular dependencies', async () => {
+      stubFetch(
+        ['/releases/latest', 200, { tag_name: 'v1.0' }],
+        [
+          'raw.githubusercontent.com',
+          200,
+          'project:\n  name: self\ndependencies:\n  - github: org/repo\n    type: ship',
+        ]
+      );
+      await assert.rejects(
+        () => resolveDependencies([{ github: 'org/repo', type: 'ship' }]),
+        /Circular dependency detected/
+      );
+    });
   });
 
   describe('pinned tag', () => {
@@ -136,13 +179,21 @@ describe('resolveDependencies', () => {
         captured.push(String(input));
         const url = String(input);
         if (url.includes('/releases/tags/'))
-          return { ok: true, status: 200, json: async () => ({ tag_name: 'v1.0' }) } as Response;
+          return { ok: true, status: 200, json: async () => ({ tag_name: 'v1.0' }), text: async () => '' } as Response;
         if (url.includes('/git/refs/tags/'))
-          return { ok: true, status: 200, json: async () => ({ object: { type: 'tag', sha: 'abc' } }) } as Response;
+          return {
+            ok: true,
+            status: 200,
+            json: async () => ({ object: { type: 'tag', sha: 'abc' } }),
+            text: async () => '',
+          } as Response;
+        if (url.includes('raw.githubusercontent.com') || url.includes('/contents/'))
+          return { ok: false, status: 404, json: async () => ({}), text: async () => '' } as Response;
         return {
           ok: true,
           status: 200,
           json: async () => ({ message: 'version_id: 04tAAAAAAAAAAAAAAA\n\ndependencies: []' }),
+          text: async () => '',
         } as Response;
       };
       await resolveDependencies([{ github: 'org/repo', type: 'cci', tag: 'v1.0' }]);
@@ -150,17 +201,39 @@ describe('resolveDependencies', () => {
     });
   });
 
-  describe('subfolder dep', () => {
-    it('returns a metadata step without making network calls', async () => {
-      global.fetch = async () => {
-        throw new Error('fetch should not be called');
-      };
-      const steps = await resolveDependencies([
-        { github: 'org/repo', type: 'cci', subfolder: 'unpackaged/pre', unmanaged: true },
-      ]);
-      assert.deepEqual(steps, [
-        { kind: 'metadata', repoUrl: 'https://github.com/org/repo', subfolder: 'unpackaged/pre', unmanaged: true },
-      ]);
+  describe('CCI metadata steps', () => {
+    it('emits pre and post metadata steps around the package install step', async () => {
+      const tagMsg = cciTagMessage('04tAAAAAAAAAAAAAAA', []);
+      stubFetch(
+        ['/releases/latest', 200, { tag_name: 'rel/1.0' }],
+        ['/git/refs/tags/', 200, { object: { type: 'tag', sha: 'abc123' } }],
+        ['/git/tags/abc123', 200, { message: tagMsg }],
+        ['raw.githubusercontent.com', 404, ''],
+        ['unpackaged/pre', 200, [{ name: 'SharedUtils', type: 'dir' }]],
+        ['unpackaged/post', 200, [{ name: 'Config', type: 'dir' }]]
+      );
+      const steps = await resolveDependencies([{ github: 'org/repo', type: 'cci', name: 'My Pkg' }]);
+      assert.equal(steps.length, 3);
+      assert.equal(steps[0].kind, 'metadata');
+      assert.equal((steps[0] as { subfolder: string }).subfolder, 'unpackaged/pre/SharedUtils');
+      assert.equal(steps[1].kind, 'package-id');
+      assert.equal(steps[2].kind, 'metadata');
+      assert.equal((steps[2] as { subfolder: string }).subfolder, 'unpackaged/post/Config');
+    });
+
+    it('includes the namespace from cumulusci.yml in metadata steps', async () => {
+      const tagMsg = cciTagMessage('04tAAAAAAAAAAAAAAA', []);
+      stubFetch(
+        ['/releases/latest', 200, { tag_name: 'rel/1.0' }],
+        ['/git/refs/tags/', 200, { object: { type: 'tag', sha: 'abc123' } }],
+        ['/git/tags/abc123', 200, { message: tagMsg }],
+        ['raw.githubusercontent.com', 200, 'project:\n  package:\n    namespace: npsp'],
+        ['unpackaged/pre', 200, [{ name: 'pre', type: 'dir' }]],
+        ['unpackaged/post', 200, []]
+      );
+      const steps = await resolveDependencies([{ github: 'org/repo', type: 'cci' }]);
+      const metaStep = steps[0] as { namespace: string };
+      assert.equal(metaStep.namespace, 'npsp');
     });
   });
 
@@ -169,7 +242,9 @@ describe('resolveDependencies', () => {
       stubFetch(
         ['/releases/latest', 200, { tag_name: 'rel/1.0' }],
         ['/git/refs/tags/', 200, { object: { type: 'tag', sha: 'abc123' } }],
-        ['/git/tags/abc123', 200, { message: 'version_id: 04tAAAAAAAAAAAAAAA\n\ndependencies: [invalid' }]
+        ['/git/tags/abc123', 200, { message: 'version_id: 04tAAAAAAAAAAAAAAA\n\ndependencies: [invalid' }],
+        ['raw.githubusercontent.com', 404, ''],
+        ['/contents/', 404, {}]
       );
       const steps = await resolveDependencies([{ github: 'org/repo', type: 'cci', name: 'My Package' }]);
       assert.deepEqual(steps, [{ kind: 'package-id', versionId: '04tAAAAAAAAAAAAAAA', name: 'My Package' }]);

@@ -1,10 +1,11 @@
 import type { TaskContext, TaskDefinition } from '@plugin-ship/core/task.js';
-import { resolveDependencies, type DependencyStep } from '@plugin-ship/core/dependency.resolver.js';
+import { resolveDependencies, type DependencyStep } from '@plugin-ship/core/package.resolver.js';
+import { installPackageVersion } from '@plugin-ship/core/package.installer.js';
+import { deployMetadataStep } from '@plugin-ship/core/package.metadata.js';
 
 function describeStep(step: DependencyStep): string {
   if (step.kind === 'package-id') return `package-id  ${step.versionId}${step.name ? ` (${step.name})` : ''}`;
-  if (step.kind === 'package-namespace') return `namespace   ${step.namespace} ${step.version}`;
-  return `metadata    ${step.repoUrl}/${step.subfolder}${step.unmanaged ? ' [unmanaged]' : ''}`;
+  return `metadata    ${step.repoUrl}/${step.subfolder}`;
 }
 
 export default {
@@ -15,6 +16,12 @@ export default {
       type: 'string',
       required: true,
       description: 'Org alias or username to install packages into.',
+    },
+    {
+      name: 'wait',
+      type: 'number',
+      required: false,
+      description: 'Minutes to wait per package installation. Defaults to 10.',
     },
     {
       name: 'dry-run',
@@ -48,7 +55,20 @@ export default {
       return;
     }
 
-    // TODO: implement package/install calls per step
-    flow.log('Install not yet implemented — use dry-run to inspect the resolved steps.');
+    const targetOrg = params['target-org'] as string;
+    const waitMinutes = (params['wait'] as number | undefined) ?? 10;
+    const org = await flow.orgs.getOrg(targetOrg);
+
+    for (const step of steps) {
+      if (step.kind === 'package-id') {
+        // eslint-disable-next-line no-await-in-loop
+        await installPackageVersion(org, step.versionId, { waitMinutes, log: flow.log });
+      } else if (step.kind === 'metadata') {
+        // eslint-disable-next-line no-await-in-loop
+        await deployMetadataStep(step, org, flow.shipDir, flow.log);
+      } else {
+        flow.log(`Skipping ${describeStep(step)} — not yet supported.`);
+      }
+    }
   },
 } satisfies TaskDefinition;

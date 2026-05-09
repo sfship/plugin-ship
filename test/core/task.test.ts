@@ -1,7 +1,8 @@
 // Tests for task.ts, task.registry.ts, and task.output.ts
 import { strict as assert } from 'node:assert';
 import { resolve } from 'node:path';
-import { Store } from '@plugin-ship/core/store.js';
+import esmock from 'esmock';
+import { Store } from '@plugin-ship/core/flow.store.js';
 import { TaskRegistry } from '../../src/core/task.registry.js';
 
 const shipDir = resolve('test/core');
@@ -45,6 +46,24 @@ describe('TaskRegistry.list', () => {
 
   it('does not throw when the tasks directory does not exist', () => {
     assert.doesNotThrow(() => new TaskRegistry('/nonexistent').list());
+  });
+
+  it('rethrows non-ENOENT errors from the tasks directory scan', async () => {
+    const permError = Object.assign(new Error('EPERM'), { code: 'EPERM' });
+    const { TaskRegistry: MockedRegistry }: { TaskRegistry: typeof TaskRegistry } = await esmock(
+      '../../src/core/task.registry.js',
+      {
+        '../../src/core/util.file.js': {
+          listDir: () => {
+            throw permError;
+          },
+        },
+      }
+    );
+    assert.throws(
+      () => new MockedRegistry('/ship'),
+      (err) => err === permError
+    );
   });
 });
 

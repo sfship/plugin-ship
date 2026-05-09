@@ -2,9 +2,9 @@ import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parse } from 'yaml';
 import type { ZodError } from 'zod';
-import { listDir, readText } from '@plugin-ship/core/file.js';
-import { FlowDefinition, FlowDefinitionSchema } from '@plugin-ship/core/flow.definition.js';
-import { ExpectedError, formatZodError } from './error.utils.js';
+import { listDir, readText } from '@plugin-ship/core/util.file.js';
+import { FlowDefinition, FlowDefinitionSchema } from '@plugin-ship/core/flow.definition.schema.js';
+import { ExpectedError, formatZodError } from './util.error.js';
 
 export const builtinsDir = resolve(fileURLToPath(import.meta.url), '..', 'flows');
 

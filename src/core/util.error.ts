@@ -20,6 +20,7 @@ function formatIssue(issue: RawIssue, pathPrefix: Array<string | number> = []): 
     const variants = issue.errors
       .map((variantIssues) => {
         const first = variantIssues[0];
+        // c8 ignore next — Zod always provides at least one issue per union variant
         if (!first) return null;
         const variantPath = [...pathPrefix, ...issue.path, ...first.path].join('.');
         return `      ${variantPath || '(root)'}: ${first.message}`;

@@ -1,8 +1,8 @@
 import type { ZodError } from 'zod';
 import { parse } from 'yaml';
-import { ShipConfig, ShipConfigSchema } from '@plugin-ship/core/config.ship.js';
-import { readText } from '@plugin-ship/core/file.js';
-import { ExpectedError, formatZodError } from './error.utils.js';
+import { ShipConfig, ShipConfigSchema } from '@plugin-ship/core/config.ship.schema.js';
+import { readText } from '@plugin-ship/core/util.file.js';
+import { ExpectedError, formatZodError } from './util.error.js';
 
 /**
  * Reads and parses a `ship.yml` config file, validating it against {@link ShipConfigSchema}.

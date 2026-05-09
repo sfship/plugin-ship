@@ -4,12 +4,12 @@ import { SfCommand, Flags, Ux } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
 import { loadConfig } from '@plugin-ship/core/config.loader.js';
 import { createFlowContext } from '@plugin-ship/core/flow.context.js';
-import { parseCliParams, validateParams } from '@plugin-ship/core/param.js';
+import { parseCliParams, validateParams } from '@plugin-ship/core/task.param.js';
 import { OrgRegistry } from '@plugin-ship/core/org.registry.js';
 import { TaskRegistry } from '@plugin-ship/core/task.registry.js';
 import { TaskContext } from '@plugin-ship/core/task.js';
-import { Store } from '@plugin-ship/core/store.js';
-import { handleError } from '@plugin-ship/core/error.utils.js';
+import { Store } from '@plugin-ship/core/flow.store.js';
+import { handleError } from '@plugin-ship/core/util.error.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('plugin-ship', 'ship.task.run');

@@ -61,7 +61,7 @@ async function setup(): Promise<ServiceModule & { keyring: Map<string, string>; 
 
   const mod: ServiceModule = await esmock('../../src/core/service.js', {
     '@napi-rs/keyring': { Entry: makeFakeEntry(keyring) },
-    '../../src/core/file.js': fileMock,
+    '../../src/core/util.file.js': fileMock,
     'node:os': { homedir: () => '/fake' },
   });
 
@@ -145,5 +145,23 @@ describe('deleteToken', () => {
   it('does not throw when the metadata file does not exist', async () => {
     const { deleteToken } = await setup();
     assert.doesNotThrow(() => deleteToken('github.com', 'bdematt', 'default'));
+  });
+
+  it('rethrows errors that are not ENOENT', async () => {
+    const permError = Object.assign(new Error('EPERM'), { code: 'EPERM' });
+    const { mock: fileMock } = makeFileMock();
+    fileMock.removeFile = () => {
+      throw permError;
+    };
+    const keyring = new Map<string, string>();
+    const mod: ServiceModule = await esmock('../../src/core/service.js', {
+      '@napi-rs/keyring': { Entry: makeFakeEntry(keyring) },
+      '../../src/core/util.file.js': { ...fileMock },
+      'node:os': { homedir: () => '/fake' },
+    });
+    assert.throws(
+      () => mod.deleteToken('github.com', 'bdematt', 'default'),
+      (err) => err === permError
+    );
   });
 });

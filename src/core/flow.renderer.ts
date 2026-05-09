@@ -1,6 +1,6 @@
 import { FlowContext } from '@plugin-ship/core/flow.context.js';
-import { FlowStep } from '@plugin-ship/core/flow.definition.js';
-import { ExpectedError } from '@plugin-ship/core/error.utils.js';
+import { FlowStep } from '@plugin-ship/core/flow.definition.schema.js';
+import { ExpectedError } from '@plugin-ship/core/util.error.js';
 
 const ANSI = {
   reset: '\x1b[0m',

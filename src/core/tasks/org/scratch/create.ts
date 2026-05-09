@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { resolve, basename, extname } from 'node:path';
 import { scratchOrgCreate, Org, ConfigAggregator, OrgConfigProperties } from '@salesforce/core';
 import type { TaskContext, TaskDefinition } from '@plugin-ship/core/task.js';
+import { ExpectedError } from '@plugin-ship/core/util.error.js';
 
 export default {
   description: 'Creates a scratch org, or skips if a healthy one already exists under the same alias.',
@@ -52,7 +53,9 @@ export default {
       const configAggregator = await ConfigAggregator.create();
       const devHub = configAggregator.getPropertyValue(OrgConfigProperties.TARGET_DEV_HUB);
       if (!devHub)
-        throw new Error('No dev hub found. Pass `dev-hub` param or set a default with `sf config set target-dev-hub`.');
+        throw new ExpectedError(
+          'No dev hub found. Pass `dev-hub` param or set a default with `sf config set target-dev-hub`.'
+        );
       hubOrg = await Org.create({ aliasOrUsername: String(devHub) });
     }
 

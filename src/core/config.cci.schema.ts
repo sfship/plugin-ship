@@ -1,6 +1,6 @@
 /* c8 ignore start */
 import { z } from 'zod';
-import { CciDependencySchema } from './config.dependency.js';
+import { CciDependencySchema } from './config.dependency.schema.js';
 
 /**
  * Partial schema for a `cumulusci.yml` file.

@@ -1,5 +1,5 @@
 import { strict as assert } from 'node:assert';
-import { Store } from '@plugin-ship/core/store.js';
+import { Store } from '@plugin-ship/core/flow.store.js';
 
 describe('Store.resolveParams', () => {
   it('returns non-string values unchanged', () => {
@@ -54,6 +54,13 @@ describe('Store.resolveParams', () => {
   it('returns an empty object for empty params', () => {
     const store = new Store();
     assert.deepEqual(store.resolveParams({}, {}), {});
+  });
+
+  it('interpolates tokens within record values', () => {
+    const store = new Store();
+    assert.deepEqual(store.resolveParams({ tokens: { key: '${{ params.ns }}' } }, { params: { ns: 'my_ns' } }), {
+      tokens: { key: 'my_ns' },
+    });
   });
 
   it('reflects TaskOutput writes immediately in step interpolation', () => {

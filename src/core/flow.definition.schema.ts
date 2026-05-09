@@ -1,6 +1,6 @@
 /* c8 ignore start */
 import { z } from 'zod';
-import { ParamDefinitionSchema, ParamValueSchema } from './param.js';
+import { ParamDefinitionSchema, ParamValueSchema } from './task.param.schema.js';
 
 /** A scalar value or null that a condition can compare against. */
 const FlowStepConditionValueSchema = z.union([z.string(), z.number(), z.boolean(), z.null()]);

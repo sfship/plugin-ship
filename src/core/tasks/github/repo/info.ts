@@ -1,5 +1,6 @@
-import { getGithubToken } from '@plugin-ship/core/services/github.js';
+import { getGithubToken } from '@plugin-ship/core/service.github.js';
 import type { TaskDefinition, TaskContext } from '@plugin-ship/core/task.js';
+import { ExpectedError } from '@plugin-ship/core/util.error.js';
 
 type GithubRepo = {
   full_name: string;
@@ -34,21 +35,24 @@ export default {
   async run({ flow, params }: TaskContext): Promise<void> {
     const alias = String(params['github-alias'] ?? 'default');
     const token = getGithubToken(alias);
-    if (!token) throw new Error(`No GitHub token found for alias "${alias}". Run: sf ship service connect github`);
+    if (!token)
+      throw new ExpectedError(`No GitHub token found for alias "${alias}". Run: sf ship service connect github`);
 
     const repoUrl = flow.config.project.git?.repoUrl ?? String(params['repo-url'] ?? '');
     if (!repoUrl)
-      throw new Error('No repo URL. Set config.project.git.repoUrl in ship.yml or pass --param repo-url=<url>.');
+      throw new ExpectedError(
+        'No repo URL. Set config.project.git.repoUrl in ship.yml or pass --param repo-url=<url>.'
+      );
 
     const match = repoUrl.match(/github\.com[/:]([\w-]+)\/([\w.-]+?)(?:\.git)?$/);
-    if (!match) throw new Error(`Could not parse GitHub owner/repo from URL: ${repoUrl}`);
+    if (!match) throw new ExpectedError(`Could not parse GitHub owner/repo from URL: ${repoUrl}`);
     const [, owner, repo] = match;
 
     const resp = await fetch(`https://api.github.com/repos/${owner}/${repo}`, {
       headers: { Authorization: `Bearer ${token}`, 'User-Agent': 'plugin-ship', Accept: 'application/vnd.github+json' },
     });
 
-    if (!resp.ok) throw new Error(`GitHub API error: ${resp.status} ${resp.statusText}`);
+    if (!resp.ok) throw new ExpectedError(`GitHub API error: ${resp.status} ${resp.statusText}`);
 
     const data = (await resp.json()) as GithubRepo;
 

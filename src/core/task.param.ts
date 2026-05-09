@@ -1,24 +1,7 @@
-import { z } from 'zod';
-import { ExpectedError } from './error.utils.js';
+import { ExpectedError } from './util.error.js';
+import type { ParamValue, ParamDefinition, Params } from './task.param.schema.js';
 
-/** Zod schema for a value that can be passed as a task or flow param. */
-export const ParamValueSchema = z.union([z.string(), z.number(), z.boolean(), z.record(z.string(), z.string())]);
-
-/** A scalar value that can be passed as a task or flow param. */
-export type ParamValue = z.infer<typeof ParamValueSchema>;
-
-/** A resolved, validated set of params, keyed by param name. */
-export type Params = Record<string, ParamValue>;
-
-/** Zod schema for a single param declaration, shared between task and flow definitions. */
-export const ParamDefinitionSchema = z.object({
-  name: z.string(),
-  type: z.enum(['string', 'number', 'boolean', 'record']).default('string'),
-  required: z.boolean().optional(),
-  default: z.union([z.string(), z.number(), z.boolean()]).optional(),
-  description: z.string().optional(),
-});
-export type ParamDefinition = z.infer<typeof ParamDefinitionSchema>;
+export type { ParamValue, ParamDefinition, Params };
 
 /**
  * Validates and coerces raw key/value input against a param schema.

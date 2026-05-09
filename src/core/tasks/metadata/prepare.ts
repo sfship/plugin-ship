@@ -1,27 +1,7 @@
-import { cp, readdir, readFile, writeFile } from 'node:fs/promises';
-import { resolve, join } from 'node:path';
+import { cp } from 'node:fs/promises';
+import { resolve } from 'node:path';
 import type { TaskContext, TaskDefinition } from '@plugin-ship/core/task.js';
-
-async function walkFiles(dir: string): Promise<string[]> {
-  const entries = await readdir(dir, { withFileTypes: true });
-  const nested = await Promise.all(
-    entries.map((entry) => {
-      const fullPath = join(dir, entry.name);
-      return entry.isDirectory() ? walkFiles(fullPath) : Promise.resolve([fullPath]);
-    })
-  );
-  return nested.flat();
-}
-
-async function replaceTokens(filePath: string, tokens: Record<string, string>): Promise<void> {
-  const buf = await readFile(filePath);
-  if (buf.includes(0)) return; // skip binary files
-  let content = buf.toString('utf8');
-  for (const [token, replacement] of Object.entries(tokens)) {
-    content = content.replaceAll(`%%%${token}%%%`, replacement);
-  }
-  await writeFile(filePath, content, 'utf8');
-}
+import { walkFiles, replaceTokens, buildTokenMap } from '@plugin-ship/core/util.token.js';
 
 export default {
   description: 'Copies source to a temporary directory and replaces %%%TOKEN%%% placeholders.',
@@ -57,12 +37,10 @@ export default {
     const sourceDir = resolve(process.cwd(), (params['source-dir'] as string | undefined) ?? 'force-app');
     const outputDir = resolve(process.cwd(), (params['output-dir'] as string | undefined) ?? '.ship/tmp');
     const ns = flow.config.project.package?.namespace ?? '';
-    const defaultTokens: Record<string, string> = {
-      NAMESPACE: ns ? `${ns}__` : '',
-      NAMESPACE_DOT: ns ? `${ns}.` : '',
-      NAMESPACE_OR_C: ns || 'c',
+    const tokens = {
+      ...buildTokenMap(ns),
+      ...((params['tokens'] as Record<string, string> | undefined) ?? {}),
     };
-    const tokens = { ...defaultTokens, ...((params['tokens'] as Record<string, string> | undefined) ?? {}) };
 
     flow.log(`Copying ${sourceDir} → ${outputDir}`);
     await cp(sourceDir, outputDir, { recursive: true, force: true });

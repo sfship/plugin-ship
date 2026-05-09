@@ -2,7 +2,7 @@ import { strict as assert } from 'node:assert';
 import { OrgRegistry } from '../../src/core/org.registry.js';
 import { FlowRenderer } from '../../src/core/flow.renderer.js';
 import { createFlowContext, type FlowContext } from '../../src/core/flow.context.js';
-import type { FlowStep } from '../../src/core/flow.definition.js';
+import type { FlowStep } from '../../src/core/flow.definition.schema.js';
 
 const steps: Array<[string, FlowStep]> = [
   ['step-a', { task: 'util/log' }],

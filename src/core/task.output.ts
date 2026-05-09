@@ -1,4 +1,4 @@
-import type { Store } from '@plugin-ship/core/store.js';
+import type { Store } from '@plugin-ship/core/flow.store.js';
 
 /**
  * Task-facing output API. Passed into `TaskContext` so tasks can read and write
