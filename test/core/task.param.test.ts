@@ -108,8 +108,8 @@ describe('parseCliParams', () => {
     assert.deepEqual(parseCliParams([]), {});
   });
 
-  it('throws when a flag is missing "="', () => {
-    assert.throws(() => parseCliParams(['invalid']), /Invalid param format/);
+  it('treats a bare flag (no "=") as boolean true', () => {
+    assert.deepEqual(parseCliParams(['ignore-conflicts']), { 'ignore-conflicts': 'true' });
   });
 
   it('parses dotted notation into a nested record', () => {

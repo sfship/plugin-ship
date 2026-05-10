@@ -1,4 +1,4 @@
-import { resolve } from 'node:path';
+import { resolve, dirname, join } from 'node:path';
 import { Args } from '@oclif/core';
 import { SfCommand, Flags, Ux } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
@@ -10,6 +10,7 @@ import { TaskRegistry } from '@plugin-ship/core/task.registry.js';
 import { TaskContext } from '@plugin-ship/core/task.js';
 import { Store } from '@plugin-ship/core/flow.store.js';
 import { handleError } from '@plugin-ship/core/util.error.js';
+import { wrapRunCommand } from '@plugin-ship/core/util.command.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('plugin-ship', 'ship.task.run');
@@ -42,14 +43,17 @@ export default class TaskRun extends SfCommand<void> {
 
     const params = parseCliParams(flags.param ?? []);
     const config = loadConfig(flags.config);
-    const shipDir = resolve(config.dir);
+    const projectDir = resolve(dirname(flags.config));
+    const shipDir = join(projectDir, config.dir);
 
     const context = createFlowContext({
+      projectDir,
       shipDir,
       config,
       orgs: new OrgRegistry(resolve(shipDir, 'orgs'), config.project.name),
       log: (message: string) => this.log(message),
       params,
+      runCommand: wrapRunCommand((id, argv) => this.config.runCommand(id, argv)),
     });
 
     const runner = new TaskRegistry(shipDir);

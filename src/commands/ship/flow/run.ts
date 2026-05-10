@@ -1,4 +1,4 @@
-import { resolve } from 'node:path';
+import { resolve, dirname, join } from 'node:path';
 import { Args } from '@oclif/core';
 import { SfCommand, Flags } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
@@ -9,6 +9,7 @@ import { parseCliParams } from '@plugin-ship/core/task.param.js';
 import { asError, ExpectedError } from '@plugin-ship/core/util.error.js';
 import { runFlow } from '@plugin-ship/core/flow.runner.js';
 import { OrgRegistry } from '@plugin-ship/core/org.registry.js';
+import { wrapRunCommand } from '@plugin-ship/core/util.command.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('plugin-ship', 'ship.flow.run');
@@ -43,8 +44,8 @@ export default class FlowRun extends SfCommand<void> {
     // Load and parse the ship.yml config file from the specified path
     const config = loadConfig(flags.config);
 
-    // Get path for .ship directory
-    const shipDir = resolve(config.dir);
+    const projectDir = resolve(dirname(flags.config));
+    const shipDir = join(projectDir, config.dir);
 
     // Look up the named flow — error early if it doesn't exist
     const registry = new FlowRegistry(shipDir);
@@ -65,11 +66,13 @@ export default class FlowRun extends SfCommand<void> {
 
     // Build the flow context passed to every step in the flow
     const context = createFlowContext({
+      projectDir,
       shipDir,
       config,
       orgs: new OrgRegistry(resolve(shipDir, 'orgs'), config.project.name),
       log: (message: string) => this.log(message),
       params,
+      runCommand: wrapRunCommand((id, argv) => this.config.runCommand(id, argv)),
     });
 
     // Hand off to the runner which resolves and executes each step in order.

@@ -65,7 +65,7 @@ export default {
         await installPackageVersion(org, step.versionId, { waitMinutes, log: flow.log });
       } else if (step.kind === 'metadata') {
         // eslint-disable-next-line no-await-in-loop
-        await deployMetadataStep(step, org, flow.shipDir, flow.log);
+        await deployMetadataStep(step, targetOrg, flow.shipDir, flow.log, flow.runCommand);
       } else {
         flow.log(`Skipping ${describeStep(step)} — not yet supported.`);
       }

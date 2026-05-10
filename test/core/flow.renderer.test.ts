@@ -12,11 +12,13 @@ const steps: Array<[string, FlowStep]> = [
 function makeContext(): { ctx: FlowContext; logs: string[] } {
   const logs: string[] = [];
   const ctx = createFlowContext({
+    projectDir: '/',
     shipDir: '/ship',
     config: { project: { name: 'test' }, dir: '.ship' },
     orgs: new OrgRegistry('/orgs'),
     log: (msg: string) => logs.push(msg),
     params: {},
+    runCommand: async () => {},
   });
   return { ctx, logs };
 }

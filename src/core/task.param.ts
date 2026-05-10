@@ -44,9 +44,8 @@ export function parseCliParams(flags: string[]): Record<string, string | Record<
   const result: Record<string, string | Record<string, string>> = {};
   for (const flag of flags) {
     const i = flag.indexOf('=');
-    if (i === -1) throw new ExpectedError(`Invalid param format "${flag}", expected key=value`);
-    const key = flag.slice(0, i);
-    const value = flag.slice(i + 1);
+    const key = i === -1 ? flag : flag.slice(0, i);
+    const value = i === -1 ? 'true' : flag.slice(i + 1);
     const dot = key.indexOf('.');
     if (dot !== -1) {
       const parent = key.slice(0, dot);
@@ -60,6 +59,39 @@ export function parseCliParams(flags: string[]): Record<string, string | Record<
     }
   }
   return result;
+}
+
+/**
+ * Builds an argv array for a passthrough sf CLI command from a resolved params object.
+ *
+ * Each param becomes `--key value` (string/number) or `--key` (boolean true).
+ * Keys present in `overrides` are skipped from the params scan and replaced with
+ * the provided value instead — pass `null` to omit a key entirely.
+ *
+ * @param params - The resolved params from the task context.
+ * @param overrides - Per-key replacements or nulls to skip.
+ * @returns A flat argv array ready to pass to `runCommand`.
+ */
+export function resolvePassthroughArgs(params: Params, overrides: Record<string, string | null> = {}): string[] {
+  const merged: Record<string, string | number | boolean | null> = {};
+  for (const [key, value] of Object.entries(params)) {
+    if (typeof value !== 'object') merged[key] = value;
+  }
+  for (const [flag, value] of Object.entries(overrides)) {
+    const key = flag.startsWith('--') ? flag.slice(2) : flag;
+    merged[key] = value;
+  }
+
+  const argv: string[] = [];
+  for (const [key, value] of Object.entries(merged)) {
+    if (value === null) continue;
+    if (typeof value === 'boolean') {
+      if (value) argv.push(`--${key}`);
+    } else {
+      argv.push(`--${key}`, String(value));
+    }
+  }
+  return argv;
 }
 
 function isParamValue(val: unknown): val is ParamValue {

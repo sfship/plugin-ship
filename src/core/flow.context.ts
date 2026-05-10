@@ -8,6 +8,8 @@ import { OrgRegistry } from '@plugin-ship/core/org.registry.js';
  * as well as the params the flow was invoked with.
  */
 export type FlowContext = {
+  /** Absolute path to the directory containing `ship.yml` — the project root. */
+  projectDir: string;
   /** Absolute path to the `.ship` directory for the current project. */
   shipDir: string;
   /** The loaded ship configuration for this project. */
@@ -20,6 +22,8 @@ export type FlowContext = {
   params: Params;
   /** True if any step has failed with ignore-failure during this flow run. */
   hasFailures: boolean;
+  /** Invokes an sf CLI command in-process via oclif's plugin system. */
+  runCommand: (id: string, argv: string[]) => Promise<unknown>;
 };
 
 /**
