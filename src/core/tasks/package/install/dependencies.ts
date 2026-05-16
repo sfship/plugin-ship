@@ -1,6 +1,5 @@
 import type { TaskContext, TaskDefinition } from '@plugin-ship/core/task.js';
 import { resolveDependencies, type DependencyStep } from '@plugin-ship/core/package.resolver.js';
-import { installPackageVersion } from '@plugin-ship/core/package.installer.js';
 import { deployMetadataStep } from '@plugin-ship/core/package.metadata.js';
 
 function describeStep(step: DependencyStep): string {
@@ -55,17 +54,26 @@ export default {
       return;
     }
 
-    const targetOrg = params['target-org'] as string;
-    const waitMinutes = (params['wait'] as number | undefined) ?? 10;
-    const org = await flow.orgs.getOrg(targetOrg);
+    const alias = flow.orgs.resolveAlias(params['target-org'] as string);
+    const wait = (params['wait'] as number | undefined) ?? 10;
 
     for (const step of steps) {
       if (step.kind === 'package-id') {
+        flow.log(`Installing ${step.versionId}${step.name ? ` (${step.name})` : ''}...`);
         // eslint-disable-next-line no-await-in-loop
-        await installPackageVersion(org, step.versionId, { waitMinutes, log: flow.log });
+        await flow.runCommand('package:install', [
+          '--package',
+          step.versionId,
+          '--target-org',
+          alias,
+          '--wait',
+          String(wait),
+          '--no-prompt',
+        ]);
+        flow.log(`Installed ${step.versionId}.`);
       } else if (step.kind === 'metadata') {
         // eslint-disable-next-line no-await-in-loop
-        await deployMetadataStep(step, targetOrg, flow.shipDir, flow.log, flow.runCommand);
+        await deployMetadataStep(step, alias, flow.shipDir, flow.log, flow.runCommand);
       } else {
         flow.log(`Skipping ${describeStep(step)} — not yet supported.`);
       }

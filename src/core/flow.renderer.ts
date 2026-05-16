@@ -1,7 +1,13 @@
-import { FlowContext } from '@plugin-ship/core/flow.context.js';
 import { FlowStep } from '@plugin-ship/core/flow.definition.schema.js';
-import { ExpectedError } from '@plugin-ship/core/util.error.js';
-import { wrapRunCommand } from '@plugin-ship/core/util.command.js';
+import { asError, ExpectedError } from '@plugin-ship/core/util.error.js';
+import { FlowFrame } from '@plugin-ship/core/flow.state.js';
+
+const ESC = String.fromCharCode(0x1b);
+
+const DANGEROUS_SEQUENCES = new RegExp(
+  `${ESC}\\[\\d*J|${ESC}\\[(\\d+;\\d+)?r|${ESC}\\[[\\d;]*[Hf]|${ESC}\\[\\d*d|${ESC}\\[\\?1049[hl]`,
+  'g'
+);
 
 const ANSI = {
   reset: '\x1b[0m',
@@ -18,69 +24,17 @@ type OutputStream = {
   write(chunk: string): boolean;
 };
 
-/**
- * Renders a live step checklist in TTY environments, or falls back to plain log
- * output in non-TTY environments (e.g. CI). The flow runner always calls the same
- * API — rendering mode is an internal detail of this class.
- */
 export class FlowRenderer {
-  private readonly mainSteps: Array<[string, FlowStep]>;
-  private readonly finallySteps: Array<[string, FlowStep]>;
-  private readonly completed = new Set<string>();
-  private readonly failed = new Set<string>();
-  private readonly skipped = new Set<string>();
-  private readonly ignored = new Map<string, string>();
-  private hasRendered = false;
-  private liveLines: string[] = [];
-  private readonly tty: boolean | undefined;
-  private current: string | null = null;
-  private context: FlowContext | null = null;
-
-  /**
-   * @param flowName - The name of the flow being rendered.
-   * @param mainSteps - Ordered list of step entries from the flow's `steps` block.
-   * @param finallySteps - Ordered list of step entries from the flow's `finally` block.
-   * @param context - The flow context for this run.
-   * @param out - Output stream. Defaults to `process.stdout`; override in tests to capture output.
-   */
+  public readonly isTTY: boolean | undefined;
   private readonly write: (chunk: string) => boolean;
+  private scrollRegionActive = false;
+  private dockHeight = 0;
+  private lastFrame: FlowFrame | null = null;
+  private cleanupHandler: (() => void) | null = null;
 
-  public constructor(
-    private readonly flowName: string,
-    mainSteps: Array<[string, FlowStep]>,
-    finallySteps: Array<[string, FlowStep]>,
-    context: FlowContext,
-    out: OutputStream = process.stdout
-  ) {
+  public constructor(out: OutputStream = process.stdout) {
     this.write = out.write.bind(out);
-    this.mainSteps = mainSteps;
-    this.finallySteps = finallySteps;
-    this.context = context;
-    this.tty = out.isTTY;
-    const originalLog = context.log;
-    if (this.tty) {
-      // eslint-disable-next-line no-param-reassign
-      context.log = (message): void => {
-        this.clear();
-        const ts = `${ANSI.dim}${FlowRenderer.timestamp()}${ANSI.reset} `;
-        const prefix = this.current ? `${ANSI.cyan}[${this.current}]${ANSI.reset} ` : '';
-        this.write(`${ts}${prefix}${message}\n`);
-        this.render();
-      };
-      // eslint-disable-next-line no-param-reassign
-      context.runCommand = wrapRunCommand(context.runCommand, context.log, (lines) => {
-        this.liveLines = lines;
-        if (lines.length > 0) {
-          this.clear();
-          this.render();
-        }
-      });
-    } else {
-      // eslint-disable-next-line no-param-reassign
-      context.log = (message): void => originalLog(`${FlowRenderer.timestamp()} ${message}`);
-      // eslint-disable-next-line no-param-reassign
-      context.runCommand = wrapRunCommand(context.runCommand, context.log);
-    }
+    this.isTTY = out.isTTY;
   }
 
   private static timestamp(): string {
@@ -91,141 +45,27 @@ export class FlowRenderer {
     return `${h}:${m}:${s}`;
   }
 
-  /** Prints the initial render. Call once before any steps run. */
-  public start(): void {
-    if (this.tty) {
-      this.render();
-    } else {
-      this.context?.log(`Running flow: ${this.flowName}`);
-    }
-  }
-
-  /** Marks a step as the currently running step. */
-  public stepStart(stepId: string): void {
-    this.current = stepId;
-    if (this.tty) {
-      this.clear();
-      this.render();
-    } else {
-      this.context?.log(`  → ${stepId}`);
-    }
-  }
-
-  /** Marks the current step as completed. */
-  public stepComplete(stepId: string): void {
-    this.liveLines = [];
-    this.completed.add(stepId);
-    this.current = null;
-    if (this.tty) {
-      this.clear();
-      this.render();
-    }
-  }
-
-  /** Prints an error when the flow could not start (e.g. param validation failed). */
-  public failedBeforeStart(err: Error): void {
-    if (this.tty) {
-      this.write(`${ANSI.red}${ANSI.bold}✗ Flow "${this.flowName}" could not start${ANSI.reset}\n`);
-      this.write('\n');
-      for (const line of err.message.split('\n')) {
-        this.write(`  ${line}\n`);
-      }
-      this.write('\n');
-    } else {
-      this.context?.log(`Flow "${this.flowName}" could not start: ${err.message}`);
-    }
-  }
-
-  /** Marks a step as skipped due to a falsy condition. */
-  public stepSkipped(stepId: string): void {
-    this.liveLines = [];
-    this.skipped.add(stepId);
-    if (this.tty) {
-      this.clear();
-      this.render();
-    } else {
-      this.context?.log(`  — ${stepId} (skipped)`);
-    }
-  }
-
-  /** Marks a step as failed but ignored; warning is deferred to the success summary. */
-  public stepIgnored(stepId: string, err: Error): void {
-    this.liveLines = [];
-    this.ignored.set(stepId, err.message);
-    this.current = null;
-    if (this.tty) {
-      this.clear();
-      this.render();
-    } else {
-      this.context?.log(`  ⚠ Step "${stepId}" failed (ignored): ${err.message}`);
-    }
-  }
-
-  /** Marks a step as failed in the checklist. Call flowFailed() after finally steps complete to print the error. */
-  public stepFailed(stepId: string, err: Error): void {
-    this.liveLines = [];
-    this.failed.add(stepId);
-    this.current = null;
-    if (this.tty) {
-      this.clear();
-      this.render();
-    } else {
-      this.context?.log(`  ✗ ${stepId} failed: ${err.message}`);
-    }
-  }
-
-  /** Prints the final error summary after all finally steps have run. */
-  public flowFailed(stepId: string, err: Error): void {
-    if (this.tty) {
-      this.write('\n');
-      this.write(`${ANSI.red}${ANSI.bold}✗ Flow "${this.flowName}" failed at step "${stepId}"${ANSI.reset}\n`);
-      this.write('\n');
-      for (const line of err.message.split('\n')) {
-        this.write(`  ${line}\n`);
-      }
-      if (!(err instanceof ExpectedError) && err.stack) {
-        this.write('\n');
-        for (const line of err.stack.split('\n').slice(1)) {
-          this.write(`${ANSI.dim}  ${line.trim()}${ANSI.reset}\n`);
-        }
-      }
-      this.write('\n');
-    } else {
-      this.context?.log(`Flow "${this.flowName}" failed: ${err.message}`);
-    }
-  }
-
-  /** Prints the final success message. */
-  public success(): void {
-    if (this.tty) {
-      this.write('\n');
-      for (const [stepId, message] of this.ignored) {
-        this.write(`  ${ANSI.yellow}${ANSI.bold}⚠ Step "${stepId}" failed (ignored):${ANSI.reset} ${message}\n`);
-      }
-      if (this.ignored.size > 0) this.write('\n');
-      this.write(`${ANSI.green}${ANSI.bold}✓ Flow "${this.flowName}" finished successfully!${ANSI.reset}\n`);
-      this.write('\n');
-    } else {
-      this.context?.log(`Flow "${this.flowName}" completed.`);
-    }
-  }
-
-  private renderStepLine(stepId: string, step: FlowStep, writeLine: (s: string) => void): void {
+  private static renderStepLine(
+    stepId: string,
+    step: FlowStep,
+    frame: FlowFrame,
+    writeLine: (s: string) => void
+  ): void {
     let marker: string;
     let color: string;
-    if (this.failed.has(stepId)) {
+    if (frame.failed.has(stepId)) {
       marker = '✗';
       color = ANSI.red;
-    } else if (this.ignored.has(stepId)) {
+    } else if (frame.ignored.has(stepId)) {
       marker = '⚠';
       color = ANSI.yellow;
-    } else if (this.completed.has(stepId)) {
+    } else if (frame.completed.has(stepId)) {
       marker = '✓';
       color = ANSI.green;
-    } else if (this.skipped.has(stepId)) {
+    } else if (frame.skipped.has(stepId)) {
       marker = '—';
       color = ANSI.dim;
-    } else if (stepId === this.current) {
+    } else if (stepId === frame.current) {
       marker = '→';
       color = ANSI.cyan;
     } else {
@@ -233,45 +73,204 @@ export class FlowRenderer {
       color = ANSI.dim;
     }
     const label = stepId.padEnd(20);
-    const detail = this.skipped.has(stepId) ? 'skipped' : step.task;
+    const detail = frame.skipped.has(stepId) ? 'skipped' : step.task;
     writeLine(`  ${color}${marker}${ANSI.reset} ${label} ${ANSI.dim}(${detail})${ANSI.reset}`);
   }
 
-  private render(): void {
-    this.write('\x1b[s'); // save cursor position
-    this.hasRendered = true;
-    const writeLine = (s: string): void => {
-      this.write(`${s}\n`);
+  private static computeDockHeight(frame: FlowFrame): number {
+    return 4 + frame.mainSteps.length + (frame.finallySteps.length > 0 ? 2 + frame.finallySteps.length : 0);
+  }
+
+  /** Wraps a runCommand function, stripping ANSI sequences that would corrupt the scroll region. */
+  public wrapCommand(
+    raw: (id: string, argv: string[]) => Promise<unknown>
+  ): (id: string, argv: string[]) => Promise<unknown> {
+    return async (id, argv) => {
+      const stdoutWrite = process.stdout.write.bind(process.stdout);
+      const stderrWrite = process.stderr.write.bind(process.stderr);
+      const filtered = (chunk: unknown): boolean => {
+        const text = typeof chunk === 'string' ? chunk : Buffer.isBuffer(chunk) ? chunk.toString() : String(chunk);
+        return this.write(text.replace(DANGEROUS_SEQUENCES, ''));
+      };
+      (process.stdout as { write: unknown }).write = filtered;
+      (process.stderr as { write: unknown }).write = filtered;
+      try {
+        return await raw(id, argv);
+      } catch (err) {
+        throw new ExpectedError(asError(err).message);
+      } finally {
+        process.stdout.write = stdoutWrite;
+        process.stderr.write = stderrWrite;
+      }
     };
+  }
 
-    if (this.liveLines.length > 0) {
-      const checklistHeight =
-        3 + this.mainSteps.length + (this.finallySteps.length > 0 ? 1 + this.finallySteps.length : 0);
-      const rows = process.stdout.rows ?? 24;
-      const maxLive = Math.max(1, rows - checklistHeight - 2);
-      const visibleLines = this.liveLines.slice(-maxLive);
+  /** Writes a timestamped log line. */
+  public log(message: string, current: string | null): void {
+    if (this.isTTY) {
       const ts = `${ANSI.dim}${FlowRenderer.timestamp()}${ANSI.reset} `;
-      const prefix = this.current ? `${ANSI.cyan}[${this.current}]${ANSI.reset} ` : '';
-      for (const line of visibleLines) writeLine(`${ts}${prefix}${line}`);
-      writeLine('');
-    }
-
-    writeLine(`  ${ANSI.dim}${'─'.repeat(40)}${ANSI.reset}`);
-    writeLine(`  ${ANSI.dim}Flow:${ANSI.reset} ${ANSI.bold}${this.flowName}${ANSI.reset}`);
-    writeLine(`  ${ANSI.dim}Steps${ANSI.reset}`);
-    for (const [stepId, step] of this.mainSteps) this.renderStepLine(stepId, step, writeLine);
-
-    if (this.finallySteps.length > 0) {
-      writeLine('');
-      writeLine(`  ${ANSI.dim}Finally${ANSI.reset}`);
-      for (const [stepId, step] of this.finallySteps) this.renderStepLine(stepId, step, writeLine);
+      const prefix = current ? `${ANSI.cyan}[${current}]${ANSI.reset} ` : '';
+      this.write(`${ts}${prefix}${message}\n`);
+    } else {
+      const prefix = current ? `[${current}] ` : '';
+      this.write(`${FlowRenderer.timestamp()} ${prefix}${message}\n`);
     }
   }
 
-  private clear(): void {
-    if (!this.hasRendered) return;
-    this.write('\x1b[u'); // restore saved cursor position
-    this.write('\x1b[J'); // erase from cursor to end of screen
-    this.hasRendered = false;
+  /** Writes a raw command output line. */
+  public command(line: string): void {
+    this.write(`${line}\n`);
+  }
+
+  /** Updates the dock with new flow state. */
+  public update(frame: FlowFrame): void {
+    if (this.isTTY) {
+      if (!this.scrollRegionActive) this.setupScrollRegion(frame);
+      this.updateDock(frame);
+    } else {
+      this.logNonTtyTransitions(frame);
+    }
+    this.lastFrame = frame;
+  }
+
+  /** Prints an error when the flow could not start (e.g. param validation failed). */
+  public failedBeforeStart(flowName: string, err: Error): void {
+    if (this.isTTY) this.teardown();
+    if (this.isTTY) {
+      this.write(`${ANSI.red}${ANSI.bold}✗ Flow "${flowName}" could not start${ANSI.reset}\n`);
+    } else {
+      this.write(`✗ Flow "${flowName}" could not start\n`);
+    }
+    this.write('\n');
+    for (const line of err.message.split('\n')) this.write(`  ${line}\n`);
+    this.write('\n');
+  }
+
+  /** Prints the final error summary after all finally steps have run. */
+  public flowFailed(flowName: string, stepId: string, err: Error): void {
+    if (this.isTTY) this.teardown(this.lastFrame ?? undefined);
+    this.write('\n');
+    if (this.isTTY) {
+      this.write(`${ANSI.red}${ANSI.bold}✗ Flow "${flowName}" failed at step "${stepId}"${ANSI.reset}\n`);
+    } else {
+      this.write(`✗ Flow "${flowName}" failed at step "${stepId}"\n`);
+    }
+    this.write('\n');
+    for (const line of err.message.split('\n')) this.write(`  ${line}\n`);
+    if (!(err instanceof ExpectedError) && err.stack) {
+      this.write('\n');
+      for (const line of err.stack.split('\n').slice(1)) {
+        if (this.isTTY) {
+          this.write(`${ANSI.dim}  ${line.trim()}${ANSI.reset}\n`);
+        } else {
+          this.write(`  ${line.trim()}\n`);
+        }
+      }
+    }
+    this.write('\n');
+  }
+
+  /** Prints the final success message. */
+  public success(frame: FlowFrame): void {
+    if (this.isTTY) this.teardown(frame);
+    this.write('\n');
+    for (const [stepId, message] of frame.ignored) {
+      if (this.isTTY) {
+        this.write(`  ${ANSI.yellow}${ANSI.bold}⚠ Step "${stepId}" failed (ignored):${ANSI.reset} ${message}\n`);
+      } else {
+        this.write(`  ⚠ Step "${stepId}" failed (ignored): ${message}\n`);
+      }
+    }
+    if (frame.ignored.size > 0) this.write('\n');
+    if (this.isTTY) {
+      this.write(`${ANSI.green}${ANSI.bold}✓ Flow "${frame.flowName}" finished successfully!${ANSI.reset}\n`);
+    } else {
+      this.write(`✓ Flow "${frame.flowName}" finished successfully!\n`);
+    }
+    this.write('\n');
+  }
+
+  private setupScrollRegion(frame: FlowFrame): void {
+    this.dockHeight = FlowRenderer.computeDockHeight(frame);
+    const rows = process.stdout.rows ?? 24;
+    // Scroll to create blank rows at the bottom for the dock
+    this.write(`\x1b[${rows};1H`);
+    for (let i = 0; i < this.dockHeight; i++) this.write('\n');
+    // Restrict scrolling to the region above the dock
+    this.write(`\x1b[1;${rows - this.dockHeight}r`);
+    // Park cursor at the bottom of the scroll region for normal output
+    this.write(`\x1b[${rows - this.dockHeight};1H`);
+    this.scrollRegionActive = true;
+    this.cleanupHandler = (): void => {
+      if (!this.scrollRegionActive) return;
+      // Uses this.write (original stdout, bound at construction) to bypass filterRunCommand's patch.
+      const r = process.stdout.rows ?? 24;
+      this.write('\x1b[r'); // reset scroll region
+      this.write(`\x1b[${r - this.dockHeight + 1};1H`); // jump to dock area
+      this.write('\x1b[J'); // clear it
+      if (this.lastFrame) this.drawDock(this.lastFrame); // redraw as permanent output
+      this.scrollRegionActive = false;
+    };
+    process.on('exit', this.cleanupHandler);
+  }
+
+  private updateDock(frame: FlowFrame): void {
+    const rows = process.stdout.rows ?? 24;
+    this.write('\x1b7'); // DEC save cursor
+    this.write(`\x1b[${rows - this.dockHeight + 1};1H`); // jump to dock start
+    this.write('\x1b[J'); // clear dock area
+    this.drawDock(frame);
+    this.write('\x1b8'); // DEC restore cursor
+  }
+
+  private drawDock(frame: FlowFrame): void {
+    const writeLine = (s: string): void => {
+      this.write(`${s}\n`);
+    };
+    writeLine(`  ${ANSI.dim}${'─'.repeat(40)}${ANSI.reset}`);
+    writeLine(`  ${ANSI.dim}Flow:${ANSI.reset} ${ANSI.bold}${frame.flowName}${ANSI.reset}`);
+    writeLine(`  ${ANSI.dim}Steps${ANSI.reset}`);
+    for (const [stepId, step] of frame.mainSteps) FlowRenderer.renderStepLine(stepId, step, frame, writeLine);
+
+    if (frame.finallySteps.length > 0) {
+      writeLine('');
+      writeLine(`  ${ANSI.dim}Finally${ANSI.reset}`);
+      for (const [stepId, step] of frame.finallySteps) FlowRenderer.renderStepLine(stepId, step, frame, writeLine);
+    }
+    writeLine('');
+  }
+
+  private teardown(frame?: FlowFrame): void {
+    if (!this.scrollRegionActive) return;
+    if (this.cleanupHandler) {
+      process.removeListener('exit', this.cleanupHandler);
+      this.cleanupHandler = null;
+    }
+    const rows = process.stdout.rows ?? 24;
+    // Clear the dock rows
+    this.write(`\x1b[${rows - this.dockHeight + 1};1H`);
+    this.write('\x1b[J');
+    // Reset scroll region and position cursor at end of content
+    this.write('\x1b[r');
+    this.write(`\x1b[${rows - this.dockHeight};1H`);
+    this.scrollRegionActive = false;
+    if (frame) this.drawDock(frame);
+  }
+
+  private logNonTtyTransitions(frame: FlowFrame): void {
+    const prev = this.lastFrame;
+    if (prev === null) {
+      this.write(`Running flow: ${frame.flowName}\n`);
+      return;
+    }
+    if (frame.current && frame.current !== prev.current) {
+      this.write(`  → ${frame.current}\n`);
+    }
+    for (const id of frame.skipped) {
+      if (!prev.skipped.has(id)) this.write(`  — ${id} (skipped)\n`);
+    }
+    for (const [id, msg] of frame.ignored) {
+      if (!prev.ignored.has(id)) this.write(`  ⚠ Step "${id}" failed (ignored): ${msg}\n`);
+    }
   }
 }

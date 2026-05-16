@@ -10,7 +10,6 @@ import { TaskRegistry } from '@plugin-ship/core/task.registry.js';
 import { TaskContext } from '@plugin-ship/core/task.js';
 import { Store } from '@plugin-ship/core/flow.store.js';
 import { handleError } from '@plugin-ship/core/util.error.js';
-import { wrapRunCommand } from '@plugin-ship/core/util.command.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('plugin-ship', 'ship.task.run');
@@ -32,12 +31,6 @@ export default class TaskRun extends SfCommand<void> {
 
   public static readonly enableJsonFlag = false;
 
-  /**
-   * Loads the ship.yml config, resolves the named task, builds a flow context,
-   * validates params, and runs the task.
-   *
-   * @throws If the config is invalid, the task cannot be resolved, or params fail validation.
-   */
   public async run(): Promise<void> {
     const { args, flags } = await this.parse(TaskRun);
 
@@ -53,7 +46,7 @@ export default class TaskRun extends SfCommand<void> {
       orgs: new OrgRegistry(resolve(shipDir, 'orgs'), config.project.name),
       log: (message: string) => this.log(message),
       params,
-      runCommand: wrapRunCommand((id, argv) => this.config.runCommand(id, argv)),
+      runCommand: (id: string, argv: string[]) => this.config.runCommand(id, argv),
     });
 
     const runner = new TaskRegistry(shipDir);

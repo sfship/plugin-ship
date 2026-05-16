@@ -47,9 +47,9 @@ export class TaskRegistry {
     this.shipDir = shipDir;
     this.tasks = new Map();
     for (const file of scanDir(builtinsDir))
-      this.tasks.set(file.replace(/\.(mjs|js|ts)$/, ''), resolve(builtinsDir, file));
+      this.tasks.set(file.replace(/(?:\/index)?\.(mjs|js|ts)$/, ''), resolve(builtinsDir, file));
     for (const file of scanDir(resolve(shipDir, 'tasks')))
-      this.tasks.set(file.replace(/\.(mjs|js|ts)$/, ''), resolve(shipDir, 'tasks', file));
+      this.tasks.set(file.replace(/(?:\/index)?\.(mjs|js|ts)$/, ''), resolve(shipDir, 'tasks', file));
   }
 
   /** Lists all available task names. */
@@ -60,7 +60,7 @@ export class TaskRegistry {
   /**
    * Resolves a task by name.
    *
-   * @param taskName - The task name from the flow step, e.g. "org/scratch/create".
+   * @param taskName - The task name from the flow step, e.g. "org/create/scratch".
    * @throws If the task cannot be found in either location.
    */
   public async resolveTask(taskName: string): Promise<Task> {

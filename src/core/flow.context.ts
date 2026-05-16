@@ -2,11 +2,6 @@ import { ShipConfig } from '@plugin-ship/core/config.ship.schema.js';
 import { Params } from '@plugin-ship/core/task.param.schema.js';
 import { OrgRegistry } from '@plugin-ship/core/org.registry.js';
 
-/**
- * The runtime context passed to every task in a flow run.
- * Provides access to shared infrastructure — config, orgs, and logging —
- * as well as the params the flow was invoked with.
- */
 export type FlowContext = {
   /** Absolute path to the directory containing `ship.yml` — the project root. */
   projectDir: string;
@@ -26,12 +21,6 @@ export type FlowContext = {
   runCommand: (id: string, argv: string[]) => Promise<unknown>;
 };
 
-/**
- * Creates a {@link FlowContext} with `hasFailures` initialised to `false`.
- *
- * @param init - All context fields except `hasFailures`.
- * @returns A fully initialised {@link FlowContext}.
- */
 export function createFlowContext(init: Omit<FlowContext, 'hasFailures'>): FlowContext {
   return { hasFailures: false, ...init };
 }

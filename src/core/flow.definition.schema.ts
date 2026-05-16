@@ -13,7 +13,7 @@ const FlowStepConditionSchema = z
 /** A single step within a flow definition. */
 const FlowStepSchema = z
   .object({
-    /** The task to execute, e.g. "util/log" or "org/scratch/create". */
+    /** The task to execute, e.g. "util/log" or "org/create/scratch". */
     task: z.string(),
     /** Parameters passed to the task. */
     params: z.record(z.string(), ParamValueSchema).optional(),

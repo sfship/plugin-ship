@@ -1,8 +1,8 @@
 import type { TaskContext, TaskDefinition } from '@plugin-ship/core/task.js';
-import { installPackageVersion } from '@plugin-ship/core/package.installer.js';
+import { resolvePassthroughArgs } from '@plugin-ship/core/task.param.js';
 
 export default {
-  description: 'Installs a package version into a Salesforce org.',
+  description: 'Installs a package version into a Salesforce org. Passthrough for `sf package install`.',
   params: [
     {
       name: 'version-id',
@@ -24,11 +24,13 @@ export default {
     },
   ],
   async run({ flow, params }: TaskContext): Promise<void> {
-    const versionId = params['version-id'] as string;
-    const targetOrg = params['target-org'] as string;
-    const waitMinutes = (params['wait'] as number | undefined) ?? 10;
-
-    const org = await flow.orgs.getOrg(targetOrg);
-    await installPackageVersion(org, versionId, { waitMinutes, log: flow.log });
+    const alias = flow.orgs.resolveAlias(params['target-org'] as string);
+    const argv = resolvePassthroughArgs(params, {
+      '--target-org': alias,
+      '--package': params['version-id'] as string,
+      '--version-id': null,
+    });
+    await flow.runCommand('package:install', argv);
+    flow.log(`Package ${params['version-id'] as string} installed successfully.`);
   },
 } satisfies TaskDefinition;

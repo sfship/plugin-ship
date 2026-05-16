@@ -11,7 +11,7 @@ describe('renderTree', () => {
   });
 
   it('renders a nested entry', () => {
-    assert.equal(renderTree(['org/scratch/create']), '└── org/\n    └── scratch/\n        └── create');
+    assert.equal(renderTree(['org/create/scratch']), '└── org/\n    └── create/\n        └── scratch');
   });
 
   it('renders siblings under the same parent', () => {
@@ -27,7 +27,7 @@ describe('renderTree', () => {
   });
 
   it('renders │ continuation lines for non-last branches', () => {
-    const output = renderTree(['apex/test/run', 'util/log']);
+    const output = renderTree(['apex/run/test', 'util/log']);
     assert.ok(output.includes('│'));
   });
 
