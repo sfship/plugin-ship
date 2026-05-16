@@ -1,6 +1,7 @@
 import { FlowContext } from '@plugin-ship/core/flow.context.js';
 import { FlowStep } from '@plugin-ship/core/flow.definition.schema.js';
 import { ExpectedError } from '@plugin-ship/core/util.error.js';
+import { wrapRunCommand } from '@plugin-ship/core/util.command.js';
 
 const ANSI = {
   reset: '\x1b[0m',
@@ -10,11 +11,7 @@ const ANSI = {
   green: '\x1b[32m',
   yellow: '\x1b[33m',
   cyan: '\x1b[36m',
-  clearLine: '\x1b[2K',
-  cursorUp: (n: number): string => `\x1b[${n}A`,
 };
-
-const SPINNER = '⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏';
 
 type OutputStream = {
   isTTY: boolean | undefined;
@@ -34,12 +31,10 @@ export class FlowRenderer {
   private readonly skipped = new Set<string>();
   private readonly ignored = new Map<string, string>();
   private hasRendered = false;
-  private lastRenderLineCount = 0;
+  private liveLines: string[] = [];
   private readonly tty: boolean | undefined;
   private current: string | null = null;
   private context: FlowContext | null = null;
-  private spinnerFrame = 0;
-  private spinnerTimer: NodeJS.Timeout | null = null;
 
   /**
    * @param flowName - The name of the flow being rendered.
@@ -48,13 +43,16 @@ export class FlowRenderer {
    * @param context - The flow context for this run.
    * @param out - Output stream. Defaults to `process.stdout`; override in tests to capture output.
    */
+  private readonly write: (chunk: string) => boolean;
+
   public constructor(
     private readonly flowName: string,
     mainSteps: Array<[string, FlowStep]>,
     finallySteps: Array<[string, FlowStep]>,
     context: FlowContext,
-    private readonly out: OutputStream = process.stdout
+    out: OutputStream = process.stdout
   ) {
+    this.write = out.write.bind(out);
     this.mainSteps = mainSteps;
     this.finallySteps = finallySteps;
     this.context = context;
@@ -66,12 +64,22 @@ export class FlowRenderer {
         this.clear();
         const ts = `${ANSI.dim}${FlowRenderer.timestamp()}${ANSI.reset} `;
         const prefix = this.current ? `${ANSI.cyan}[${this.current}]${ANSI.reset} ` : '';
-        this.out.write(`${ts}${prefix}${message}\n`);
+        this.write(`${ts}${prefix}${message}\n`);
         this.render();
       };
+      // eslint-disable-next-line no-param-reassign
+      context.runCommand = wrapRunCommand(context.runCommand, context.log, (lines) => {
+        this.liveLines = lines;
+        if (lines.length > 0) {
+          this.clear();
+          this.render();
+        }
+      });
     } else {
       // eslint-disable-next-line no-param-reassign
       context.log = (message): void => originalLog(`${FlowRenderer.timestamp()} ${message}`);
+      // eslint-disable-next-line no-param-reassign
+      context.runCommand = wrapRunCommand(context.runCommand, context.log);
     }
   }
 
@@ -96,14 +104,8 @@ export class FlowRenderer {
   public stepStart(stepId: string): void {
     this.current = stepId;
     if (this.tty) {
-      this.spinnerFrame = 0;
       this.clear();
       this.render();
-      this.spinnerTimer = setInterval(() => {
-        this.spinnerFrame = (this.spinnerFrame + 1) % SPINNER.length;
-        this.clear();
-        this.render();
-      }, 80).unref();
     } else {
       this.context?.log(`  → ${stepId}`);
     }
@@ -111,7 +113,7 @@ export class FlowRenderer {
 
   /** Marks the current step as completed. */
   public stepComplete(stepId: string): void {
-    this.stopSpinner();
+    this.liveLines = [];
     this.completed.add(stepId);
     this.current = null;
     if (this.tty) {
@@ -123,12 +125,12 @@ export class FlowRenderer {
   /** Prints an error when the flow could not start (e.g. param validation failed). */
   public failedBeforeStart(err: Error): void {
     if (this.tty) {
-      this.out.write(`${ANSI.red}${ANSI.bold}✗ Flow "${this.flowName}" could not start${ANSI.reset}\n`);
-      this.out.write('\n');
+      this.write(`${ANSI.red}${ANSI.bold}✗ Flow "${this.flowName}" could not start${ANSI.reset}\n`);
+      this.write('\n');
       for (const line of err.message.split('\n')) {
-        this.out.write(`  ${line}\n`);
+        this.write(`  ${line}\n`);
       }
-      this.out.write('\n');
+      this.write('\n');
     } else {
       this.context?.log(`Flow "${this.flowName}" could not start: ${err.message}`);
     }
@@ -136,6 +138,7 @@ export class FlowRenderer {
 
   /** Marks a step as skipped due to a falsy condition. */
   public stepSkipped(stepId: string): void {
+    this.liveLines = [];
     this.skipped.add(stepId);
     if (this.tty) {
       this.clear();
@@ -147,7 +150,7 @@ export class FlowRenderer {
 
   /** Marks a step as failed but ignored; warning is deferred to the success summary. */
   public stepIgnored(stepId: string, err: Error): void {
-    this.stopSpinner();
+    this.liveLines = [];
     this.ignored.set(stepId, err.message);
     this.current = null;
     if (this.tty) {
@@ -160,7 +163,7 @@ export class FlowRenderer {
 
   /** Marks a step as failed in the checklist. Call flowFailed() after finally steps complete to print the error. */
   public stepFailed(stepId: string, err: Error): void {
-    this.stopSpinner();
+    this.liveLines = [];
     this.failed.add(stepId);
     this.current = null;
     if (this.tty) {
@@ -174,19 +177,19 @@ export class FlowRenderer {
   /** Prints the final error summary after all finally steps have run. */
   public flowFailed(stepId: string, err: Error): void {
     if (this.tty) {
-      this.out.write('\n');
-      this.out.write(`${ANSI.red}${ANSI.bold}✗ Flow "${this.flowName}" failed at step "${stepId}"${ANSI.reset}\n`);
-      this.out.write('\n');
+      this.write('\n');
+      this.write(`${ANSI.red}${ANSI.bold}✗ Flow "${this.flowName}" failed at step "${stepId}"${ANSI.reset}\n`);
+      this.write('\n');
       for (const line of err.message.split('\n')) {
-        this.out.write(`  ${line}\n`);
+        this.write(`  ${line}\n`);
       }
       if (!(err instanceof ExpectedError) && err.stack) {
-        this.out.write('\n');
+        this.write('\n');
         for (const line of err.stack.split('\n').slice(1)) {
-          this.out.write(`${ANSI.dim}  ${line.trim()}${ANSI.reset}\n`);
+          this.write(`${ANSI.dim}  ${line.trim()}${ANSI.reset}\n`);
         }
       }
-      this.out.write('\n');
+      this.write('\n');
     } else {
       this.context?.log(`Flow "${this.flowName}" failed: ${err.message}`);
     }
@@ -195,22 +198,15 @@ export class FlowRenderer {
   /** Prints the final success message. */
   public success(): void {
     if (this.tty) {
-      this.out.write('\n');
+      this.write('\n');
       for (const [stepId, message] of this.ignored) {
-        this.out.write(`  ${ANSI.yellow}${ANSI.bold}⚠ Step "${stepId}" failed (ignored):${ANSI.reset} ${message}\n`);
+        this.write(`  ${ANSI.yellow}${ANSI.bold}⚠ Step "${stepId}" failed (ignored):${ANSI.reset} ${message}\n`);
       }
-      if (this.ignored.size > 0) this.out.write('\n');
-      this.out.write(`${ANSI.green}${ANSI.bold}✓ Flow "${this.flowName}" finished successfully!${ANSI.reset}\n`);
-      this.out.write('\n');
+      if (this.ignored.size > 0) this.write('\n');
+      this.write(`${ANSI.green}${ANSI.bold}✓ Flow "${this.flowName}" finished successfully!${ANSI.reset}\n`);
+      this.write('\n');
     } else {
       this.context?.log(`Flow "${this.flowName}" completed.`);
-    }
-  }
-
-  private stopSpinner(): void {
-    if (this.spinnerTimer) {
-      clearInterval(this.spinnerTimer);
-      this.spinnerTimer = null;
     }
   }
 
@@ -242,12 +238,23 @@ export class FlowRenderer {
   }
 
   private render(): void {
+    this.write('\x1b[s'); // save cursor position
     this.hasRendered = true;
-    let lineCount = 0;
     const writeLine = (s: string): void => {
-      this.out.write(`${s}\n`);
-      lineCount++;
+      this.write(`${s}\n`);
     };
+
+    if (this.liveLines.length > 0) {
+      const checklistHeight =
+        3 + this.mainSteps.length + (this.finallySteps.length > 0 ? 1 + this.finallySteps.length : 0);
+      const rows = process.stdout.rows ?? 24;
+      const maxLive = Math.max(1, rows - checklistHeight - 2);
+      const visibleLines = this.liveLines.slice(-maxLive);
+      const ts = `${ANSI.dim}${FlowRenderer.timestamp()}${ANSI.reset} `;
+      const prefix = this.current ? `${ANSI.cyan}[${this.current}]${ANSI.reset} ` : '';
+      for (const line of visibleLines) writeLine(`${ts}${prefix}${line}`);
+      writeLine('');
+    }
 
     writeLine(`  ${ANSI.dim}${'─'.repeat(40)}${ANSI.reset}`);
     writeLine(`  ${ANSI.dim}Flow:${ANSI.reset} ${ANSI.bold}${this.flowName}${ANSI.reset}`);
@@ -259,19 +266,12 @@ export class FlowRenderer {
       writeLine(`  ${ANSI.dim}Finally${ANSI.reset}`);
       for (const [stepId, step] of this.finallySteps) this.renderStepLine(stepId, step, writeLine);
     }
-
-    if (this.current) {
-      writeLine('');
-      writeLine(`  ${ANSI.yellow}${SPINNER[this.spinnerFrame]}${ANSI.reset}`);
-    }
-
-    this.lastRenderLineCount = lineCount;
   }
 
   private clear(): void {
     if (!this.hasRendered) return;
-    for (let i = 0; i < this.lastRenderLineCount; i++) {
-      this.out.write(`${ANSI.cursorUp(1)}${ANSI.clearLine}`);
-    }
+    this.write('\x1b[u'); // restore saved cursor position
+    this.write('\x1b[J'); // erase from cursor to end of screen
+    this.hasRendered = false;
   }
 }
