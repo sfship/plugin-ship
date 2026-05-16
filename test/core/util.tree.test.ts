@@ -39,4 +39,9 @@ describe('renderTree', () => {
     const output = renderTree(['ci', 'test/hello']);
     assert.equal(output, '├── ci\n└── test/\n    └── hello');
   });
+
+  it('handles a name that is also a prefix of another name', () => {
+    const output = renderTree(['package/install', 'package/install/dependencies']);
+    assert.equal(output, '└── package/\n    └── install/\n        └── dependencies');
+  });
 });

@@ -3,9 +3,9 @@ type Tree = Map<string, Tree | null>;
 function insert(tree: Tree, parts: string[]): void {
   const [head, ...rest] = parts;
   if (rest.length === 0) {
-    tree.set(head, null);
+    if (!tree.has(head)) tree.set(head, null);
   } else {
-    if (!tree.has(head)) tree.set(head, new Map());
+    if (!tree.has(head) || tree.get(head) === null) tree.set(head, new Map());
     insert(tree.get(head) as Tree, rest);
   }
 }
