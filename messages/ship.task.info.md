@@ -18,7 +18,7 @@ Path to the ship.yml config file.
 
 - Show details for a built-in task:
 
-  <%= config.bin %> <%= command.id %> org/scratch/create
+  <%= config.bin %> <%= command.id %> org/create/scratch
 
 - Show details for a custom task:
 
