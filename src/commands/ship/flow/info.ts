@@ -2,9 +2,9 @@ import { resolve } from 'node:path';
 import { Args } from '@oclif/core';
 import { SfCommand, Flags, Ux, StandardColors } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
-import { loadConfig } from '@plugin-ship/core/config.loader.js';
-import { FlowRegistry } from '@plugin-ship/core/flow.registry.js';
-import { asError } from '@plugin-ship/core/util.error.js';
+import { loadConfig } from '../../../core/config.loader.js';
+import { FlowRegistry } from '../../../core/flow.registry.js';
+import { asError } from '../../../core/util.error.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('plugin-ship', 'ship.flow.info');

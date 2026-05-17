@@ -1,7 +1,7 @@
 import { ux } from '@oclif/core';
 import { SfCommand, Flags, StandardColors, Ux } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
-import { setGithubToken, requestDeviceCode, pollForToken } from '@plugin-ship/core/service.github.js';
+import { setGithubToken, requestDeviceCode, pollForToken } from '../../../../core/service.github.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('plugin-ship', 'service.connect.github');

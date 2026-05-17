@@ -11,7 +11,7 @@ import type {
   fetchGitTag as FetchGitTagFn,
   fetchCciNamespace as FetchCciNamespaceFn,
   fetchSubdirs as FetchSubdirsFn,
-} from '@plugin-ship/core/service.github.js';
+} from '../../src/core/service.github.js';
 
 type GithubService = {
   getGithubToken: typeof GetTokenFn;

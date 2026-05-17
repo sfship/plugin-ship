@@ -1,7 +1,7 @@
 import { strict as assert } from 'node:assert';
 import esmock from 'esmock';
 import dedent from 'dedent';
-import type { loadConfig as LoadConfigFn } from '@plugin-ship/core/config.loader.js';
+import type { loadConfig as LoadConfigFn } from '../../src/core/config.loader.js';
 
 type ConfigLoader = { loadConfig: typeof LoadConfigFn };
 

@@ -1,7 +1,7 @@
 import type { ZodError } from 'zod';
 import { parse } from 'yaml';
-import { ShipConfig, ShipConfigSchema } from '@plugin-ship/core/config.ship.schema.js';
-import { readText } from '@plugin-ship/core/util.file.js';
+import { ShipConfig, ShipConfigSchema } from './config.ship.schema.js';
+import { readText } from './util.file.js';
 import { ExpectedError, formatZodError } from './util.error.js';
 
 /**

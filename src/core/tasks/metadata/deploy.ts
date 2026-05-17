@@ -1,5 +1,5 @@
 import { resolve } from 'node:path';
-import type { TaskContext, TaskDefinition } from '@plugin-ship/core/task.js';
+import type { TaskContext, TaskDefinition } from '../../task.js';
 
 export default {
   description: 'Deploys metadata to a target org using the Salesforce source deploy API.',

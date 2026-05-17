@@ -3,10 +3,6 @@
   "include": ["./**/*.ts"],
   "compilerOptions": {
     "types": ["mocha"],
-    "skipLibCheck": true,
-    "paths": {
-      "@plugin-ship/core": ["../src/core/index.ts"],
-      "@plugin-ship/core/*": ["../src/core/*"]
-    }
+    "skipLibCheck": true
   }
 }

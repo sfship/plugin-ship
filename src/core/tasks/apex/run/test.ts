@@ -1,6 +1,6 @@
-import type { TaskContext, TaskDefinition } from '@plugin-ship/core/task.js';
-import { resolvePassthroughArgs } from '@plugin-ship/core/task.param.js';
-import { ExpectedError } from '@plugin-ship/core/util.error.js';
+import type { TaskContext, TaskDefinition } from '../../../task.js';
+import { resolvePassthroughArgs } from '../../../task.param.js';
+import { ExpectedError } from '../../../util.error.js';
 
 type TestRunResult = {
   summary: {

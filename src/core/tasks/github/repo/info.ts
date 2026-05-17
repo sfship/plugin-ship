@@ -1,6 +1,6 @@
-import { getGithubToken } from '@plugin-ship/core/service.github.js';
-import type { TaskDefinition, TaskContext } from '@plugin-ship/core/task.js';
-import { ExpectedError } from '@plugin-ship/core/util.error.js';
+import { getGithubToken } from '../../../service.github.js';
+import type { TaskDefinition, TaskContext } from '../../../task.js';
+import { ExpectedError } from '../../../util.error.js';
 
 type GithubRepo = {
   full_name: string;

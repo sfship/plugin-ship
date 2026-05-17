@@ -1,6 +1,6 @@
 import { SfCommand, Ux, StandardColors } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
-import { listMetas } from '@plugin-ship/core/service.js';
+import { listMetas } from '../../../core/service.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('plugin-ship', 'ship.service.list');

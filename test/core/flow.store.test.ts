@@ -1,5 +1,5 @@
 import { strict as assert } from 'node:assert';
-import { Store } from '@plugin-ship/core/flow.store.js';
+import { Store } from '../../src/core/flow.store.js';
 
 describe('Store.resolveParams', () => {
   it('returns non-string values unchanged', () => {

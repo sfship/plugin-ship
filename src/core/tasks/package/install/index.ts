@@ -1,5 +1,5 @@
-import type { TaskContext, TaskDefinition } from '@plugin-ship/core/task.js';
-import { resolvePassthroughArgs } from '@plugin-ship/core/task.param.js';
+import type { TaskContext, TaskDefinition } from '../../../task.js';
+import { resolvePassthroughArgs } from '../../../task.param.js';
 
 export default {
   description: 'Installs a package version into a Salesforce org. Passthrough for `sf package install`.',

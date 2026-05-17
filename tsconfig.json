@@ -3,11 +3,7 @@
   "compilerOptions": {
     "outDir": "lib",
     "rootDir": "src",
-    "skipLibCheck": true,
-    "paths": {
-      "@plugin-ship/core": ["./src/core/index.ts"],
-      "@plugin-ship/core/*": ["./src/core/*"]
-    }
+    "skipLibCheck": true
   },
   "include": ["./src/**/*.ts"]
 }

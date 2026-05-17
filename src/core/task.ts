@@ -1,7 +1,7 @@
 import { z } from 'zod';
-import { ParamDefinitionSchema, Params } from '@plugin-ship/core/task.param.schema.js';
-import { FlowContext } from '@plugin-ship/core/flow.context.js';
-import { TaskOutput } from '@plugin-ship/core/task.output.js';
+import { ParamDefinitionSchema, Params } from './task.param.schema.js';
+import { FlowContext } from './flow.context.js';
+import { TaskOutput } from './task.output.js';
 
 /** Zod schema for a value this task writes to the flow outputs. */
 export const TaskOutputDefinitionSchema = z.object({

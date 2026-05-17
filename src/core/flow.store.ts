@@ -1,4 +1,4 @@
-import { TaskOutput } from '@plugin-ship/core/task.output.js';
+import { TaskOutput } from './task.output.js';
 
 /**
  * Traverses a nested object by an array of keys.

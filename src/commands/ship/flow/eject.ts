@@ -3,8 +3,8 @@ import { resolve, dirname } from 'node:path';
 import { Args } from '@oclif/core';
 import { SfCommand, Flags } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
-import { loadConfig } from '@plugin-ship/core/config.loader.js';
-import { builtinsDir } from '@plugin-ship/core/flow.registry.js';
+import { loadConfig } from '../../../core/config.loader.js';
+import { builtinsDir } from '../../../core/flow.registry.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('plugin-ship', 'ship.flow.eject');

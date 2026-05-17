@@ -1,7 +1,7 @@
 import { resolve } from 'node:path';
 import { pathToFileURL, fileURLToPath } from 'node:url';
-import { listDir } from '@plugin-ship/core/util.file.js';
-import { Task, TaskSchema } from '@plugin-ship/core/task.js';
+import { listDir } from './util.file.js';
+import { Task, TaskSchema } from './task.js';
 import { asError, ExpectedError, formatZodError } from './util.error.js';
 
 const builtinsDir = resolve(fileURLToPath(import.meta.url), '..', 'tasks');

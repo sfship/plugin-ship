@@ -1,8 +1,8 @@
 import { StandardColors } from '@salesforce/sf-plugins-core';
-import { FlowStep } from '@plugin-ship/core/flow.definition.schema.js';
-import { FlowContext } from '@plugin-ship/core/flow.context.js';
-import { ExpectedError } from '@plugin-ship/core/util.error.js';
-import { formatFlowPlan, formatStepHeading, formatFlowSummary, type FlowOutcome } from '@plugin-ship/core/flow.view.js';
+import { FlowStep } from './flow.definition.schema.js';
+import { FlowContext } from './flow.context.js';
+import { ExpectedError } from './util.error.js';
+import { formatFlowPlan, formatStepHeading, formatFlowSummary, type FlowOutcome } from './flow.view.js';
 
 type OutputStream = {
   isTTY?: boolean;

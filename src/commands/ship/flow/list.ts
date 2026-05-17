@@ -1,9 +1,9 @@
 import { resolve } from 'node:path';
 import { SfCommand, Flags, StandardColors } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
-import { loadConfig } from '@plugin-ship/core/config.loader.js';
-import { FlowRegistry } from '@plugin-ship/core/flow.registry.js';
-import { renderTree } from '@plugin-ship/core/util.tree.js';
+import { loadConfig } from '../../../core/config.loader.js';
+import { FlowRegistry } from '../../../core/flow.registry.js';
+import { renderTree } from '../../../core/util.tree.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('plugin-ship', 'ship.flow.list');

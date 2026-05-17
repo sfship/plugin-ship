@@ -1,7 +1,7 @@
 /* eslint-disable camelcase */
 import { strict as assert } from 'node:assert';
 import esmock from 'esmock';
-import type { resolveDependencies as ResolveFn } from '@plugin-ship/core/package.resolver.js';
+import type { resolveDependencies as ResolveFn } from '../../src/core/package.resolver.js';
 
 type Resolver = { resolveDependencies: typeof ResolveFn };
 

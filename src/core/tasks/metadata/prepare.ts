@@ -1,7 +1,7 @@
 import { cp } from 'node:fs/promises';
 import { resolve } from 'node:path';
-import type { TaskContext, TaskDefinition } from '@plugin-ship/core/task.js';
-import { walkFiles, replaceTokens, buildTokenMap } from '@plugin-ship/core/util.token.js';
+import type { TaskContext, TaskDefinition } from '../../task.js';
+import { walkFiles, replaceTokens, buildTokenMap } from '../../util.token.js';
 
 export default {
   description: 'Copies source to a temporary directory and replaces %%%TOKEN%%% placeholders.',

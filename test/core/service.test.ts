@@ -7,7 +7,7 @@ import type {
   getMeta as GetMetaFn,
   listMetas as ListMetasFn,
   deleteToken as DeleteTokenFn,
-} from '@plugin-ship/core/service.js';
+} from '../../src/core/service.js';
 
 type ServiceModule = {
   getToken: typeof GetTokenFn;

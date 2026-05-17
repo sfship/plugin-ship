@@ -1,6 +1,6 @@
-import type { TaskContext, TaskDefinition } from '@plugin-ship/core/task.js';
-import { resolveDependencies, type DependencyStep } from '@plugin-ship/core/package.resolver.js';
-import { deployMetadataStep } from '@plugin-ship/core/package.metadata.js';
+import type { TaskContext, TaskDefinition } from '../../../task.js';
+import { resolveDependencies, type DependencyStep } from '../../../package.resolver.js';
+import { deployMetadataStep } from '../../../package.metadata.js';
 
 function describeStep(step: DependencyStep): string {
   if (step.kind === 'package-id') return `package-id  ${step.versionId}${step.name ? ` (${step.name})` : ''}`;

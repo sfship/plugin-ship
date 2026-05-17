@@ -1,5 +1,5 @@
 import { StandardColors } from '@salesforce/sf-plugins-core';
-import { Task } from '@plugin-ship/core/task.js';
+import { Task } from './task.js';
 
 /**
  * A consistent identity + description preview for a task. Used both when

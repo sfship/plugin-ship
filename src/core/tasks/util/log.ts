@@ -1,4 +1,4 @@
-import type { TaskContext, TaskDefinition } from '@plugin-ship/core/task.js';
+import type { TaskContext, TaskDefinition } from '../../task.js';
 
 /** Logs a message to the flow output. Useful for progress indicators and debug output in flows. */
 export default {

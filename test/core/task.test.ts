@@ -2,7 +2,7 @@
 import { strict as assert } from 'node:assert';
 import { resolve } from 'node:path';
 import esmock from 'esmock';
-import { Store } from '@plugin-ship/core/flow.store.js';
+import { Store } from '../../src/core/flow.store.js';
 import { TaskRegistry } from '../../src/core/task.registry.js';
 
 const shipDir = resolve('test/core');

@@ -1,5 +1,5 @@
 import { StandardColors } from '@salesforce/sf-plugins-core';
-import { FlowStep } from '@plugin-ship/core/flow.definition.schema.js';
+import { FlowStep } from './flow.definition.schema.js';
 
 /** The terminal state of every step in a finished (or failed) flow. */
 export type FlowOutcome = {
@@ -45,9 +45,9 @@ export function formatFlowPlan(flowName: string, mainSteps: Steps, finallySteps:
 
 /** The heading printed when a step begins. */
 export function formatStepHeading(position: number, total: number, stepId: string, step: FlowStep): string {
-  return `\n${StandardColors.info(`→ [${position}/${total}]`)} ${StandardColors.success(stepId)} ${StandardColors.info(
-    '·'
-  )} ${step.task}`;
+  return `\n${StandardColors.info(`→ Task [${position}/${total}]`)} ${StandardColors.success(
+    stepId
+  )} ${StandardColors.info('·')} ${step.task}`;
 }
 
 function outcomeLine(stepId: string, outcome: FlowOutcome): string {
@@ -73,5 +73,7 @@ export function formatFlowSummary(mainSteps: Steps, finallySteps: Steps, outcome
       ? StandardColors.warning(`${outcome.ignored.size} ignored`)
       : `${outcome.ignored.size} ignored`,
   ].join(' · ');
-  return ['', StandardColors.info('Summary'), ...all.map(([id]) => outcomeLine(id, outcome)), '', counts].join('\n');
+  return ['', StandardColors.info('Flow Summary'), ...all.map(([id]) => outcomeLine(id, outcome)), '', counts].join(
+    '\n'
+  );
 }

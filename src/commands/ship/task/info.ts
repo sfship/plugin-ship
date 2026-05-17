@@ -2,9 +2,9 @@ import { resolve } from 'node:path';
 import { Args } from '@oclif/core';
 import { SfCommand, Flags, Ux, StandardColors } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
-import { loadConfig } from '@plugin-ship/core/config.loader.js';
-import { TaskRegistry } from '@plugin-ship/core/task.registry.js';
-import { formatTaskPreview } from '@plugin-ship/core/task.view.js';
+import { loadConfig } from '../../../core/config.loader.js';
+import { TaskRegistry } from '../../../core/task.registry.js';
+import { formatTaskPreview } from '../../../core/task.view.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('plugin-ship', 'ship.task.info');
