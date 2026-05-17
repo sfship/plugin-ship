@@ -1,6 +1,6 @@
 # plugin-ship
 
-[![NPM](https://img.shields.io/npm/v/plugin-ship.svg?label=plugin-ship)](https://www.npmjs.com/package/plugin-ship) [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://raw.githubusercontent.com/sfship/plugin-ship/main/LICENSE)
+[![NPM](https://img.shields.io/npm/v/plugin-ship.svg?label=plugin-ship)](https://www.npmjs.com/package/plugin-ship) [![License](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](https://opensource.org/license/apache-2-0)
 
 A Salesforce CLI plugin for managing the full development and release lifecycle of second-generation managed and unlocked packages.
 

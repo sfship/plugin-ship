@@ -22,7 +22,6 @@
     "esmock": "^2.7.3",
     "oclif": "^4.22.96",
     "ts-node": "^10.9.2",
-    "tsc-alias": "^1.8.16",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3"
   },
@@ -113,7 +112,7 @@
       ]
     },
     "compile": {
-      "command": "tsc -p . --pretty --incremental && tsc-alias -p tsconfig.json",
+      "command": "tsc -p . --pretty --incremental",
       "files": [
         "src/**/*.ts",
         "**/tsconfig.json",
@@ -172,7 +171,8 @@
         "src/**/*.ts",
         "**/tsconfig.json",
         ".mocha*",
-        "!*.nut.ts"
+        "!*.nut.ts",
+        ".nycrc"
       ],
       "output": []
     },
