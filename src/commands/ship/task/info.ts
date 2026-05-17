@@ -4,6 +4,7 @@ import { SfCommand, Flags, Ux, StandardColors } from '@salesforce/sf-plugins-cor
 import { Messages } from '@salesforce/core';
 import { loadConfig } from '@plugin-ship/core/config.loader.js';
 import { TaskRegistry } from '@plugin-ship/core/task.registry.js';
+import { formatTaskPreview } from '@plugin-ship/core/task.view.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('plugin-ship', 'ship.task.info');
@@ -33,9 +34,7 @@ export default class TaskInfo extends SfCommand<void> {
 
     const ux = new Ux();
     this.log('');
-    this.log(`=== Task: ${StandardColors.success(args.taskName)}`);
-    this.log('');
-    this.log(`${StandardColors.info('Description:')} ${task.description}`);
+    this.log(formatTaskPreview(task));
 
     if (task.params.length > 0) {
       this.log('');

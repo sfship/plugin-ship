@@ -9,8 +9,6 @@ import { parseCliParams } from '@plugin-ship/core/task.param.js';
 import { asError, ExpectedError } from '@plugin-ship/core/util.error.js';
 import { runFlow } from '@plugin-ship/core/flow.runner.js';
 import { OrgRegistry } from '@plugin-ship/core/org.registry.js';
-import { FlowState } from '@plugin-ship/core/flow.state.js';
-import { FlowRenderer } from '@plugin-ship/core/flow.renderer.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('plugin-ship', 'ship.flow.run');
@@ -54,46 +52,27 @@ export default class FlowRun extends SfCommand<void> {
       this.error(asError(err).message, { exit: 1 });
     }
 
-    const steps = Object.entries(flow.steps);
-    const finallySteps = Object.entries(flow.finally ?? {});
-    const state = new FlowState(args.flowName, steps, finallySteps);
-    const renderer = new FlowRenderer();
-
     const context = createFlowContext({
       projectDir,
       shipDir,
       config,
       orgs: new OrgRegistry(resolve(shipDir, 'orgs'), config.project.name),
-      log: (message: string) => renderer.log(message, state.current),
+      // The renderer takes over this logger; this base is only a fallback.
+      log: (message: string) => this.log(message),
       params,
-      runCommand: renderer.wrapCommand((id: string, argv: string[]) => this.config.runCommand(id, argv)),
-    });
-
-    process.once('uncaughtException', (err: unknown) => {
-      const e = asError(err);
-      if ((e as { code?: unknown }).code === 'EEXIT') {
-        const exitCode = (e as { oclif?: { exit?: number } }).oclif?.exit ?? 1;
-        if (exitCode === 130) {
-          (process.stdout as { write: unknown }).write = (): boolean => true;
-          (process.stderr as { write: unknown }).write = (): boolean => true;
-          const interruptedStep = state.current;
-          if (interruptedStep) {
-            state.stepFailed(interruptedStep);
-            renderer.update(state.getFrame());
-          }
-          renderer.flowFailed(args.flowName, interruptedStep ?? '?', new ExpectedError('Interrupted by user.'));
+      // Subcommands print their own output natively; we only normalise a
+      // failure into an ExpectedError so the flow reports it without a stack.
+      runCommand: async (id: string, argv: string[]) => {
+        try {
+          return await this.config.runCommand(id, argv);
+        } catch (err) {
+          throw new ExpectedError(asError(err).message);
         }
-        process.exit(exitCode);
-      } else {
-        renderer.flowFailed(args.flowName, state.current ?? '?', e);
-        process.exit(1);
-      }
+      },
     });
-
-    renderer.update(state.getFrame());
 
     try {
-      await runFlow(args.flowName, flow, context, state, renderer);
+      await runFlow(args.flowName, flow, context);
     } catch (err) {
       if (!(err instanceof ExpectedError)) throw err;
       process.exit(1);

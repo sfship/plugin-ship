@@ -1,8 +1,9 @@
 import { resolve, dirname, join } from 'node:path';
 import { Args } from '@oclif/core';
-import { SfCommand, Flags, Ux } from '@salesforce/sf-plugins-core';
+import { SfCommand, Flags } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
 import { loadConfig } from '@plugin-ship/core/config.loader.js';
+import { formatTaskPreview } from '@plugin-ship/core/task.view.js';
 import { createFlowContext } from '@plugin-ship/core/flow.context.js';
 import { parseCliParams, validateParams } from '@plugin-ship/core/task.param.js';
 import { OrgRegistry } from '@plugin-ship/core/org.registry.js';
@@ -52,7 +53,8 @@ export default class TaskRun extends SfCommand<void> {
     const runner = new TaskRegistry(shipDir);
     const task = await runner.resolveTask(args.taskName);
 
-    new Ux().styledHeader(`Task: ${task.name}`);
+    this.log(formatTaskPreview(task));
+    this.log('');
     const validatedParams = validateParams(params, task.params);
 
     const store = new Store();
