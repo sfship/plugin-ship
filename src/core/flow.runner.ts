@@ -4,7 +4,6 @@ import { validateParams } from '@plugin-ship/core/task.param.js';
 import { TaskRegistry } from '@plugin-ship/core/task.registry.js';
 import { Store } from '@plugin-ship/core/flow.store.js';
 import { FlowRenderer } from '@plugin-ship/core/flow.renderer.js';
-import { FlowState } from '@plugin-ship/core/flow.state.js';
 import { asError, ExpectedError } from '@plugin-ship/core/util.error.js';
 import { Task } from '@plugin-ship/core/task.js';
 
@@ -37,21 +36,13 @@ function evaluateIfNot(condition: StepCondition, context: Record<string, unknown
 
 type StepError = { stepId: string; error: Error };
 
-type StepHooks = {
-  onStart: (stepId: string) => void;
-  onComplete: (stepId: string) => void;
-  onSkipped: (stepId: string) => void;
-  onIgnored: (stepId: string, err: Error) => void;
-  onFailed: (stepId: string, err: Error) => void;
-};
-
 async function runSteps(
   stepEntries: Array<[string, FlowStep]>,
   flowName: string,
   context: FlowContext,
   store: Store,
   taskRunner: TaskRegistry,
-  hooks: StepHooks,
+  renderer: FlowRenderer,
   ignoreAllFailures = false
 ): Promise<StepError | undefined> {
   for (const [stepId, step] of stepEntries) {
@@ -63,15 +54,15 @@ async function runSteps(
     };
 
     if (step.if && !evaluateIf(step.if, interpolationContext)) {
-      hooks.onSkipped(stepId);
+      renderer.stepSkipped(stepId);
       continue;
     }
     if (step['if-not'] && !evaluateIfNot(step['if-not'], interpolationContext)) {
-      hooks.onSkipped(stepId);
+      renderer.stepSkipped(stepId);
       continue;
     }
 
-    hooks.onStart(stepId);
+    renderer.stepStart(stepId);
 
     try {
       // eslint-disable-next-line no-await-in-loop
@@ -85,7 +76,7 @@ async function runSteps(
       const error = asError(err);
 
       if (step['ignore-failure'] ?? ignoreAllFailures) {
-        hooks.onIgnored(stepId, error);
+        renderer.stepIgnored(stepId, error);
         store.set(stepId, 'failed', true);
         store.set(stepId, 'error', error.message);
         // eslint-disable-next-line no-param-reassign
@@ -93,7 +84,7 @@ async function runSteps(
         continue;
       }
 
-      hooks.onFailed(stepId, error);
+      renderer.stepFailed(stepId);
       store.set(stepId, 'failed', true);
       store.set(stepId, 'error', error.message);
       // eslint-disable-next-line no-param-reassign
@@ -106,63 +97,61 @@ async function runSteps(
       return { stepId, error };
     }
 
-    hooks.onComplete(stepId);
+    renderer.stepComplete(stepId);
   }
 
   return undefined;
 }
 
-export async function runFlow(
-  flowName: string,
-  flow: FlowDefinition,
-  context: FlowContext,
-  state: FlowState,
-  renderer: FlowRenderer
-): Promise<void> {
+export async function runFlow(flowName: string, flow: FlowDefinition, context: FlowContext): Promise<void> {
+  const mainSteps = Object.entries(flow.steps);
+  const finallySteps = Object.entries(flow.finally ?? {});
+  const renderer = new FlowRenderer(flowName, mainSteps, finallySteps, context);
+
   if (flow.params?.length) {
     try {
       // eslint-disable-next-line no-param-reassign
       context.params = validateParams(context.params, flow.params);
     } catch (err) {
-      renderer.failedBeforeStart(flowName, asError(err));
+      renderer.failedBeforeStart(asError(err));
       throw err;
     }
   }
 
-  const steps = Object.entries(flow.steps);
-  const finallySteps = Object.entries(flow.finally ?? {});
-  const store = new Store(flow.steps);
-  const taskRunner = new TaskRegistry(context.shipDir);
-
-  const hooks: StepHooks = {
-    onStart: (id) => {
-      state.stepStart(id);
-      renderer.update(state.getFrame());
-    },
-    onComplete: (id) => {
-      state.stepComplete(id);
-      renderer.update(state.getFrame());
-    },
-    onSkipped: (id) => {
-      state.stepSkipped(id);
-      renderer.update(state.getFrame());
-    },
-    onIgnored: (id, err) => {
-      state.stepIgnored(id, err.message);
-      renderer.update(state.getFrame());
-    },
-    onFailed: (id) => {
-      state.stepFailed(id);
-      renderer.update(state.getFrame());
-    },
+  // oclif converts Ctrl+C into an EEXIT error on the process. Take over here
+  // (the renderer is ours now) so an interrupt prints a clean failure instead
+  // of a raw stack, and unexpected crashes still report through the renderer.
+  const onUncaught = (err: unknown): void => {
+    const e = asError(err);
+    if ((e as { code?: unknown }).code === 'EEXIT') {
+      const exitCode = (e as { oclif?: { exit?: number } }).oclif?.exit ?? 1;
+      if (exitCode === 130) {
+        (process.stdout as { write: unknown }).write = (): boolean => true;
+        (process.stderr as { write: unknown }).write = (): boolean => true;
+        renderer.interrupt();
+      }
+      process.exit(exitCode);
+    }
+    renderer.flowFailed(renderer.activeStep ?? '?', e);
+    process.exit(1);
   };
+  process.once('uncaughtException', onUncaught);
 
-  const hardError = await runSteps(steps, flowName, context, store, taskRunner, hooks);
-  await runSteps(finallySteps, flowName, context, store, taskRunner, hooks, true);
+  try {
+    renderer.start();
 
-  if (hardError) {
-    renderer.flowFailed(flowName, hardError.stepId, hardError.error);
-    throw new ExpectedError(hardError.error.message);
+    const store = new Store(flow.steps);
+    const taskRunner = new TaskRegistry(context.shipDir);
+
+    const hardError = await runSteps(mainSteps, flowName, context, store, taskRunner, renderer);
+    await runSteps(finallySteps, flowName, context, store, taskRunner, renderer, true);
+
+    if (hardError) {
+      renderer.flowFailed(hardError.stepId, hardError.error);
+      throw new ExpectedError(hardError.error.message);
+    }
+    renderer.success();
+  } finally {
+    process.removeListener('uncaughtException', onUncaught);
   }
-  renderer.success(state.getFrame());
 }
