@@ -1,10 +1,10 @@
 import { existsSync, copyFileSync, mkdirSync } from 'node:fs';
-import { resolve, dirname, join } from 'node:path';
+import { resolve, dirname, join, relative } from 'node:path';
 import { Args } from '@oclif/core';
 import { SfCommand, Flags } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
 import { loadConfig } from '../../../core/config.loader.js';
-import { builtinsDir } from '../../../core/flow.registry.js';
+import { FlowRegistry, builtinsDir } from '../../../core/flow.registry.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('plugin-ship', 'ship.flow.eject');
@@ -32,13 +32,15 @@ export default class FlowEject extends SfCommand<void> {
     const projectDir = resolve(dirname(flags.config));
     const shipDir = join(projectDir, config.dir);
 
-    const src = join(builtinsDir, `${args.flowName}.yml`);
-    this.log(src);
-    if (!existsSync(src)) {
+    // Resolve the same way `flow run`/`flow info` do — through the registry,
+    // which owns name normalization and the built-in vs project distinction.
+    const src = new FlowRegistry(shipDir).builtinSource(args.flowName);
+    this.log(src ?? '');
+    if (!src) {
       this.error(`"${args.flowName}" is not a built-in flow.`, { exit: 1 });
     }
 
-    const dest = join(shipDir, 'flows', `${args.flowName}.yml`);
+    const dest = join(shipDir, 'flows', relative(builtinsDir, src));
     if (existsSync(dest)) {
       this.error(`${dest} already exists. Remove it first if you want to re-eject.`, { exit: 1 });
     }

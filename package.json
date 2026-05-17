@@ -99,11 +99,15 @@
     "build": {
       "dependencies": [
         "compile",
-        "lint"
+        "lint",
+        "copy-assets"
       ]
     },
     "copy-assets": {
       "command": "node -e \"require('fs').cpSync('src/core/flows', 'lib/core/flows', {recursive: true, force: true})\"",
+      "dependencies": [
+        "compile"
+      ],
       "files": [
         "src/core/flows/**/*.yml"
       ],

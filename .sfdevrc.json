@@ -3,6 +3,15 @@
     "testsPath": "test/**/*.test.ts"
   },
   "wireit": {
+    "build": {
+      "dependencies": ["compile", "lint", "copy-assets"]
+    },
+    "copy-assets": {
+      "command": "node -e \"require('fs').cpSync('src/core/flows', 'lib/core/flows', {recursive: true, force: true})\"",
+      "dependencies": ["compile"],
+      "files": ["src/core/flows/**/*.yml"],
+      "output": ["lib/core/flows/**/*.yml"]
+    },
     "test": {
       "dependencies": ["test:compile", "test:only", "lint"]
     },
