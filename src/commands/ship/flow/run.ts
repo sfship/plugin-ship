@@ -70,9 +70,24 @@ export default class FlowRun extends SfCommand<void> {
     });
 
     process.once('uncaughtException', (err: unknown) => {
-      const code = err && typeof err === 'object' && 'code' in err ? (err as { code: unknown }).code : null;
-      if (code !== 'EEXIT') throw new ExpectedError(asError(err).message);
-      process.exit((err as { oclif?: { exit?: number } }).oclif?.exit ?? 1);
+      const e = asError(err);
+      if ((e as { code?: unknown }).code === 'EEXIT') {
+        const exitCode = (e as { oclif?: { exit?: number } }).oclif?.exit ?? 1;
+        if (exitCode === 130) {
+          (process.stdout as { write: unknown }).write = (): boolean => true;
+          (process.stderr as { write: unknown }).write = (): boolean => true;
+          const interruptedStep = state.current;
+          if (interruptedStep) {
+            state.stepFailed(interruptedStep);
+            renderer.update(state.getFrame());
+          }
+          renderer.flowFailed(args.flowName, interruptedStep ?? '?', new ExpectedError('Interrupted by user.'));
+        }
+        process.exit(exitCode);
+      } else {
+        renderer.flowFailed(args.flowName, state.current ?? '?', e);
+        process.exit(1);
+      }
     });
 
     renderer.update(state.getFrame());
