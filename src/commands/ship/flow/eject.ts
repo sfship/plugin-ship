@@ -1,5 +1,5 @@
 import { existsSync, copyFileSync, mkdirSync } from 'node:fs';
-import { resolve, dirname } from 'node:path';
+import { resolve, dirname, join } from 'node:path';
 import { Args } from '@oclif/core';
 import { SfCommand, Flags } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
@@ -28,13 +28,17 @@ export default class FlowEject extends SfCommand<void> {
   public async run(): Promise<void> {
     const { args, flags } = await this.parse(FlowEject);
 
-    const src = resolve(builtinsDir, `${args.flowName}.yml`);
+    const config = loadConfig(flags.config);
+    const projectDir = resolve(dirname(flags.config));
+    const shipDir = join(projectDir, config.dir);
+
+    const src = join(builtinsDir, `${args.flowName}.yml`);
+    this.log(src);
     if (!existsSync(src)) {
       this.error(`"${args.flowName}" is not a built-in flow.`, { exit: 1 });
     }
 
-    const config = loadConfig(flags.config);
-    const dest = resolve(config.dir, 'flows', `${args.flowName}.yml`);
+    const dest = join(shipDir, 'flows', `${args.flowName}.yml`);
     if (existsSync(dest)) {
       this.error(`${dest} already exists. Remove it first if you want to re-eject.`, { exit: 1 });
     }

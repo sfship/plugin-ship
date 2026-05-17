@@ -1,5 +1,5 @@
 import { Args } from '@oclif/core';
-import { SfCommand, Ux } from '@salesforce/sf-plugins-core';
+import { SfCommand, Ux, StandardColors } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
 import { getMeta } from '../../../core/service.js';
 
@@ -28,7 +28,8 @@ export default class ServiceInfo extends SfCommand<void> {
     }
 
     const ux = new Ux();
-    this.styledHeader(`${meta.service} — ${meta.alias}`);
+    this.log('');
+    this.log(`${StandardColors.info(meta.service)} ${StandardColors.info('—')} ${StandardColors.success(meta.alias)}`);
 
     ux.table({
       data: [
