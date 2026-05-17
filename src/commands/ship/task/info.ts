@@ -37,8 +37,7 @@ export default class TaskInfo extends SfCommand<void> {
     this.log(formatTaskPreview(task));
 
     if (task.params.length > 0) {
-      this.log('');
-      this.log('=== Params');
+      this.styledHeader('Params');
       ux.table({
         data: task.params.map((p) => ({
           name: p.name,
@@ -50,7 +49,7 @@ export default class TaskInfo extends SfCommand<void> {
     }
 
     if (task.outputs && task.outputs.length > 0) {
-      this.log('=== Outputs');
+      this.styledHeader('Outputs');
       this.log(
         StandardColors.info('Tip:') + ' Reference these in subsequent steps using ${{ steps.<step-id>.<output-name> }}'
       );

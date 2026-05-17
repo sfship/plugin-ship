@@ -40,7 +40,7 @@ export default class FlowInfo extends SfCommand<void> {
     const ux = new Ux();
 
     this.log('');
-    this.log(`=== Flow: ${StandardColors.success(args.flowName)}`);
+    this.log(`${StandardColors.info('Flow:')} ${StandardColors.success(args.flowName)}`);
 
     if (flow.description) {
       this.log('');
@@ -48,8 +48,7 @@ export default class FlowInfo extends SfCommand<void> {
     }
 
     if (flow.params && flow.params.length > 0) {
-      this.log('');
-      this.log('=== Params');
+      this.styledHeader('Params');
       ux.table({
         data: flow.params.map((p) => ({
           name: p.name,
@@ -61,8 +60,7 @@ export default class FlowInfo extends SfCommand<void> {
       });
     }
 
-    this.log('');
-    this.log('=== Steps');
+    this.styledHeader('Steps');
     ux.table({
       data: Object.entries(flow.steps).map(([stepId, step], index) => ({
         '#': index + 1,

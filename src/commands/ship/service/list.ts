@@ -18,7 +18,7 @@ export default class ServiceList extends SfCommand<void> {
     const metas = listMetas();
 
     const ux = new Ux();
-    ux.styledHeader('Connected Services');
+    this.styledHeader('Connected Services');
 
     if (metas.length === 0) {
       this.log(StandardColors.warning('No services connected'));

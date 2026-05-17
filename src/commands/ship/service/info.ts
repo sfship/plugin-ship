@@ -28,8 +28,7 @@ export default class ServiceInfo extends SfCommand<void> {
     }
 
     const ux = new Ux();
-    this.log('');
-    ux.styledHeader(`${meta.service} — ${meta.alias}`);
+    this.styledHeader(`${meta.service} — ${meta.alias}`);
 
     ux.table({
       data: [

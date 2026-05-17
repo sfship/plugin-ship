@@ -26,6 +26,8 @@ export default class FlowList extends SfCommand<void> {
     const registry = new FlowRegistry(resolve(config.dir));
     const names = registry.list();
 
+    this.styledHeader('Flow List');
+
     if (names.length === 0) {
       this.log('No flows available.');
       return;

@@ -1,5 +1,5 @@
 import { ux } from '@oclif/core';
-import { SfCommand, Flags, StandardColors, Ux } from '@salesforce/sf-plugins-core';
+import { SfCommand, Flags, StandardColors } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
 import { setGithubToken, requestDeviceCode, pollForToken } from '../../../../core/service.github.js';
 
@@ -21,8 +21,7 @@ export default class ServiceConnectGithub extends SfCommand<void> {
     const { flags } = await this.parse(ServiceConnectGithub);
     const deviceData = await requestDeviceCode();
 
-    const sfUx = new Ux();
-    sfUx.styledHeader('Authorize GitHub');
+    this.styledHeader('Authorize GitHub');
     this.log(`Go to: \x1b[36m${deviceData.verification_uri}\x1b[0m`);
     this.log(`Code:  ${StandardColors.success(deviceData.user_code)}\n`);
 

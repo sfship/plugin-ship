@@ -26,6 +26,8 @@ export default class TaskList extends SfCommand<void> {
     const shipDir = resolve(config.dir);
 
     const tasks = new TaskRegistry(shipDir).list();
+
+    this.styledHeader('Task List');
     this.log(renderTree(tasks));
     this.log('');
     this.log(

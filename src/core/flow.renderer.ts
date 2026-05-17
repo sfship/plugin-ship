@@ -16,8 +16,8 @@ type Steps = ReadonlyArray<readonly [string, FlowStep]>;
  * heading before each step, the step's own (and any subcommand's) output
  * flowing untouched, and a result summary at the end.
  *
- * All formatting lives in the `flow.view` / `task.view` modules so a flow
- * looks the same whether it runs here or is inspected via `ship flow info`.
+ * All formatting lives in the `flow.view` module so a flow looks the same
+ * whether it runs here or is inspected via `ship flow info`.
  */
 export class FlowRenderer {
   private readonly write: (chunk: string) => boolean;
