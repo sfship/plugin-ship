@@ -1,7 +1,7 @@
 import { existsSync, copyFileSync, mkdirSync } from 'node:fs';
 import { resolve, dirname, join, relative } from 'node:path';
 import { Args } from '@oclif/core';
-import { SfCommand, Flags } from '@salesforce/sf-plugins-core';
+import { SfCommand, Flags, StandardColors } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
 import { loadConfig } from '../../../core/config.loader.js';
 import { FlowRegistry, builtinsDir } from '../../../core/flow.registry.js';
@@ -28,6 +28,9 @@ export default class FlowEject extends SfCommand<void> {
   public async run(): Promise<void> {
     const { args, flags } = await this.parse(FlowEject);
 
+    this.log('');
+    this.styledHeader('Flow Eject');
+
     const config = loadConfig(flags.config);
     const projectDir = resolve(dirname(flags.config));
     const shipDir = join(projectDir, config.dir);
@@ -35,7 +38,6 @@ export default class FlowEject extends SfCommand<void> {
     // Resolve the same way `flow run`/`flow info` do — through the registry,
     // which owns name normalization and the built-in vs project distinction.
     const src = new FlowRegistry(shipDir).builtinSource(args.flowName);
-    this.log(src ?? '');
     if (!src) {
       this.error(`"${args.flowName}" is not a built-in flow.`, { exit: 1 });
     }
@@ -47,6 +49,7 @@ export default class FlowEject extends SfCommand<void> {
 
     mkdirSync(dirname(dest), { recursive: true });
     copyFileSync(src, dest);
-    this.log(`Ejected to ${dest}`);
+    this.log(StandardColors.success('✓') + ` Ejected flow to: ${dest}`);
+    this.log('');
   }
 }

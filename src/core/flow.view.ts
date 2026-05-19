@@ -28,10 +28,17 @@ function planLines(steps: Steps, startIndex: number): string[] {
   );
 }
 
+/**
+ * UX formatted flow name + description
+ */
+export function formatFlowPreview(flowName: string, description?: string): string {
+  const header = `${StandardColors.info('Task:')} ${StandardColors.success(flowName)}`;
+  return description ? `${header}\n${StandardColors.info('Description:')} ${description}` : header;
+}
+
 /** The plan banner printed once when a flow starts. */
 export function formatFlowPlan(flowName: string, mainSteps: Steps, finallySteps: Steps): string {
   const lines = [
-    '',
     `${StandardColors.info('Flow:')} ${StandardColors.success(flowName)}`,
     '',
     StandardColors.info('Steps'),

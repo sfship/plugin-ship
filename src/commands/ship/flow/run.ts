@@ -33,6 +33,9 @@ export default class FlowRun extends SfCommand<void> {
   public async run(): Promise<void> {
     const { args, flags } = await this.parse(FlowRun);
 
+    this.log('');
+    this.styledHeader('Flow Run');
+
     const config = loadConfig(flags.config);
     const projectDir = resolve(dirname(flags.config));
     const shipDir = join(projectDir, config.dir);

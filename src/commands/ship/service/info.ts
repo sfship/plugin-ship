@@ -20,6 +20,9 @@ export default class ServiceInfo extends SfCommand<void> {
   public static readonly enableJsonFlag = false;
 
   public async run(): Promise<void> {
+    this.log('');
+    this.styledHeader('Service Info');
+
     const { args } = await this.parse(ServiceInfo);
 
     const meta = getMeta(args.service, args.alias ?? 'default');

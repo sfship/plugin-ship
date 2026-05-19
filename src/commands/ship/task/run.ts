@@ -53,8 +53,8 @@ export default class TaskRun extends SfCommand<void> {
     const runner = new TaskRegistry(shipDir);
     const task = await runner.resolveTask(args.taskName);
 
-    this.log(formatTaskPreview(task));
     this.log('');
+    this.log(formatTaskPreview(task));
     const validatedParams = validateParams(params, task.params);
 
     const store = new Store();

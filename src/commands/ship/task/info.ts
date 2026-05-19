@@ -28,16 +28,19 @@ export default class TaskInfo extends SfCommand<void> {
   public async run(): Promise<void> {
     const { args, flags } = await this.parse(TaskInfo);
 
+    this.log('');
+    this.styledHeader('Task Info');
+
     const config = loadConfig(flags.config);
     const shipDir = resolve(config.dir);
     const task = await new TaskRegistry(shipDir).resolveTask(args.taskName);
 
     const ux = new Ux();
-    this.log('');
     this.log(formatTaskPreview(task));
+    this.log('');
 
     if (task.params.length > 0) {
-      this.styledHeader('Params');
+      this.styledHeader('Task Params');
       ux.table({
         data: task.params.map((p) => ({
           name: p.name,
@@ -49,7 +52,7 @@ export default class TaskInfo extends SfCommand<void> {
     }
 
     if (task.outputs && task.outputs.length > 0) {
-      this.styledHeader('Outputs');
+      this.styledHeader('Task Outputs');
       this.log(
         StandardColors.info('Tip:') + ' Reference these in subsequent steps using ${{ steps.<step-id>.<output-name> }}'
       );

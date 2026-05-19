@@ -8,7 +8,7 @@ Prints the metadata for a stored service credential identified by service name a
 
 # args.service.summary
 
-The service name (e.g. github.com).
+The service name (e.g. github).
 
 # args.alias.summary
 

@@ -5,6 +5,7 @@ import { Messages } from '@salesforce/core';
 import { loadConfig } from '../../../core/config.loader.js';
 import { FlowRegistry } from '../../../core/flow.registry.js';
 import { asError } from '../../../core/util.error.js';
+import { formatFlowPreview } from '../../../core/flow.view.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('plugin-ship', 'ship.flow.info');
@@ -28,6 +29,9 @@ export default class FlowInfo extends SfCommand<void> {
   public async run(): Promise<void> {
     const { args, flags } = await this.parse(FlowInfo);
 
+    this.log('');
+    this.styledHeader('Flow Info');
+
     const config = loadConfig(flags.config);
     const registry = new FlowRegistry(resolve(config.dir));
     let flow;
@@ -38,14 +42,8 @@ export default class FlowInfo extends SfCommand<void> {
     }
 
     const ux = new Ux();
-
+    this.log(formatFlowPreview(args.flowName, flow.description));
     this.log('');
-    this.log(`${StandardColors.info('Flow:')} ${StandardColors.success(args.flowName)}`);
-
-    if (flow.description) {
-      this.log('');
-      this.log(`${StandardColors.info('Description:')} ${flow.description}`);
-    }
 
     if (flow.params && flow.params.length > 0) {
       this.styledHeader('Params');
@@ -60,7 +58,7 @@ export default class FlowInfo extends SfCommand<void> {
       });
     }
 
-    this.styledHeader('Steps');
+    this.styledHeader('Flow Steps');
     ux.table({
       data: Object.entries(flow.steps).map(([stepId, step], index) => ({
         '#': index + 1,

@@ -22,6 +22,9 @@ export default class ServiceDelete extends SfCommand<void> {
   public async run(): Promise<void> {
     const { args } = await this.parse(ServiceDelete);
 
+    this.log('');
+    this.styledHeader('Service Delete');
+
     const alias = args.alias ?? 'default';
     const meta = getMeta(args.service, alias);
     if (!meta) {
@@ -30,7 +33,7 @@ export default class ServiceDelete extends SfCommand<void> {
 
     deleteToken(args.service, meta.account, alias);
 
-    this.log(StandardColors.success('✓') + ` Removed ${args.service} credential "${alias}".`);
+    this.log(StandardColors.success('✓') + ` Removed ${args.service} credential ` + StandardColors.success(alias));
     this.log('');
   }
 }

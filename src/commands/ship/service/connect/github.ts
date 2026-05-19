@@ -21,7 +21,8 @@ export default class ServiceConnectGithub extends SfCommand<void> {
     const { flags } = await this.parse(ServiceConnectGithub);
     const deviceData = await requestDeviceCode();
 
-    this.styledHeader('Authorize GitHub');
+    this.log('');
+    this.styledHeader('Service Connect: GitHub');
     this.log(`Go to: \x1b[36m${deviceData.verification_uri}\x1b[0m`);
     this.log(`Code:  ${StandardColors.success(deviceData.user_code)}\n`);
 
@@ -40,7 +41,7 @@ export default class ServiceConnectGithub extends SfCommand<void> {
 
     setGithubToken(token, user.login, flags.alias, scopes);
     this.log('');
-    this.log(StandardColors.success(`Connected to Github as "${user.login}"`));
+    this.log(StandardColors.success('✓') + ' Connected to Github as ' + StandardColors.success(user.login));
     this.log(`Scopes: ${scopes.join(', ')}`);
     this.log('');
   }
