@@ -1,5 +1,5 @@
 # CCI lineage: ci_feature_2gp
-#   1) flow: install_2gp_commit   -> inlined (see install-2gp-commit.yml)
+#   1) flow: install_2gp_commit   -> inlined (package-data, deps, deploy_pre, install)
 #   2) flow: config_apextest      -> inlined (deploy_post, update_admin_profile)
 #   3) run_tests                  -> apex/run/test
 description: Install as a managed 2GP package and run Apex tests. Run after build-2gp.

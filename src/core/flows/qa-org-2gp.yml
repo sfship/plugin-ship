@@ -1,5 +1,5 @@
 # CCI lineage: qa_org_2gp
-#   1) flow: install_2gp_commit   -> inlined (see install-2gp-commit.yml)
+#   1) flow: install_2gp_commit   -> inlined (package-data, deps, deploy_pre, install)
 #   2) flow: config_qa            -> inlined (deploy_post, update_admin_profile, load_sample_data)
 #   3) snapshot_changes           -> org/tracking/reset
 description: Set up an org as a QA environment using a 2GP managed package.

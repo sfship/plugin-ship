@@ -14,5 +14,5 @@ steps:
     task: github/release/notes
     params:
       version-id: ${{ steps.create-version.version-id }}
-  automerge:
-    task: github/branch/merge
+# CCI's release_2gp_beta ends with github_automerge_main — intentionally omitted.
+# We do not inherit CCI's auto-merge feature; see 2GP_FLOW_PLAN.md design note 5.
