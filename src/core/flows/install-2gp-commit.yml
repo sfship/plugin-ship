@@ -1,0 +1,29 @@
+# CCI lineage: install_2gp_commit
+#   1) github_package_data        -> package/version/list (resolve latest 04t)
+#   2) flow: dependencies         -> inlined (no nested-flow support)
+#   3) install_managed            -> package/install
+description: Install the 2GP package for the current commit, with its dependencies.
+params:
+  - name: target-org
+    type: string
+    required: true
+    description: Org alias or username to install into.
+steps:
+  package-data:
+    task: package/version/list
+    params:
+      released: false
+  update-dependencies:
+    task: package/install/dependencies
+    params:
+      target-org: ${{ params.target-org }}
+  deploy-pre:
+    task: metadata/deploy/bundles
+    params:
+      target-org: ${{ params.target-org }}
+      path: unpackaged/pre
+  install:
+    task: package/install
+    params:
+      target-org: ${{ params.target-org }}
+      version-id: ${{ steps.package-data.version-id }}

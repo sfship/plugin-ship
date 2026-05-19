@@ -1,0 +1,50 @@
+# CCI lineage: qa_org_2gp
+#   1) flow: install_2gp_commit   -> inlined (see install-2gp-commit.yml)
+#   2) flow: config_qa            -> inlined (deploy_post, update_admin_profile, load_sample_data)
+#   3) snapshot_changes           -> org/tracking/reset
+description: Set up an org as a QA environment using a 2GP managed package.
+params:
+  - name: target-org
+    type: string
+    required: true
+    description: Org alias or username to set up.
+steps:
+  # --- install_2gp_commit ---
+  package-data:
+    task: package/version/list
+    params:
+      released: false
+  update-dependencies:
+    task: package/install/dependencies
+    params:
+      target-org: ${{ params.target-org }}
+  deploy-pre:
+    task: metadata/deploy/bundles
+    params:
+      target-org: ${{ params.target-org }}
+      path: unpackaged/pre
+  install:
+    task: package/install
+    params:
+      target-org: ${{ params.target-org }}
+      version-id: ${{ steps.package-data.version-id }}
+  # --- config_qa ---
+  deploy-post:
+    task: metadata/deploy/bundles
+    params:
+      target-org: ${{ params.target-org }}
+      path: unpackaged/post
+      inject-namespace: true
+  update-admin-profile:
+    task: org/admin-profile/update
+    params:
+      target-org: ${{ params.target-org }}
+  load-data:
+    task: data/import
+    params:
+      target-org: ${{ params.target-org }}
+  # --- snapshot_changes ---
+  reset-tracking:
+    task: org/tracking/reset
+    params:
+      target-org: ${{ params.target-org }}

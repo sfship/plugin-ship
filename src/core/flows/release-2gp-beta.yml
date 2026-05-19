@@ -1,0 +1,18 @@
+# CCI lineage: release_2gp_beta
+description: Upload and release a beta 2GP managed package version.
+steps:
+  create-version:
+    task: package/version/create
+    params:
+      code-coverage: true
+  github-release:
+    task: github/release/create
+    params:
+      version-id: ${{ steps.create-version.version-id }}
+      prerelease: true
+  release-notes:
+    task: github/release/notes
+    params:
+      version-id: ${{ steps.create-version.version-id }}
+  automerge:
+    task: github/branch/merge

@@ -1,0 +1,16 @@
+# CCI lineage: release_2gp_production
+description: Promote the latest beta 2GP managed package version and release it on GitHub.
+steps:
+  promote:
+    task: package/version/promote
+    params:
+      no-prompt: true
+  github-release:
+    task: github/release/create
+    params:
+      version-id: ${{ steps.promote.version-id }}
+      prerelease: false
+  release-notes:
+    task: github/release/notes
+    params:
+      version-id: ${{ steps.promote.version-id }}
