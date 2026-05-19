@@ -13,7 +13,7 @@ import { OrgRegistry } from '../../../core/org.registry.js';
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('plugin-ship', 'ship.flow.run');
 
-/** Executes a named flow defined in `ship.yml`. */
+/** Executes a built-in flow or one defined in `ship.yml`. */
 export default class FlowRun extends SfCommand<void> {
   public static readonly summary = messages.getMessage('summary');
   public static readonly description = messages.getMessage('description');

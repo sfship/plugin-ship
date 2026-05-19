@@ -35,8 +35,6 @@ export default class FlowEject extends SfCommand<void> {
     const projectDir = resolve(dirname(flags.config));
     const shipDir = join(projectDir, config.dir);
 
-    // Resolve the same way `flow run`/`flow info` do — through the registry,
-    // which owns name normalization and the built-in vs project distinction.
     const src = new FlowRegistry(shipDir).builtinSource(args.flowName);
     if (!src) {
       this.error(`"${args.flowName}" is not a built-in flow.`, { exit: 1 });
