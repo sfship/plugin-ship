@@ -1,4 +1,4 @@
-description: Set up an org as a QA environment using a 2GP managed package.
+description: Set up an org as a QA environment using a managed package.
 params:
   - name: target-org
     type: string

@@ -1,4 +1,4 @@
-description: Build a 2GP managed package version, install it, and run Apex tests against the target org.
+description: Build a managed package version, install it, and run Apex tests against the target org.
 params:
   - name: target-org
     type: string

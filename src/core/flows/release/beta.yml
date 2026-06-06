@@ -1,4 +1,4 @@
-description: Upload and release a beta 2GP managed package version.
+description: Upload and release a beta managed package version.
 steps:
   create-version:
     task: package/version/create

@@ -1,4 +1,4 @@
-description: Promote the latest beta 2GP managed package version and release it on GitHub.
+description: Promote the latest beta managed package version and release it on GitHub.
 steps:
   promote:
     task: package/version/promote
