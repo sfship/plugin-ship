@@ -8,7 +8,9 @@ function describeStep(step: DependencyStep): string {
 }
 
 export default {
-  description: 'Resolves and installs all dependencies declared in ship.yml in topological order.',
+  description:
+    'Resolves and installs all dependencies declared in ship.yml in topological order. ' +
+    'Package versions already installed in the target org are skipped unless `force` is set.',
   params: [
     {
       name: 'target-org',
@@ -27,6 +29,12 @@ export default {
       type: 'boolean',
       required: false,
       description: 'When true, resolves and logs dependency steps without installing.',
+    },
+    {
+      name: 'force',
+      type: 'boolean',
+      required: false,
+      description: 'Reinstall package versions even if the target org already has them installed.',
     },
   ],
   async run({ flow, params }: TaskContext): Promise<void> {
@@ -57,8 +65,24 @@ export default {
     const alias = flow.orgs.resolveAlias(params['target-org'] as string);
     const wait = (params['wait'] as number | undefined) ?? 10;
 
+    // Skip anything the org already has. Every step carries the 04t of its
+    // release — direct package installs and the unpackaged bundles that ship with
+    // a release alike — so one `package installed list` query covers them all.
+    let installed = new Set<string>();
+    if (params['force'] !== true) {
+      const result = (await flow.runCommand('package:installed:list', ['--target-org', alias])) as Array<{
+        SubscriberPackageVersionId: string;
+      }>;
+      installed = new Set(result.map((p) => p.SubscriberPackageVersionId));
+      flow.log(`${installed.size} package version(s) already installed in ${alias}.`);
+    }
+
     for (const step of steps) {
       if (step.kind === 'package-id') {
+        if (installed.has(step.versionId)) {
+          flow.log(`Already installed: ${step.versionId}${step.name ? ` (${step.name})` : ''} — skipping.`);
+          continue;
+        }
         flow.log(`Installing ${step.versionId}${step.name ? ` (${step.name})` : ''}...`);
         // eslint-disable-next-line no-await-in-loop
         await flow.runCommand('package:install', [
@@ -72,6 +96,10 @@ export default {
         ]);
         flow.log(`Installed ${step.versionId}.`);
       } else if (step.kind === 'metadata') {
+        if (installed.has(step.versionId)) {
+          flow.log(`Already installed (${step.versionId}): ${step.repoUrl}/${step.subfolder} — skipping.`);
+          continue;
+        }
         // eslint-disable-next-line no-await-in-loop
         await deployMetadataStep(step, alias, flow.shipDir, flow.log, flow.runCommand);
       } else {

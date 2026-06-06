@@ -1,4 +1,3 @@
-# CCI lineage: release_2gp_beta
 description: Upload and release a beta 2GP managed package version.
 steps:
   create-version:
@@ -14,5 +13,3 @@ steps:
     task: github/release/notes
     params:
       version-id: ${{ steps.create-version.version-id }}
-# CCI's release_2gp_beta ends with github_automerge_main — intentionally omitted.
-# We do not inherit CCI's auto-merge feature; see 2GP_FLOW_PLAN.md design note 5.

@@ -1,4 +1,3 @@
-# CCI lineage: release_2gp_production
 description: Promote the latest beta 2GP managed package version and release it on GitHub.
 steps:
   promote:

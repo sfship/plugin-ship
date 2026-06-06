@@ -1,9 +1,0 @@
-# CCI lineage: build_feature_test_package
-# (update_package_xml dropped — sfdx source format)
-description: Create a 2GP managed package version for the current commit.
-steps:
-  create-version:
-    task: package/version/create
-    params:
-      code-coverage: true
-      skip-validation: false

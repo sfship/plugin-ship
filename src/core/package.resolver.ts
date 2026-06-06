@@ -15,7 +15,15 @@ import {
 export type PackageIdStep = { kind: 'package-id'; versionId: string; name?: string };
 
 /** Deploy a subdirectory from a GitHub repository as metadata, with namespace tokens injected. */
-export type MetadataStep = { kind: 'metadata'; repoUrl: string; subfolder: string; namespace: string; tag: string };
+export type MetadataStep = {
+  kind: 'metadata';
+  repoUrl: string;
+  subfolder: string;
+  namespace: string;
+  tag: string;
+  /** 04t package version ID of the release this bundle ships with — lets the installer skip it when already present. */
+  versionId: string;
+};
 
 /** A single resolved install or deploy step produced by the dependency resolver. */
 export type DependencyStep = PackageIdStep | MetadataStep;
@@ -96,7 +104,14 @@ async function resolveGitHubRepo(dep: ShipGitHubDependency, visited: Set<string>
       const key = `${repo}:${subfolder}`;
       if (!visited.has(key)) {
         visited.add(key);
-        steps.push({ kind: 'metadata', repoUrl, subfolder, namespace, tag: release.tagName });
+        steps.push({
+          kind: 'metadata',
+          repoUrl,
+          subfolder,
+          namespace,
+          tag: release.tagName,
+          versionId: metadata.versionId,
+        });
       }
     }
 
@@ -116,7 +131,14 @@ async function resolveGitHubRepo(dep: ShipGitHubDependency, visited: Set<string>
       const key = `${repo}:${subfolder}`;
       if (!visited.has(key)) {
         visited.add(key);
-        steps.push({ kind: 'metadata', repoUrl, subfolder, namespace, tag: release.tagName });
+        steps.push({
+          kind: 'metadata',
+          repoUrl,
+          subfolder,
+          namespace,
+          tag: release.tagName,
+          versionId: metadata.versionId,
+        });
       }
     }
 

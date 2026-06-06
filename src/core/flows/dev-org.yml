@@ -1,12 +1,3 @@
-# CCI lineage: dev_org
-#   1) flow: dependencies         -> inlined (update_dependencies, deploy_pre)
-#   2) flow: deploy_unmanaged     -> sfdx+scratch path only: deploy + snapshot_changes
-#                                    (dx_convert_from, unschedule_apex,
-#                                     update_package_xml, uninstall_packaged_incremental
-#                                     dropped — see 2GP_FLOW_PLAN.md design note 2)
-#   3) flow: config_dev           -> inlined (deploy_post, update_admin_profile, load_sample_data)
-#   4) snapshot_changes           -> org/tracking/reset
-# Unlike the 2GP flows, dev_org provisions its own scratch org (design note 4).
 description: Set up a scratch org as a development environment for unmanaged metadata.
 steps:
   create-org:
@@ -14,40 +5,18 @@ steps:
     params:
       scratch-def: dev
       duration: 30
-  # --- dependencies ---
   update-dependencies:
     task: package/install/dependencies
     params:
       target-org: ${{ steps.create-org.target-org }}
-  deploy-pre:
-    task: metadata/deploy/bundles
-    params:
-      target-org: ${{ steps.create-org.target-org }}
-      path: unpackaged/pre
-  # --- deploy_unmanaged (sfdx + scratch) ---
   deploy:
     task: project/deploy/start
     params:
       target-org: ${{ steps.create-org.target-org }}
-  # --- config_dev ---
-  deploy-post:
-    task: metadata/deploy/bundles
-    params:
-      target-org: ${{ steps.create-org.target-org }}
-      path: unpackaged/post
-      inject-namespace: true
-  update-admin-profile:
-    task: org/admin-profile/update
-    params:
-      target-org: ${{ steps.create-org.target-org }}
   load-data:
-    task: data/import
-    params:
-      target-org: ${{ steps.create-org.target-org }}
-  # --- snapshot_changes ---
-  # CCI runs snapshot_changes twice (mid deploy_unmanaged + at end); once after
-  # all metadata is deployed is the meaningful reset for local dev tracking.
-  reset-tracking:
-    task: org/tracking/reset
+    task: data/import/tree
+    if:
+      value: ${{ steps.create-org.created }}
+      equals: true
     params:
       target-org: ${{ steps.create-org.target-org }}
