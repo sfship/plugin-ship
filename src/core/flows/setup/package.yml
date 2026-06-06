@@ -1,0 +1,18 @@
+description: Register the 2GP package on the Dev Hub and write its 0Ho into sfdx-project.json. Run once per project before any release or deploy/feature flow.
+params:
+  - name: package-type
+    type: string
+    required: false
+    default: Managed
+    description: Package type, Managed or Unlocked.
+  - name: path
+    type: string
+    required: false
+    default: force-app
+    description: Path to the package source directory.
+steps:
+  create-package:
+    task: package/create
+    params:
+      package-type: ${{ params.package-type }}
+      path: ${{ params.path }}

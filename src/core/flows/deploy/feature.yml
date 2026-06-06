@@ -9,7 +9,18 @@ params:
     type: string
     required: false
     description: Existing 04t SubscriberPackageVersionId to install. If omitted, a new package version is built from the current commit.
+  - name: version-type
+    type: string
+    required: false
+    default: build
+    description: Which part of the version to bump relative to the latest released version. One of build, patch, minor, major.
 steps:
+  resolve-next:
+    if-not:
+      value: ${{ params.version-id }}
+    task: package/version/resolve-next
+    params:
+      version-type: ${{ params.version-type }}
   create-version:
     if-not:
       value: ${{ params.version-id }}
@@ -17,6 +28,8 @@ steps:
     params:
       code-coverage: true
       skip-validation: false
+      version-number: ${{ steps.resolve-next.version-number }}
+      ancestor-id: ${{ steps.resolve-next.ancestor-id }}
   update-dependencies:
     task: package/install/dependencies
     params:

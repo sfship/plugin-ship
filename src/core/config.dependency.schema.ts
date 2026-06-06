@@ -31,12 +31,10 @@ export const CciDependencySchema = z.union([
   CciVersionIdDependencySchema,
 ]);
 
-/** A plugin-ship GitHub repository dependency. Resolves via ship.yml or CCI release metadata. */
+/** A plugin-ship GitHub repository dependency. Resolves via the annotated tag message on the latest (or pinned) release. */
 export const ShipGitHubDependencySchema = z.object({
   /** GitHub repository as a full URL or `owner/repo` slug. */
   github: z.string(),
-  /** Whether the repo uses plugin-ship or CumulusCI. Determines which config file is fetched. Defaults to `ship`. */
-  type: z.enum(['ship', 'cci']).default('ship'),
   /** Pin to a specific release tag instead of resolving to latest. */
   tag: z.string().optional(),
   /** Human-readable label for this dependency, used to name the repo's own package step in log output. */
