@@ -1,10 +1,5 @@
-description: Build a managed package version, install it, and run Apex tests against the target org.
+description: Build a managed package version, install it, and run Apex tests against a fresh scratch org.
 params:
-  - name: target-org
-    type: string
-    required: true
-    default: feature
-    description: Org alias or username to install and test against.
   - name: version-id
     type: string
     required: false
@@ -14,7 +9,22 @@ params:
     required: false
     default: build
     description: Which part of the version to bump relative to the latest released version. One of build, patch, minor, major.
+  - name: test-level
+    type: string
+    required: false
+    default: RunAllTestsInOrg
+    description: 'Apex test level to run post-install. One of: RunAllTestsInOrg, RunSpecifiedTests.'
+  - name: test-classes
+    type: string
+    required: false
+    description: Comma-separated test class names. Required when test-level is RunSpecifiedTests.
 steps:
+  create-org:
+    task: org/create/scratch
+    params:
+      scratch-def: feature
+      duration: 1
+      no-namespace: true
   resolve-next:
     if-not:
       value: ${{ params.version-id }}
@@ -26,23 +36,23 @@ steps:
       value: ${{ params.version-id }}
     task: package/version/create
     params:
-      code-coverage: true
-      skip-validation: false
+      code-coverage: false
+      skip-validation: true
       version-number: ${{ steps.resolve-next.version-number }}
-      ancestor-id: ${{ steps.resolve-next.ancestor-id }}
   update-dependencies:
     task: package/install/dependencies
     params:
-      target-org: ${{ params.target-org }}
+      target-org: ${{ steps.create-org.target-org }}
   install:
     task: package/install
     params:
-      target-org: ${{ params.target-org }}
+      target-org: ${{ steps.create-org.target-org }}
       # Only one of these resolves per run: create-version's output if it ran,
       # otherwise the version-id param. Mixed-string concat handles the empty side.
       version-id: ${{ steps.create-version.version-id }}${{ params.version-id }}
   test:
     task: apex/run/test
     params:
-      target-org: ${{ params.target-org }}
-      test-level: RunLocalTests
+      target-org: ${{ steps.create-org.target-org }}
+      test-level: ${{ params.test-level }}
+      class-names: ${{ params.test-classes }}

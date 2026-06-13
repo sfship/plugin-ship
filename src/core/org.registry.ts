@@ -29,7 +29,10 @@ export class OrgRegistry {
    *
    * @param alias - A project alias, Salesforce username, or SF CLI alias.
    */
-  public resolveAlias(alias: string): string {
+  public resolveAlias(alias: string): string;
+  public resolveAlias(alias: string | undefined): string | undefined;
+  public resolveAlias(alias: string | undefined): string | undefined {
+    if (alias === undefined) return undefined;
     const defPath = resolve(this.orgsDir, `${alias}.json`);
     if (fileExists(defPath)) return this.projectName ? `${this.projectName}:${alias}` : alias;
     return alias;

@@ -1,6 +1,6 @@
 import type { TaskContext, TaskDefinition } from '../../../task.js';
 import { ExpectedError } from '../../../util.error.js';
-import { normalizeRepo, fetchRelease, fetchGitTag } from '../../../service.github.js';
+import { normalizeRepo, fetchRelease } from '../../../service.github.js';
 
 const VERSION_TYPES = ['build', 'patch', 'minor', 'major'] as const;
 type VersionType = (typeof VERSION_TYPES)[number];
@@ -31,7 +31,7 @@ function bump(base: { major: number; minor: number; patch: number }, type: Versi
 
 export default {
   description:
-    'Resolves the next package version number and ancestor 04t by reading the latest GitHub release. Outputs a `.NEXT` version so sf assigns the build slot automatically.',
+    'Resolves the next package version number by reading the latest GitHub release. Outputs a `.NEXT` version so sf assigns the build slot automatically. Ancestor is handled by sf via `ancestorVersion: "HIGHEST"` in sfdx-project.json (scaffolded by `package/create`), so no ancestor output is needed.',
   params: [
     {
       name: 'version-type',
@@ -62,12 +62,6 @@ export default {
       description:
         'Next version number ending in `.NEXT`, ready to pass to `sf package version create --version-number`.',
     },
-    {
-      name: 'ancestor-id',
-      type: 'string',
-      description:
-        'The 04t SubscriberPackageVersionId of the latest released version. Empty when no prior release exists.',
-    },
   ],
   async run({ flow, params, output }: TaskContext): Promise<void> {
     const versionType = (params['version-type'] as string | undefined) ?? 'build';
@@ -87,35 +81,27 @@ export default {
     const release = await fetchRelease(repo);
 
     let base = { major: 0, minor: 0, patch: 0 };
-    let ancestorId = '';
-
     if (release) {
       // Parse the version from the tag name (e.g. "v1.2.3" or "1.2.3").
       const parsed = parseSemver(release.tagName);
       if (parsed) base = parsed;
-
-      // Pull the ancestor 04t out of the tag annotation (the CCI-format block we write on release).
-      const gitTag = await fetchGitTag(repo, release.tagName);
-      if (gitTag) {
-        const versionIdMatch = gitTag.message.match(/^version_id:\s*(04t[A-Za-z0-9]{12,15})/m);
-        if (versionIdMatch) ancestorId = versionIdMatch[1];
-      }
     }
 
-    const next = bump(base, versionType as VersionType);
+    // A 'build' bump stays in the same X.Y.Z series. But fetchRelease returns the latest
+    // non-prerelease (production) release, which has a promoted version in that series —
+    // sf won't allow new versions there. Bump minor to open a fresh series.
+    // (Patch versioning requires special Dev Hub enablement and is off by default.)
+    const effectiveType: VersionType =
+      versionType === 'build' && release !== null ? 'minor' : (versionType as VersionType);
+    const next = bump(base, effectiveType);
     const versionNumber = `${next.major}.${next.minor}.${next.patch}.NEXT`;
 
     if (release) {
-      flow.log(
-        `Latest release: ${release.tagName} (ancestor: ${
-          ancestorId || 'none'
-        }). Bumping ${versionType} → ${versionNumber}`
-      );
+      flow.log(`Latest release: ${release.tagName}. Bumping ${versionType} → ${versionNumber}`);
     } else {
       flow.log(`No prior GitHub release found. First version: ${versionNumber}`);
     }
 
     output.set('version-number', versionNumber);
-    output.set('ancestor-id', ancestorId);
   },
 } satisfies TaskDefinition;

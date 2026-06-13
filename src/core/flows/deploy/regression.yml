@@ -1,12 +1,16 @@
-description: Set up a QA environment using the latest beta managed package.
+description: Simulate an upgrade from the latest production release to the latest beta, with full dependency and unpackaged metadata setup.
 steps:
   create-org:
     task: org/create/scratch
     params:
-      scratch-def: qa
-      duration: 7
+      scratch-def: regression
+      duration: 1
       no-namespace: true
-  package-data:
+  find-release:
+    task: package/version/resolve-latest
+    params:
+      released: true
+  find-beta:
     task: package/version/resolve-latest
     params:
       released: false
@@ -25,11 +29,20 @@ steps:
     params:
       target-org: ${{ steps.create-org.target-org }}
       source-dir: unpackaged/pre
-  install:
+  install-release:
     task: package/install
     params:
       target-org: ${{ steps.create-org.target-org }}
-      version-id: ${{ steps.package-data.version-id }}
+      version-id: ${{ steps.find-release.version-id }}
+  install-beta:
+    task: package/install
+    params:
+      target-org: ${{ steps.create-org.target-org }}
+      version-id: ${{ steps.find-beta.version-id }}
+  assign-permsets:
+    task: org/assign/permsets
+    params:
+      target-org: ${{ steps.create-org.target-org }}
   check-post:
     task: util/file/exists
     params:
@@ -41,10 +54,6 @@ steps:
     params:
       target-org: ${{ steps.create-org.target-org }}
       source-dir: unpackaged/post
-  assign-permsets:
-    task: org/assign/permsets
-    params:
-      target-org: ${{ steps.create-org.target-org }}
   load-data:
     task: data/import/tree
     params:

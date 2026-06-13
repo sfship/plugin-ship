@@ -15,8 +15,8 @@ export default {
     {
       name: 'target-org',
       type: 'string',
-      required: true,
-      description: 'Org alias or username to install packages into.',
+      required: false,
+      description: 'Org alias or username to install packages into. Defaults to the SF CLI default target-org.',
     },
     {
       name: 'wait',
@@ -62,7 +62,7 @@ export default {
       return;
     }
 
-    const alias = flow.orgs.resolveAlias(params['target-org'] as string);
+    const alias = flow.orgs.resolveAlias(params['target-org'] as string | undefined);
     const wait = (params['wait'] as number | undefined) ?? 10;
 
     // Skip anything the org already has. Every step carries the 04t of its
@@ -70,11 +70,12 @@ export default {
     // a release alike — so one `package installed list` query covers them all.
     let installed = new Set<string>();
     if (params['force'] !== true) {
-      const result = (await flow.runCommand('package:installed:list', ['--target-org', alias])) as Array<{
+      const listArgs = alias !== undefined ? ['--target-org', alias] : [];
+      const result = (await flow.runCommand('package:installed:list', listArgs)) as Array<{
         SubscriberPackageVersionId: string;
       }>;
       installed = new Set(result.map((p) => p.SubscriberPackageVersionId));
-      flow.log(`${installed.size} package version(s) already installed in ${alias}.`);
+      flow.log(`${installed.size} package version(s) already installed in ${alias ?? 'default org'}.`);
     }
 
     for (const step of steps) {
@@ -84,16 +85,10 @@ export default {
           continue;
         }
         flow.log(`Installing ${step.versionId}${step.name ? ` (${step.name})` : ''}...`);
+        const installArgs = ['--package', step.versionId, '--wait', String(wait), '--no-prompt'];
+        if (alias !== undefined) installArgs.push('--target-org', alias);
         // eslint-disable-next-line no-await-in-loop
-        await flow.runCommand('package:install', [
-          '--package',
-          step.versionId,
-          '--target-org',
-          alias,
-          '--wait',
-          String(wait),
-          '--no-prompt',
-        ]);
+        await flow.runCommand('package:install', installArgs);
         flow.log(`Installed ${step.versionId}.`);
       } else if (step.kind === 'metadata') {
         if (installed.has(step.versionId)) {
@@ -101,7 +96,7 @@ export default {
           continue;
         }
         // eslint-disable-next-line no-await-in-loop
-        await deployMetadataStep(step, alias, flow.shipDir, flow.log, flow.runCommand);
+        await deployMetadataStep(step, alias ?? '', flow.shipDir, flow.log, flow.runCommand);
       } else {
         flow.log(`Skipping ${describeStep(step)} — not yet supported.`);
       }

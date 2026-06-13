@@ -15,7 +15,6 @@ steps:
     params:
       code-coverage: true
       version-number: ${{ steps.resolve-next.version-number }}
-      ancestor-id: ${{ steps.resolve-next.ancestor-id }}
   github-release:
     task: git/release/create
     params:

@@ -13,6 +13,10 @@ steps:
     task: project/deploy/start
     params:
       target-org: ${{ steps.create-org.target-org }}
+  assign-permsets:
+    task: org/assign/permsets
+    params:
+      target-org: ${{ steps.create-org.target-org }}
   load-data:
     task: data/import/tree
     if:

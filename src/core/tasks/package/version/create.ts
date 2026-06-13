@@ -3,7 +3,6 @@ import { join } from 'node:path';
 import type { TaskContext, TaskDefinition } from '../../../task.js';
 import { resolvePassthroughArgs } from '../../../task.param.js';
 import { ExpectedError } from '../../../util.error.js';
-import { normalizeSfdxProject } from '../../../util.sfdx-project.js';
 
 /** Reads sfdx-project.json and returns the package alias of the default packageDirectory, if any. */
 async function getDefaultPackageAlias(projectDir: string): Promise<string | null> {
@@ -146,6 +145,10 @@ export default {
 
     const argv = resolvePassthroughArgs(params, overrides);
 
+    // Prevent sf from writing to sfdx-project.json
+    // https://developer.salesforce.com/docs/atlas.en-us.sfdx_setup.meta/sfdx_setup/sfdx_dev_cli_env_variables.htm
+    process.env.SF_PROJECT_AUTOUPDATE_DISABLE_FOR_PACKAGE_VERSION_CREATE = 'true';
+
     const label = (params['package'] as string | undefined) ?? overrides['--package'] ?? '(default package)';
     flow.log(`Creating package version for ${label}...`);
     const result = (await flow.runCommand('package:version:create', argv)) as PackageVersionCreateResult;
@@ -161,8 +164,6 @@ export default {
       (result.MajorVersion !== undefined
         ? `${result.MajorVersion}.${result.MinorVersion ?? 0}.${result.PatchVersion ?? 0}.${result.BuildNumber ?? 0}`
         : undefined);
-
-    await normalizeSfdxProject(flow.projectDir);
 
     flow.log(
       `Created ${result.SubscriberPackageVersionId}${versionNumber ? ` (${versionNumber})` : ''} (status: ${

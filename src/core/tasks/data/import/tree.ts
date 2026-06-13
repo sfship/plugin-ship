@@ -7,8 +7,8 @@ export default {
     {
       name: 'target-org',
       type: 'string',
-      required: true,
-      description: 'Org alias or username to import records into.',
+      required: false,
+      description: 'Org alias or username to import records into. Defaults to the SF CLI default target-org.',
     },
     {
       name: 'plan',
@@ -28,8 +28,8 @@ export default {
       flow.log('No plan or files configured — skipping data import.');
       return;
     }
-    const alias = flow.orgs.resolveAlias(params['target-org'] as string);
-    const argv = resolvePassthroughArgs(params, { '--target-org': alias });
+    const alias = flow.orgs.resolveAlias(params['target-org'] as string | undefined);
+    const argv = resolvePassthroughArgs(params, { '--target-org': alias ?? null });
     await flow.runCommand('data:import:tree', argv);
     flow.log('Imported records.');
   },

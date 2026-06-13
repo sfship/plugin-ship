@@ -13,15 +13,16 @@ export default {
     {
       name: 'target-org',
       type: 'string',
-      required: true,
-      description: 'Org alias or username to deploy to.',
+      required: false,
+      description: 'Org alias or username to deploy to. Defaults to the SF CLI default target-org.',
     },
   ],
   async run({ flow, params }: TaskContext): Promise<void> {
     const sourceDir = resolve(process.cwd(), (params['source-dir'] as string | undefined) ?? 'force-app');
-    const alias = flow.orgs.resolveAlias(params['target-org'] as string);
+    const alias = flow.orgs.resolveAlias(params['target-org'] as string | undefined);
+    const orgArgs = alias !== undefined ? ['--target-org', alias] : [];
 
-    await flow.runCommand('project:deploy:start', ['--source-dir', sourceDir, '--target-org', alias]);
+    await flow.runCommand('project:deploy:start', ['--source-dir', sourceDir, ...orgArgs]);
     flow.log('Deployed successfully.');
   },
 } satisfies TaskDefinition;

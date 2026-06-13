@@ -7,6 +7,50 @@ type GitTagObject = { sha: string };
 type Branch = { commit: { sha: string } };
 type Repo = { default_branch: string };
 type Release = { html_url: string };
+type ReleaseListItem = { tag_name: string; prerelease: boolean };
+type Commit = { sha: string };
+
+/** Renders the "Installation Info" block consumers expect on a package release. */
+function buildInstallInfo(versionId: string): string {
+  return [
+    '## Installation Info',
+    '',
+    '**Sandbox & Scratch Orgs:**',
+    `https://test.salesforce.com/packaging/installPackage.apexp?p0=${versionId}`,
+    '',
+    '**Production & Developer Edition Orgs:**',
+    `https://login.salesforce.com/packaging/installPackage.apexp?p0=${versionId}`,
+  ].join('\n');
+}
+
+/**
+ * Returns the SHA of the very first commit in the repo's default branch, used as
+ * `previous_tag_name` when a production release has no prior non-prerelease to
+ * anchor against, so auto-generated notes span the full history.
+ */
+async function getFirstCommitSha(token: string, repo: string): Promise<string | null> {
+  const headers: Record<string, string> = {
+    Authorization: `Bearer ${token}`,
+    'User-Agent': 'plugin-ship',
+    Accept: 'application/vnd.github+json',
+  };
+  const resp = await fetch(`https://api.github.com/repos/${repo}/commits?per_page=1`, { headers });
+  if (!resp.ok) return null;
+  const linkHeader = resp.headers.get('link');
+  // Single-page repo (one commit total): the response itself is the oldest commit.
+  if (!linkHeader) {
+    const commits = (await resp.json()) as Commit[];
+    return commits[0]?.sha ?? null;
+  }
+  const lastMatch = linkHeader.match(/<[^>]*[?&]page=(\d+)[^>]*>;\s*rel="last"/);
+  if (!lastMatch) return null;
+  const lastResp = await fetch(`https://api.github.com/repos/${repo}/commits?per_page=1&page=${lastMatch[1]}`, {
+    headers,
+  });
+  if (!lastResp.ok) return null;
+  const lastCommits = (await lastResp.json()) as Commit[];
+  return lastCommits[0]?.sha ?? null;
+}
 
 async function gh<T>(token: string, path: string, init?: { method?: string; body?: unknown }): Promise<T> {
   const headers: Record<string, string> = {
@@ -71,6 +115,14 @@ export default {
         'Release body. When omitted, GitHub auto-generates notes from PRs and commits since the previous release. Pass any value (including an empty string) to opt out of auto-generation and use your own.',
     },
     {
+      name: 'install-link',
+      type: 'boolean',
+      required: false,
+      default: true,
+      description:
+        'Prepend a Salesforce package-install link section (test + login URLs for the 04t) to the release body. Defaults to true.',
+    },
+    {
       name: 'target',
       type: 'string',
       required: false,
@@ -110,7 +162,8 @@ export default {
     const releaseName = (params['name'] as string | undefined) ?? tagName;
     const customBody = params['body'] as string | undefined;
     const generateReleaseNotes = customBody === undefined;
-    const releaseBody = customBody ?? '';
+    const installInfo = params['install-link'] !== false ? buildInstallInfo(versionId) : '';
+    const releaseBody = [installInfo, customBody ?? ''].filter((s) => s.length > 0).join('\n\n');
     const alias = String(params['github-alias'] ?? 'default');
 
     const token = getGithubToken(alias);
@@ -126,20 +179,7 @@ export default {
     }
     const repo = normalizeRepo(repoUrl);
 
-    // Resolve commit SHA to tag.
-    const target = params['target'] as string | undefined;
-    let commitSha: string;
-    if (target && /^[0-9a-f]{40}$/i.test(target)) {
-      commitSha = target;
-    } else {
-      let branchName = target;
-      if (!branchName) {
-        const repoInfo = await gh<Repo>(token, `/repos/${repo}`);
-        branchName = repoInfo.default_branch;
-      }
-      const branchInfo = await gh<Branch>(token, `/repos/${repo}/branches/${branchName}`);
-      commitSha = branchInfo.commit.sha;
-    }
+    const commitSha = await resolveCommitSha(params['target'] as string | undefined, token, repo);
 
     // Flatten dependencies into the annotation so downstream resolution is one-shot.
     const depsForAnnotation: Array<{ version_id: string; package_name?: string }> = [];
@@ -183,6 +223,22 @@ export default {
       body: { ref: `refs/tags/${tagName}`, sha: tagObj.sha },
     });
 
+    // For production releases, anchor the auto-generated notes against the previous
+    // production release. If none exists, anchor against the first commit so the
+    // notes span the full history (rather than against an arbitrary prerelease,
+    // which is GitHub's default fallback).
+    let previousTagName: string | undefined;
+    if (!prerelease && generateReleaseNotes) {
+      const releases = await gh<ReleaseListItem[]>(token, `/repos/${repo}/releases?per_page=30`);
+      const previousProd = releases.find((r) => !r.prerelease);
+      if (previousProd) {
+        previousTagName = previousProd.tag_name;
+      } else {
+        const firstCommitSha = await getFirstCommitSha(token, repo);
+        if (firstCommitSha) previousTagName = firstCommitSha;
+      }
+    }
+
     flow.log(`Creating GitHub release ${tagName}...`);
     const release = await gh<Release>(token, `/repos/${repo}/releases`, {
       method: 'POST',
@@ -194,6 +250,8 @@ export default {
         prerelease,
         // eslint-disable-next-line camelcase
         generate_release_notes: generateReleaseNotes,
+        // eslint-disable-next-line camelcase
+        ...(previousTagName !== undefined ? { previous_tag_name: previousTagName } : {}),
       },
     });
 
@@ -202,3 +260,17 @@ export default {
     output.set('release-url', release.html_url);
   },
 } satisfies TaskDefinition;
+
+async function resolveCommitSha(target: string | undefined, token: string, repo: string): Promise<string> {
+  if (target && /^[0-9a-f]{40}$/i.test(target)) {
+    return target;
+  } else {
+    let branchName = target;
+    if (!branchName) {
+      const repoInfo = await gh<Repo>(token, `/repos/${repo}`);
+      branchName = repoInfo.default_branch;
+    }
+    const branchInfo = await gh<Branch>(token, `/repos/${repo}/branches/${branchName}`);
+    return branchInfo.commit.sha;
+  }
+}

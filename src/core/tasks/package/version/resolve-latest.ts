@@ -4,7 +4,8 @@ import { ExpectedError } from '../../../util.error.js';
 type PackageVersion = {
   SubscriberPackageVersionId: string;
   Version?: string;
-  IsReleased: boolean;
+  // sf serializes this as the string "true"/"false" in --json output, even though the upstream field is boolean.
+  IsReleased: boolean | string;
   Branch?: string | null;
   Name?: string;
   CreatedDate: string;
@@ -47,6 +48,16 @@ export default {
       type: 'string',
       description: 'The 04t SubscriberPackageVersionId of the latest matching package version.',
     },
+    {
+      name: 'version-number',
+      type: 'string',
+      description: 'Full version number including build (e.g. "0.1.0.4").',
+    },
+    {
+      name: 'version-base',
+      type: 'string',
+      description: 'Major.minor.patch portion only (e.g. "0.1.0"), useful for production release tags.',
+    },
   ],
   async run({ flow, params, output }: TaskContext): Promise<void> {
     const packageName = (params['package'] as string | undefined) ?? flow.config.project.package?.name;
@@ -54,14 +65,25 @@ export default {
       throw new ExpectedError('No package specified. Pass `package` param or set project.package.name in ship.yml.');
     }
 
-    const argv: string[] = ['--packages', packageName];
+    const argv: string[] = ['--packages', packageName, '--json'];
     if (params['target-dev-hub']) argv.push('--target-dev-hub', params['target-dev-hub'] as string);
     if (params['branch']) argv.push('--branch', params['branch'] as string);
     const wantReleased = params['released'] === true;
     if (wantReleased) argv.push('--released');
 
-    const versions = (await flow.runCommand('package:version:list', argv)) as PackageVersion[];
-    const matching = versions.filter((v) => v.IsReleased === wantReleased);
+    const originalWrite = process.stdout.write.bind(process.stdout);
+    process.stdout.write = (): boolean => true;
+    let versions: PackageVersion[];
+    try {
+      versions = (await flow.runCommand('package:version:list', argv)) as PackageVersion[];
+    } finally {
+      process.stdout.write = originalWrite;
+    }
+
+    const matching = versions.filter((v) => {
+      const released = v.IsReleased === true || v.IsReleased === 'true';
+      return released === wantReleased;
+    });
 
     if (matching.length === 0) {
       throw new ExpectedError(
@@ -75,9 +97,16 @@ export default {
 
     flow.log(
       `Resolved ${packageName} → ${latest.Version ?? '(unknown version)'} (${latest.SubscriberPackageVersionId})${
-        latest.IsReleased ? ' [released]' : ' [beta]'
+        wantReleased ? ' [released]' : ' [beta]'
       }`
     );
     output.set('version-id', latest.SubscriberPackageVersionId);
+    if (latest.Version) {
+      output.set('version-number', latest.Version);
+      const parts = latest.Version.split('.');
+      if (parts.length >= 3) {
+        output.set('version-base', `${parts[0]}.${parts[1]}.${parts[2]}`);
+      }
+    }
   },
 } satisfies TaskDefinition;

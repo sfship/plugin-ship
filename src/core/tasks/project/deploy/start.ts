@@ -24,8 +24,8 @@ export default {
     {
       name: 'target-org',
       type: 'string',
-      required: true,
-      description: 'Org alias or username to deploy to.',
+      required: false,
+      description: 'Org alias or username to deploy to. Defaults to the SF CLI default target-org.',
     },
     {
       name: 'source-dir',
@@ -90,9 +90,9 @@ export default {
     },
   ],
   async run({ flow, params }: TaskContext): Promise<void> {
-    const alias = flow.orgs.resolveAlias(params['target-org'] as string);
+    const alias = flow.orgs.resolveAlias(params['target-org'] as string | undefined);
     const argv = resolvePassthroughArgs(params, {
-      '--target-org': alias,
+      '--target-org': alias ?? null,
       '--source-dir': join(flow.projectDir, (params['source-dir'] as string | undefined) ?? 'force-app'),
     });
 

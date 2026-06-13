@@ -13,24 +13,26 @@ export default {
     {
       name: 'target-org',
       type: 'string',
-      required: true,
-      description: 'Org alias or username to install the package into.',
+      required: false,
+      description: 'Org alias or username to install the package into. Defaults to the SF CLI default target-org.',
     },
     {
       name: 'wait',
       type: 'number',
       required: false,
+      default: 10,
       description: 'Minutes to wait for installation to complete. Defaults to 10.',
     },
   ],
   async run({ flow, params }: TaskContext): Promise<void> {
-    const alias = flow.orgs.resolveAlias(params['target-org'] as string);
+    const versionId = params['version-id'] as string;
+    const alias = flow.orgs.resolveAlias(params['target-org'] as string | undefined);
     const argv = resolvePassthroughArgs(params, {
-      '--target-org': alias,
-      '--package': params['version-id'] as string,
+      '--target-org': alias ?? null,
+      '--package': versionId,
       '--version-id': null,
     });
     await flow.runCommand('package:install', argv);
-    flow.log(`Package ${params['version-id'] as string} installed successfully.`);
+    flow.log(`Package ${versionId} installed successfully.`);
   },
 } satisfies TaskDefinition;

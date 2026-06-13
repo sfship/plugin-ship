@@ -1,18 +1,18 @@
 description: Register the 2GP package on the Dev Hub and write its 0Ho into sfdx-project.json. Run once per project before any release or deploy/feature flow.
 params:
-  - name: package-type
-    type: string
-    required: false
-    default: Managed
-    description: Package type, Managed or Unlocked.
   - name: path
     type: string
     required: false
     default: force-app
     description: Path to the package source directory.
+  - name: target-dev-hub
+    type: string
+    required: false
+    description: Dev hub alias or username. Defaults to the SF CLI default target-dev-hub.
 steps:
   create-package:
     task: package/create
     params:
-      package-type: ${{ params.package-type }}
+      package-type: ${{ config.project.package.type }}
       path: ${{ params.path }}
+      target-dev-hub: ${{ params.target-dev-hub }}

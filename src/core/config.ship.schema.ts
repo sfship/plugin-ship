@@ -8,6 +8,9 @@ const ProjectPackageConfigSchema = z.object({
   name: z.string(),
   /** The package namespace. */
   namespace: z.string().optional(),
+  type: z.enum(['Managed', 'Unlocked']),
+  /** Permission sets (and/or permission set groups) to assign to the running user after package install in flow contexts. */
+  permsets: z.array(z.string()).optional(),
 });
 
 /** Git/GitHub configuration for the project. */

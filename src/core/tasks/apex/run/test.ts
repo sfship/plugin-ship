@@ -18,8 +18,8 @@ export default {
     {
       name: 'target-org',
       type: 'string',
-      required: true,
-      description: 'Org alias or username to run tests against.',
+      required: false,
+      description: 'Org alias or username to run tests against. Defaults to the SF CLI default target-org.',
     },
     {
       name: 'test-level',
@@ -47,10 +47,10 @@ export default {
     },
   ],
   async run({ flow, params }: TaskContext): Promise<void> {
-    const alias = flow.orgs.resolveAlias(params['target-org'] as string);
+    const alias = flow.orgs.resolveAlias(params['target-org'] as string | undefined);
     const wait = (params['wait'] as number | undefined) ?? 10;
     const argv = resolvePassthroughArgs(params, {
-      '--target-org': alias,
+      '--target-org': alias ?? null,
       '--tests': (params['class-names'] as string | undefined) ?? null,
       '--class-names': null,
       '--wait': String(wait),

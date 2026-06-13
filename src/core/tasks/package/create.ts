@@ -1,10 +1,8 @@
-import { readFile } from 'node:fs/promises';
+import { readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import type { TaskContext, TaskDefinition } from '../../task.js';
 import { resolvePassthroughArgs } from '../../task.param.js';
 import { ExpectedError } from '../../util.error.js';
-import { normalizeSfdxProject } from '../../util.sfdx-project.js';
-
 type PackageCreateResult = {
   Id?: string;
 };
@@ -21,7 +19,7 @@ async function readPackageAliases(projectDir: string): Promise<Record<string, st
 
 export default {
   description:
-    'Registers a 2GP managed or unlocked package on the Dev Hub. Passthrough for `sf package create`. sf writes the new 0Ho into sfdx-project.json automatically. Idempotent: skips if the package is already in packageAliases.',
+    'Registers a 2GP managed or unlocked package on the Dev Hub. Passthrough for `sf package create`. Writes the new 0Ho into sfdx-project.json packageAliases. Idempotent: skips if the package is already in packageAliases.',
   params: [
     {
       name: 'name',
@@ -32,8 +30,7 @@ export default {
     {
       name: 'package-type',
       type: 'string',
-      required: false,
-      default: 'Managed',
+      required: true,
       description: 'Package type: Managed or Unlocked.',
     },
     {
@@ -98,6 +95,10 @@ export default {
       '--name': name,
     });
 
+    // Disable sf's sfdx-project.json autoupdate. We write the alias ourselves below.
+    // https://developer.salesforce.com/docs/atlas.en-us.sfdx_setup.meta/sfdx_setup/sfdx_dev_cli_env_variables.htm
+    process.env.SF_PROJECT_AUTOUPDATE_DISABLE_FOR_PACKAGE_CREATE = 'true';
+
     flow.log(`Creating package "${name}"...`);
     const result = (await flow.runCommand('package:create', argv)) as PackageCreateResult;
 
@@ -105,9 +106,15 @@ export default {
       throw new ExpectedError('Package create completed without a Package2Id.');
     }
 
-    await normalizeSfdxProject(flow.projectDir);
+    const sfdxProjectPath = join(flow.projectDir, 'sfdx-project.json');
+    const sfdxProject = JSON.parse(await readFile(sfdxProjectPath, 'utf8')) as {
+      [key: string]: unknown;
+      packageAliases?: Record<string, string>;
+    };
+    sfdxProject.packageAliases = { ...sfdxProject.packageAliases, [name]: result.Id };
+    await writeFile(sfdxProjectPath, JSON.stringify(sfdxProject, null, 2) + '\n', 'utf8');
 
-    flow.log(`Created package ${result.Id} and updated sfdx-project.json.`);
+    flow.log(`Created package ${result.Id} and wrote alias "${name}" to sfdx-project.json.`);
     output.set('package-id', result.Id);
   },
 } satisfies TaskDefinition;

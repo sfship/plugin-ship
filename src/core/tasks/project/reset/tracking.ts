@@ -7,8 +7,8 @@ export default {
     {
       name: 'target-org',
       type: 'string',
-      required: true,
-      description: 'Org alias or username to reset source tracking for.',
+      required: false,
+      description: 'Org alias or username to reset source tracking for. Defaults to the SF CLI default target-org.',
     },
     {
       name: 'revision',
@@ -25,9 +25,9 @@ export default {
     },
   ],
   async run({ flow, params }: TaskContext): Promise<void> {
-    const alias = flow.orgs.resolveAlias(params['target-org'] as string);
-    const argv = resolvePassthroughArgs(params, { '--target-org': alias });
+    const alias = flow.orgs.resolveAlias(params['target-org'] as string | undefined);
+    const argv = resolvePassthroughArgs(params, { '--target-org': alias ?? null });
     await flow.runCommand('project:reset:tracking', argv);
-    flow.log(`Reset source tracking for ${alias}.`);
+    flow.log(`Reset source tracking for ${alias ?? 'default org'}.`);
   },
 } satisfies TaskDefinition;
