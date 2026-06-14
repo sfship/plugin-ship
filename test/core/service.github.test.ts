@@ -4,7 +4,6 @@ import esmock from 'esmock';
 import type {
   getGithubToken as GetTokenFn,
   setGithubToken as SetTokenFn,
-  getGithubMeta as GetMetaFn,
   downloadDir as DownloadDirFn,
   requestDeviceCode as RequestDeviceCodeFn,
   pollForToken as PollForTokenFn,
@@ -16,7 +15,6 @@ import type {
 type GithubService = {
   getGithubToken: typeof GetTokenFn;
   setGithubToken: typeof SetTokenFn;
-  getGithubMeta: typeof GetMetaFn;
   downloadDir: typeof DownloadDirFn;
   requestDeviceCode: typeof RequestDeviceCodeFn;
   pollForToken: typeof PollForTokenFn;
@@ -27,7 +25,6 @@ type GithubService = {
 
 let getTokenStub: (service: string, alias: string) => string | null = () => null;
 let setTokenStub: (...args: unknown[]) => void = () => {};
-let getMetaStub: (service: string, alias: string) => unknown = () => undefined;
 
 const written = new Map<string, Buffer>();
 let mkdirCalled = false;
@@ -35,7 +32,6 @@ let mkdirCalled = false;
 const {
   getGithubToken,
   setGithubToken,
-  getGithubMeta,
   downloadDir,
   requestDeviceCode,
   pollForToken,
@@ -46,7 +42,6 @@ const {
   '../../src/core/service.js': {
     getToken: (service: string, alias: string) => getTokenStub(service, alias),
     setToken: (...args: unknown[]) => setTokenStub(...args),
-    getMeta: (service: string, alias: string) => getMetaStub(service, alias),
   },
   'node:fs/promises': {
     mkdir: async () => {
@@ -83,19 +78,6 @@ describe('setGithubToken', () => {
     assert.equal(calls.length, 1);
     assert.ok((calls[0] as string[]).includes('ghp_abc123'));
     assert.ok((calls[0] as string[]).includes('bdematt'));
-  });
-});
-
-describe('getGithubMeta', () => {
-  it('returns metadata when present', () => {
-    const meta = { service: 'github', account: 'bdematt', alias: 'default', scopes: [] };
-    getMetaStub = () => meta;
-    assert.deepEqual(getGithubMeta(), meta);
-  });
-
-  it('returns undefined when no credential is stored', () => {
-    getMetaStub = () => undefined;
-    assert.equal(getGithubMeta(), undefined);
   });
 });
 

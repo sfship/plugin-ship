@@ -1,7 +1,7 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { parse } from 'yaml';
-import { getToken, setToken, getMeta } from './service.js';
+import { getToken, setToken } from './service.js';
 import type { ServiceMeta } from './service.js';
 import { ExpectedError } from './util.error.js';
 
@@ -23,11 +23,6 @@ export function getGithubToken(alias = 'default'): string | undefined {
  */
 export function setGithubToken(token: string, username: string, alias = 'default', scopes: string[] = []): void {
   setToken(SERVICE, username, alias, token, scopes);
-}
-
-/** Returns the metadata for the stored GitHub credential for the given alias. */
-export function getGithubMeta(alias = 'default'): GithubMeta | undefined {
-  return getMeta(SERVICE, alias) as GithubMeta | undefined;
 }
 
 // ---- URL utilities -----------------------------------------------------------
