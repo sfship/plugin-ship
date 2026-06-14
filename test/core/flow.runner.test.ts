@@ -35,7 +35,7 @@ function makeContext(params: Params = {}): FlowContext {
   return createFlowContext({
     projectDir: '/',
     shipDir: '/ship',
-    config: { project: { name: 'test' }, dir: '.ship' },
+    config: { project: { slug: 'test' }, dir: '.ship' },
     orgs: new OrgRegistry('/orgs'),
     log: () => {},
     params,

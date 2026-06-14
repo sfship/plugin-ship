@@ -21,9 +21,9 @@ describe('loadConfig', () => {
   it('parses a minimal valid ship.yml', () => {
     readTextStub = () => dedent`
       project:
-        name: my-project
+        slug: my-project
     `;
-    assert.equal(loadConfig('ship.yml').project.name, 'my-project');
+    assert.equal(loadConfig('ship.yml').project.slug, 'my-project');
   });
 
   it('parses optional dir field', () => {
