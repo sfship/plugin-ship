@@ -1,36 +1,6 @@
 /* c8 ignore start */
 import { z } from 'zod';
 
-/** A CumulusCI GitHub repository dependency. Resolves by fetching `cumulusci.yml` from the repo. */
-export const CciGitHubDependencySchema = z.object({
-  /** GitHub repository as a full URL or `owner/repo` slug. */
-  github: z.string(),
-  /** Pin to a specific release tag instead of resolving to latest. */
-  tag: z.string().optional(),
-});
-
-/** A CumulusCI 1GP managed package dependency identified by namespace and version number. */
-export const CciNamespaceDependencySchema = z.object({
-  /** The package namespace (e.g. `npsp`). */
-  namespace: z.string(),
-  /** The version number (e.g. `3.232`). */
-  version: z.string(),
-});
-
-/** A CumulusCI 2GP or unlocked package dependency identified by package version ID. */
-export const CciVersionIdDependencySchema = z.object({
-  /** The 04t package version ID. */
-  // eslint-disable-next-line camelcase
-  version_id: z.string(),
-});
-
-/** A single entry in a `cumulusci.yml` dependency list. */
-export const CciDependencySchema = z.union([
-  CciGitHubDependencySchema,
-  CciNamespaceDependencySchema,
-  CciVersionIdDependencySchema,
-]);
-
 /** A plugin-ship GitHub repository dependency. Resolves via the annotated tag message on the latest (or pinned) release. */
 export const ShipGitHubDependencySchema = z.object({
   /** GitHub repository as a full URL or `owner/repo` slug. */
@@ -52,10 +22,6 @@ export const ShipPackageIdDependencySchema = z.object({
 /** A single entry in a `ship.yml` dependency list. */
 export const ShipDependencySchema = z.union([ShipGitHubDependencySchema, ShipPackageIdDependencySchema]);
 
-export type CciGitHubDependency = z.infer<typeof CciGitHubDependencySchema>;
-export type CciNamespaceDependency = z.infer<typeof CciNamespaceDependencySchema>;
-export type CciVersionIdDependency = z.infer<typeof CciVersionIdDependencySchema>;
-export type CciDependency = z.infer<typeof CciDependencySchema>;
 export type ShipGitHubDependency = z.infer<typeof ShipGitHubDependencySchema>;
 export type ShipPackageIdDependency = z.infer<typeof ShipPackageIdDependencySchema>;
 export type ShipDependency = z.infer<typeof ShipDependencySchema>;
