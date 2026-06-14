@@ -7,9 +7,9 @@ steps:
       duration: 7
       no-namespace: true
   package-data:
-    task: package/version/resolve-latest
+    task: git/release/fetch
     params:
-      released: false
+      prerelease: true
   update-dependencies:
     task: package/install/dependencies
     params:

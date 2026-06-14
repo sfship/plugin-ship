@@ -24,14 +24,18 @@ function resolveConditionValue(condition: StepCondition, context: Record<string,
   return match ? deepGet(context, match[1].split('.')) ?? null : condition.value;
 }
 
+function coerce(val: unknown): unknown {
+  return typeof val === 'string' && Number.isFinite(Number(val)) ? Number(val) : val;
+}
+
 function evaluateIf(condition: StepCondition, context: Record<string, unknown>): boolean {
   const resolved = resolveConditionValue(condition, context);
-  return condition.equals !== undefined ? resolved === condition.equals : Boolean(resolved);
+  return condition.equals !== undefined ? resolved === condition.equals : Boolean(coerce(resolved));
 }
 
 function evaluateIfNot(condition: StepCondition, context: Record<string, unknown>): boolean {
   const resolved = resolveConditionValue(condition, context);
-  return condition.equals !== undefined ? resolved !== condition.equals : !resolved;
+  return condition.equals !== undefined ? resolved !== condition.equals : !coerce(resolved);
 }
 
 type StepError = { stepId: string; error: Error };

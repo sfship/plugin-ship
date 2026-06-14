@@ -11,6 +11,8 @@ const ProjectPackageConfigSchema = z.object({
   type: z.enum(['Managed', 'Unlocked']),
   /** Permission sets (and/or permission set groups) to assign to the running user after package install in flow contexts. */
   permsets: z.array(z.string()).optional(),
+  /** Glob pattern used to discover Apex test classes. Defaults to "*_Test". */
+  testPattern: z.string().default('*_Test'),
 });
 
 /** Git/GitHub configuration for the project. */

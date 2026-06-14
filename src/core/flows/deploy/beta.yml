@@ -1,14 +1,4 @@
 description: Install the latest beta into a fresh scratch org and run Apex tests.
-params:
-  - name: test-level
-    type: string
-    required: false
-    default: RunAllTestsInOrg
-    description: 'Apex test level to run post-install. One of: RunAllTestsInOrg, RunSpecifiedTests.'
-  - name: test-classes
-    type: string
-    required: false
-    description: Comma-separated test class names. Required when test-level is RunSpecifiedTests.
 steps:
   create-org:
     task: org/create/scratch
@@ -17,9 +7,9 @@ steps:
       duration: 1
       no-namespace: true
   find-beta:
-    task: package/version/resolve-latest
+    task: git/release/fetch
     params:
-      released: false
+      prerelease: true
   update-dependencies:
     task: package/install/dependencies
     params:
@@ -33,9 +23,16 @@ steps:
     task: org/assign/permsets
     params:
       target-org: ${{ steps.create-org.target-org }}
+  find-test-classes:
+    task: util/file/find
+    params:
+      path: force-app/main/default/classes
+      pattern: ${{ config.project.package.testPattern }}
   test:
+    if:
+      value: ${{ steps.find-test-classes.count }}
     task: apex/run/test
     params:
       target-org: ${{ steps.create-org.target-org }}
-      test-level: ${{ params.test-level }}
-      class-names: ${{ params.test-classes }}
+      class-names: ${{ steps.find-test-classes.files }}
+      namespace: ${{ config.project.package.namespace }}

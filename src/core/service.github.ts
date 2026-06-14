@@ -82,9 +82,19 @@ export type GithubUser = { login: string };
 
 /**
  * Fetches a GitHub release for `repo`. Returns `null` if no release exists.
- * When `tag` is provided, fetches that specific release; otherwise fetches the latest.
+ * When `tag` is provided, fetches that specific release.
+ * When `prerelease` is true, fetches the latest pre-release; otherwise fetches the latest production release.
  */
-export async function fetchRelease(repo: string, tag?: string): Promise<Release | null> {
+export async function fetchRelease(repo: string, tag?: string, prerelease = false): Promise<Release | null> {
+  if (prerelease && !tag) {
+    const res = await fetch(`https://api.github.com/repos/${repo}/releases?per_page=10`, {
+      headers: githubHeaders(),
+    });
+    if (!res.ok) return null;
+    const releases = (await res.json()) as Array<{ tag_name: string; prerelease: boolean }>;
+    const found = releases.find((r) => r.prerelease);
+    return found ? { tagName: found.tag_name } : null;
+  }
   const url = tag
     ? `https://api.github.com/repos/${repo}/releases/tags/${encodeURIComponent(tag)}`
     : `https://api.github.com/repos/${repo}/releases/latest`;

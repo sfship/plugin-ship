@@ -1,9 +1,9 @@
 description: Promote the latest beta to released and create a production GitHub release.
 steps:
   find-beta:
-    task: package/version/resolve-latest
+    task: git/release/fetch
     params:
-      released: false
+      prerelease: true
   promote:
     task: package/version/promote
     params:

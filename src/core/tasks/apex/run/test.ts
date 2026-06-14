@@ -25,7 +25,8 @@ export default {
       name: 'test-level',
       type: 'string',
       required: false,
-      description: '"RunLocalTests" | "RunAllTestsInOrg" | "RunSpecifiedTests". Defaults to "RunAllTestsInOrg".',
+      description:
+        'Apex test level. Defaults to "RunSpecifiedTests" when class-names is set, otherwise "RunLocalTests".',
     },
     {
       name: 'class-names',
@@ -34,10 +35,18 @@ export default {
       description: 'Comma-separated test class names. Required when test-level is "RunSpecifiedTests".',
     },
     {
+      name: 'namespace',
+      type: 'string',
+      required: false,
+      description:
+        'Namespace prefix to prepend to each class name. Defaults to project.package.namespace from ship.yml.',
+    },
+    {
       name: 'wait',
       type: 'number',
       required: false,
-      description: 'Minutes to wait for the test run to complete. Defaults to 10.',
+      default: 15,
+      description: 'Minutes to wait for the test run to complete. Defaults to 15.',
     },
     {
       name: 'min-coverage',
@@ -48,18 +57,40 @@ export default {
   ],
   async run({ flow, params }: TaskContext): Promise<void> {
     const alias = flow.orgs.resolveAlias(params['target-org'] as string | undefined);
-    const wait = (params['wait'] as number | undefined) ?? 10;
+
+    const rawClassNames = params['class-names'] as string | undefined;
+    const namespace = params['namespace'] as string | undefined;
+    const classNames =
+      rawClassNames && namespace
+        ? rawClassNames
+            .split(',')
+            .map((c) => (c.includes('.') ? c.trim() : `${namespace}.${c.trim()}`))
+            .join(',')
+        : rawClassNames;
+
+    const effectiveTestLevel =
+      (params['test-level'] as string | undefined) ?? (classNames ? 'RunSpecifiedTests' : 'RunLocalTests');
+
+    const wait = (params['wait'] as number | undefined) ?? 30;
     const argv = resolvePassthroughArgs(params, {
       '--target-org': alias ?? null,
-      '--tests': (params['class-names'] as string | undefined) ?? null,
+      '--tests': classNames ?? null,
       '--class-names': null,
+      '--namespace': null,
+      '--test-level': effectiveTestLevel ?? null,
       '--wait': String(wait),
       '--min-coverage': null,
       '--code-coverage': params['min-coverage'] !== undefined ? 'true' : null,
     });
 
+    flow.log('Running Apex tests...');
     const result = (await flow.runCommand('apex:run:test', argv)) as TestRunResult;
     const { summary } = result;
+    if (!summary) {
+      throw new ExpectedError(
+        'Test run did not complete within the wait period. Increase the `wait` param or retrieve results manually with `sf apex get test`.'
+      );
+    }
     flow.log(`Tests run: ${summary.testsRan} | Passed: ${summary.passing} | Failed: ${summary.failing}`);
 
     const minCoverage = params['min-coverage'] as number | undefined;

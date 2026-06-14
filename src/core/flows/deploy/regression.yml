@@ -7,13 +7,13 @@ steps:
       duration: 1
       no-namespace: true
   find-release:
-    task: package/version/resolve-latest
+    task: git/release/fetch
     params:
-      released: true
+      prerelease: false
   find-beta:
-    task: package/version/resolve-latest
+    task: git/release/fetch
     params:
-      released: false
+      prerelease: true
   update-dependencies:
     task: package/install/dependencies
     params:
