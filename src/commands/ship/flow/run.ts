@@ -1,8 +1,8 @@
-import { resolve, dirname, join } from 'node:path';
+import { resolve } from 'node:path';
 import { Args } from '@oclif/core';
 import { SfCommand, Flags } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
-import { loadConfig } from '../../../core/config.loader.js';
+import { loadConfig, resolveProjectPaths } from '../../../core/config.loader.js';
 import { createFlowContext } from '../../../core/flow.context.js';
 import { FlowRegistry } from '../../../core/flow.registry.js';
 import { parseCliParams } from '../../../core/task.param.js';
@@ -37,8 +37,7 @@ export default class FlowRun extends SfCommand<void> {
     this.styledHeader('Flow Run');
 
     const config = loadConfig(flags.config);
-    const projectDir = resolve(dirname(flags.config));
-    const shipDir = join(projectDir, config.dir);
+    const { projectDir, shipDir } = resolveProjectPaths(flags.config, config);
 
     const registry = new FlowRegistry(shipDir);
     let flow;

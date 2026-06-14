@@ -1,9 +1,9 @@
 import { existsSync, copyFileSync, mkdirSync } from 'node:fs';
-import { resolve, dirname, join, relative } from 'node:path';
+import { dirname, join, relative } from 'node:path';
 import { Args } from '@oclif/core';
 import { SfCommand, Flags, StandardColors } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
-import { loadConfig } from '../../../core/config.loader.js';
+import { loadConfig, resolveProjectPaths } from '../../../core/config.loader.js';
 import { FlowRegistry, builtinsDir } from '../../../core/flow.registry.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
@@ -32,8 +32,7 @@ export default class FlowEject extends SfCommand<void> {
     this.styledHeader('Flow Eject');
 
     const config = loadConfig(flags.config);
-    const projectDir = resolve(dirname(flags.config));
-    const shipDir = join(projectDir, config.dir);
+    const { shipDir } = resolveProjectPaths(flags.config, config);
 
     const src = new FlowRegistry(shipDir).builtinSource(args.flowName);
     if (!src) {

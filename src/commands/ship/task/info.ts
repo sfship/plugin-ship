@@ -1,8 +1,7 @@
-import { resolve } from 'node:path';
 import { Args } from '@oclif/core';
 import { SfCommand, Flags, Ux, StandardColors } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
-import { loadConfig } from '../../../core/config.loader.js';
+import { loadConfig, resolveProjectPaths } from '../../../core/config.loader.js';
 import { TaskRegistry } from '../../../core/task.registry.js';
 import { formatTaskPreview } from '../../../core/task.view.js';
 
@@ -32,7 +31,7 @@ export default class TaskInfo extends SfCommand<void> {
     this.styledHeader('Task Info');
 
     const config = loadConfig(flags.config);
-    const shipDir = resolve(config.dir);
+    const { shipDir } = resolveProjectPaths(flags.config, config);
     const task = await new TaskRegistry(shipDir).resolveTask(args.taskName);
 
     const ux = new Ux();

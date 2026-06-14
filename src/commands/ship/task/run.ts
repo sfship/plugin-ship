@@ -1,8 +1,8 @@
-import { resolve, dirname, join } from 'node:path';
+import { resolve } from 'node:path';
 import { Args } from '@oclif/core';
 import { SfCommand, Flags } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
-import { loadConfig } from '../../../core/config.loader.js';
+import { loadConfig, resolveProjectPaths } from '../../../core/config.loader.js';
 import { formatTaskPreview } from '../../../core/task.view.js';
 import { createFlowContext } from '../../../core/flow.context.js';
 import { parseCliParams, validateParams } from '../../../core/task.param.js';
@@ -37,8 +37,7 @@ export default class TaskRun extends SfCommand<void> {
 
     const params = parseCliParams(flags.param ?? []);
     const config = loadConfig(flags.config);
-    const projectDir = resolve(dirname(flags.config));
-    const shipDir = join(projectDir, config.dir);
+    const { projectDir, shipDir } = resolveProjectPaths(flags.config, config);
 
     const context = createFlowContext({
       projectDir,

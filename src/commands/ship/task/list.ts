@@ -1,7 +1,6 @@
-import { resolve } from 'node:path';
 import { SfCommand, Flags, StandardColors } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
-import { loadConfig } from '../../../core/config.loader.js';
+import { loadConfig, resolveProjectPaths } from '../../../core/config.loader.js';
 import { TaskRegistry } from '../../../core/task.registry.js';
 import { renderTree } from '../../../core/util.tree.js';
 
@@ -23,7 +22,7 @@ export default class TaskList extends SfCommand<void> {
   public async run(): Promise<void> {
     const { flags } = await this.parse(TaskList);
     const config = loadConfig(flags.config);
-    const shipDir = resolve(config.dir);
+    const { shipDir } = resolveProjectPaths(flags.config, config);
 
     const tasks = new TaskRegistry(shipDir).list();
 

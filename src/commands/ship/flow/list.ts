@@ -1,7 +1,6 @@
-import { resolve } from 'node:path';
 import { SfCommand, Flags, StandardColors } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
-import { loadConfig } from '../../../core/config.loader.js';
+import { loadConfig, resolveProjectPaths } from '../../../core/config.loader.js';
 import { FlowRegistry } from '../../../core/flow.registry.js';
 import { renderTree } from '../../../core/util.tree.js';
 
@@ -23,7 +22,8 @@ export default class FlowList extends SfCommand<void> {
   public async run(): Promise<void> {
     const { flags } = await this.parse(FlowList);
     const config = loadConfig(flags.config);
-    const registry = new FlowRegistry(resolve(config.dir));
+    const { shipDir } = resolveProjectPaths(flags.config, config);
+    const registry = new FlowRegistry(shipDir);
     const names = registry.list();
 
     this.log('');

@@ -1,8 +1,7 @@
-import { resolve } from 'node:path';
 import { Args } from '@oclif/core';
 import { SfCommand, Flags, Ux, StandardColors } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
-import { loadConfig } from '../../../core/config.loader.js';
+import { loadConfig, resolveProjectPaths } from '../../../core/config.loader.js';
 import { FlowRegistry } from '../../../core/flow.registry.js';
 import { asError } from '../../../core/util.error.js';
 import { formatFlowPreview } from '../../../core/flow.view.js';
@@ -33,7 +32,8 @@ export default class FlowInfo extends SfCommand<void> {
     this.styledHeader('Flow Info');
 
     const config = loadConfig(flags.config);
-    const registry = new FlowRegistry(resolve(config.dir));
+    const { shipDir } = resolveProjectPaths(flags.config, config);
+    const registry = new FlowRegistry(shipDir);
     let flow;
     try {
       flow = registry.resolveFlow(args.flowName);
