@@ -8,7 +8,7 @@ All flows use **verb-noun nested paths** (`deploy/dev`, `release/beta`, etc.), n
 
 | Flow                 | CCI lineage                                                                      | Purpose                                                                                                         |
 | -------------------- | -------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `setup/package`      | (new — no CCI counterpart)                                                       | One-time: register the 2GP package on the Dev Hub, scaffold `ancestorVersion: "HIGHEST"` into sfdx-project.json |
+| `create/package`     | (new — no CCI counterpart)                                                       | One-time: register the 2GP package on the Dev Hub, scaffold `ancestorVersion: "HIGHEST"` into sfdx-project.json |
 | `deploy/dev`         | `dev_org`                                                                        | Provision a namespaced dev scratch (`dev.json`), install deps, deploy `force-app`, optionally seed data         |
 | `deploy/qa`          | `qa_org_2gp`                                                                     | Install the latest beta + deps into a provided org (target-org param)                                           |
 | `deploy/feature`     | `ci_feature_2gp` + `build_feature_test_package` (collapsed into one atomic flow) | Build a version (or reuse one passed via `version-id`), install deps, install, run Apex tests                   |
@@ -77,7 +77,7 @@ Scaffolded in `.ship/orgs/` of consumer projects. Currently dev is the only one 
 
 ## Open items
 
-- `.forceignore` scaffolding for managed-package noise in `setup/package` or via a future `init` flow.
+- `.forceignore` scaffolding for managed-package noise in `create/package` or via a future `init` flow.
 - A `regression`-style flow that installs the latest production release and runs tests against it (would use `release.json` scratch def + `package/version/list released:true` + `package/install` + `apex/run/test`).
 - The "init / new project" flow — scaffolds ship.yml, .ship/, sfdx-project.json starter, scratch defs, .forceignore — when we want to make project onboarding more discoverable.
 
