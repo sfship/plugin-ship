@@ -43,7 +43,7 @@ export default class TaskRun extends SfCommand<void> {
       projectDir,
       shipDir,
       config,
-      orgs: new OrgRegistry(resolve(shipDir, 'orgs'), config.project.name),
+      orgs: new OrgRegistry(resolve(shipDir, 'orgs'), config.project.slug),
       log: (message: string) => this.log(message),
       params,
       runCommand: (id: string, argv: string[]) => this.config.runCommand(id, argv),

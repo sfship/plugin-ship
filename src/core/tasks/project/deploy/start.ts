@@ -2,6 +2,7 @@ import { join } from 'node:path';
 import type { TaskContext, TaskDefinition } from '../../../task.js';
 import { resolvePassthroughArgs } from '../../../task.param.js';
 import { ExpectedError } from '../../../util.error.js';
+import { withSuppressedStdout } from '../../../util.stdout.js';
 
 type DeployFile = {
   fullName: string;
@@ -96,7 +97,17 @@ export default {
       '--source-dir': join(flow.projectDir, (params['source-dir'] as string | undefined) ?? 'force-app'),
     });
 
-    const result = (await flow.runCommand('project:deploy:start', argv)) as DeployResult;
+    let result: DeployResult;
+    try {
+      result = await withSuppressedStdout(() => flow.runCommand('project:deploy:start', argv) as Promise<DeployResult>);
+    } catch (err) {
+      if (err instanceof ExpectedError && err.message.includes('No local changes to deploy')) {
+        flow.log('Nothing to deploy — skipping.');
+        return;
+      }
+      throw err;
+    }
+
     if (!result.success) {
       const failed = result.files.filter((f) => f.state === 'Failed');
       const lines = failed.map((f) => {

@@ -79,7 +79,12 @@ Scaffolded in `.ship/orgs/` of consumer projects. Currently dev is the only one 
 
 - `.forceignore` scaffolding for managed-package noise in `create/package` or via a future `init` flow.
 - A `regression`-style flow that installs the latest production release and runs tests against it (would use `release.json` scratch def + `package/version/list released:true` + `package/install` + `apex/run/test`).
-- The "init / new project" flow — scaffolds ship.yml, .ship/, sfdx-project.json starter, scratch defs, .forceignore — when we want to make project onboarding more discoverable.
+- `sf ship project init`:
+  - ship.yml
+  - .ship/
+  - sfdx-project.json
+  - .ship/orgs scratch defs
+  - .forceignore
 
 ## Memory pointers
 

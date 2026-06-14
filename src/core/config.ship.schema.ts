@@ -24,14 +24,19 @@ const ProjectGitConfigSchema = z.object({
 });
 
 /** Top-level project metadata within a ship config. */
-const ProjectConfigSchema = z.object({
-  /** The project name, used as a prefix for generated aliases etc. */
-  name: z.string(),
-  /** Optional Salesforce package metadata. */
-  package: ProjectPackageConfigSchema.optional(),
-  /** Optional Git repository configuration. */
-  git: ProjectGitConfigSchema.optional(),
-});
+const ProjectConfigSchema = z
+  .object({
+    /** URL/alias-safe slug used as a prefix for generated org aliases. Defaults to package.name lowercased with spaces replaced by hyphens. */
+    slug: z.string().optional(),
+    /** Optional Salesforce package metadata. */
+    package: ProjectPackageConfigSchema.optional(),
+    /** Optional Git repository configuration. */
+    git: ProjectGitConfigSchema.optional(),
+  })
+  .transform((data) => ({
+    ...data,
+    slug: data.slug ?? data.package?.name?.toLowerCase().replace(/\s+/g, '-') ?? 'project',
+  }));
 
 /**
  * Zod schema for the top-level `ship.yml`.

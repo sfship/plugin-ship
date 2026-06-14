@@ -58,7 +58,7 @@ export default class FlowRun extends SfCommand<void> {
       projectDir,
       shipDir,
       config,
-      orgs: new OrgRegistry(resolve(shipDir, 'orgs'), config.project.name),
+      orgs: new OrgRegistry(resolve(shipDir, 'orgs'), config.project.slug),
       // The renderer takes over this logger; this base is only a fallback.
       log: (message: string) => this.log(message),
       params,

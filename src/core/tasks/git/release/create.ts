@@ -11,16 +11,21 @@ type ReleaseListItem = { tag_name: string; prerelease: boolean };
 type Commit = { sha: string };
 
 /** Renders the "Installation Info" block consumers expect on a package release. */
-function buildInstallInfo(versionId: string): string {
-  return [
+function buildInstallInfo(versionId: string, prerelease: boolean): string {
+  const lines = [
     '## Installation Info',
     '',
     '**Sandbox & Scratch Orgs:**',
     `https://test.salesforce.com/packaging/installPackage.apexp?p0=${versionId}`,
-    '',
-    '**Production & Developer Edition Orgs:**',
-    `https://login.salesforce.com/packaging/installPackage.apexp?p0=${versionId}`,
-  ].join('\n');
+  ];
+  if (!prerelease) {
+    lines.push(
+      '',
+      '**Production & Developer Edition Orgs:**',
+      `https://login.salesforce.com/packaging/installPackage.apexp?p0=${versionId}`
+    );
+  }
+  return lines.join('\n');
 }
 
 /**
@@ -162,7 +167,7 @@ export default {
     const releaseName = (params['name'] as string | undefined) ?? tagName;
     const customBody = params['body'] as string | undefined;
     const generateReleaseNotes = customBody === undefined;
-    const installInfo = params['install-link'] !== false ? buildInstallInfo(versionId) : '';
+    const installInfo = params['install-link'] !== false ? buildInstallInfo(versionId, prerelease) : '';
     const releaseBody = [installInfo, customBody ?? ''].filter((s) => s.length > 0).join('\n\n');
     const alias = String(params['github-alias'] ?? 'default');
 
