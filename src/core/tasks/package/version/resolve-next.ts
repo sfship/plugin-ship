@@ -62,7 +62,7 @@ export default {
       throw new ExpectedError(`Invalid version-type "${versionType}". Use one of: ${VERSION_TYPES.join(', ')}.`);
     }
 
-    const repoUrl = flow.config.project.git?.repoUrl ?? String(params['repo-url'] ?? '');
+    const repoUrl = (params['repo-url'] as string | undefined) ?? flow.config.project.git?.repoUrl;
     if (!repoUrl) {
       throw new ExpectedError(
         'No repo URL. Set config.project.git.repoUrl in ship.yml or pass --param repo-url=<url>.'

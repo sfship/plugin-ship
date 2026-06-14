@@ -38,7 +38,7 @@ export default {
     if (!token)
       throw new ExpectedError(`No GitHub token found for alias "${alias}". Run: sf ship service connect github`);
 
-    const repoUrl = flow.config.project.git?.repoUrl ?? String(params['repo-url'] ?? '');
+    const repoUrl = (params['repo-url'] as string | undefined) ?? flow.config.project.git?.repoUrl;
     if (!repoUrl)
       throw new ExpectedError(
         'No repo URL. Set config.project.git.repoUrl in ship.yml or pass --param repo-url=<url>.'

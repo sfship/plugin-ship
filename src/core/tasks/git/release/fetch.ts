@@ -49,7 +49,7 @@ export default {
     },
   ],
   async run({ flow, params, output }: TaskContext): Promise<void> {
-    const repoUrl = flow.config.project.git?.repoUrl ?? (params['repo-url'] as string | undefined);
+    const repoUrl = (params['repo-url'] as string | undefined) ?? flow.config.project.git?.repoUrl;
     if (!repoUrl) {
       throw new ExpectedError('No repo URL. Set project.git.repoUrl in ship.yml or pass --param repo-url=<url>.');
     }
