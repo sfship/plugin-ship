@@ -44,7 +44,7 @@ describe('loadConfig', () => {
 
   it('throws when the YAML is unparseable', () => {
     readTextStub = () => 'key: [unclosed';
-    assert.throws(() => loadConfig('ship.yml'), /Invalid flow definition/);
+    assert.throws(() => loadConfig('ship.yml'), /Could not parse ship\.yml/);
   });
 
   it('throws when the YAML is missing required fields', () => {
