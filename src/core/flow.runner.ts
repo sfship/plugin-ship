@@ -5,23 +5,14 @@ import { TaskRegistry } from './task.registry.js';
 import { Store } from './flow.store.js';
 import { FlowRenderer } from './flow.renderer.js';
 import { asError, ExpectedError } from './util.error.js';
+import { resolvePureToken } from './util.interpolate.js';
 import { Task } from './task.js';
 
 type StepCondition = NonNullable<FlowStep['if']>;
 
-function deepGet(root: unknown, keys: string[]): unknown {
-  let val: unknown = root;
-  for (const key of keys) {
-    // c8 ignore next — val === null guards against tasks setting null outputs at intermediate paths
-    if (val === null || typeof val !== 'object') return undefined;
-    val = (val as Record<string, unknown>)[key];
-  }
-  return val;
-}
-
 function resolveConditionValue(condition: StepCondition, context: Record<string, unknown>): unknown {
-  const match = condition.value.match(/^\$\{\{\s*([\w.-]+)\s*\}\}$/);
-  return match ? deepGet(context, match[1].split('.')) ?? null : condition.value;
+  const resolved = resolvePureToken(condition.value, context);
+  return resolved !== undefined ? resolved : condition.value;
 }
 
 function rootMessage(err: Error): string {

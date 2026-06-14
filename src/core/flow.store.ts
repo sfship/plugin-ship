@@ -1,42 +1,5 @@
 import { TaskOutput } from './task.output.js';
-
-/**
- * Traverses a nested object by an array of keys.
- * Returns `undefined` if any segment is missing or non-traversable.
- */
-function deepGet(root: unknown, keys: string[]): unknown {
-  let val: unknown = root;
-  for (const key of keys) {
-    if (val == null || typeof val !== 'object') return undefined;
-    val = (val as Record<string, unknown>)[key];
-  }
-  return val;
-}
-
-/**
- * Interpolates `${{ some.path }}` tokens in a single value by looking up the path
- * in a unified context object. Non-string values are returned unchanged.
- */
-function interpolate(value: unknown, context: Record<string, unknown>): unknown {
-  if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
-    return Object.fromEntries(
-      Object.entries(value as Record<string, unknown>).map(([k, v]) => [k, interpolate(v, context)])
-    );
-  }
-  if (typeof value !== 'string') return value;
-
-  // Pure token: preserve null so callers can distinguish "missing" from "empty"
-  const single = value.match(/^\$\{\{\s*([\w.-]+)\s*\}\}$/);
-  if (single) return deepGet(context, single[1].split('.')) ?? null;
-
-  // Mixed string: replace missing tokens with empty string, keep surrounding text
-  let result = value;
-  for (const [match, path] of value.matchAll(/\$\{\{\s*([\w.-]+)\s*\}\}/g)) {
-    const raw = deepGet(context, path.split('.'));
-    result = result.replace(match, raw != null ? String(raw) : '');
-  }
-  return result;
-}
+import { interpolate } from './util.interpolate.js';
 
 /**
  * Holds all step outputs for a flow run and owns param interpolation.
