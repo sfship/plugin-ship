@@ -2,6 +2,9 @@ import type { TaskContext, TaskDefinition } from '../../../task.js';
 import { resolvePassthroughArgs } from '../../../task.param.js';
 import { ExpectedError } from '../../../util.error.js';
 
+// Default --wait value in minutes
+const DEFAULT_WAIT_TIME = 15;
+
 type TestRunResult = {
   summary: {
     outcome: string;
@@ -45,8 +48,8 @@ export default {
       name: 'wait',
       type: 'number',
       required: false,
-      default: 15,
-      description: 'Minutes to wait for the test run to complete. Defaults to 15.',
+      default: DEFAULT_WAIT_TIME,
+      description: `Minutes to wait for the test run to complete. Defaults to ${DEFAULT_WAIT_TIME}`,
     },
     {
       name: 'min-coverage',
@@ -71,7 +74,7 @@ export default {
     const effectiveTestLevel =
       (params['test-level'] as string | undefined) ?? (classNames ? 'RunSpecifiedTests' : 'RunLocalTests');
 
-    const wait = (params['wait'] as number | undefined) ?? 30;
+    const wait = (params['wait'] as number | undefined) ?? DEFAULT_WAIT_TIME;
     const argv = resolvePassthroughArgs(params, {
       '--target-org': alias ?? null,
       '--tests': classNames ?? null,

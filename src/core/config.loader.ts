@@ -23,7 +23,7 @@ export function loadConfig(configPath: string = 'ship.yml'): ShipConfig {
   try {
     parsed = parse(raw);
   } catch (err) {
-    throw new ExpectedError(`Invalid flow definition: ${(err as Error).message}`);
+    throw new ExpectedError(`Could not parse ship.yml: ${(err as Error).message}`);
   }
 
   try {

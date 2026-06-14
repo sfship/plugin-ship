@@ -32,7 +32,7 @@ function planLines(steps: Steps, startIndex: number): string[] {
  * UX formatted flow name + description
  */
 export function formatFlowPreview(flowName: string, description?: string): string {
-  const header = `${StandardColors.info('Task:')} ${StandardColors.success(flowName)}`;
+  const header = `${StandardColors.info('Flow:')} ${StandardColors.success(flowName)}`;
   return description ? `${header}\n${StandardColors.info('Description:')} ${description}` : header;
 }
 

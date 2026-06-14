@@ -1,7 +1,7 @@
 import { ux } from '@oclif/core';
 import { SfCommand, Flags, StandardColors } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
-import { setGithubToken, requestDeviceCode, pollForToken } from '../../../../core/service.github.js';
+import { setGithubToken, requestDeviceCode, pollForToken, GithubUser } from '../../../../core/service.github.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('plugin-ship', 'service.connect.github');
@@ -33,7 +33,7 @@ export default class ServiceConnectGithub extends SfCommand<void> {
     const userResp = await fetch('https://api.github.com/user', {
       headers: { Authorization: `Bearer ${token}`, 'User-Agent': 'plugin-ship' },
     });
-    const user = (await userResp.json()) as { login: string };
+    const user = (await userResp.json()) as GithubUser;
     const scopes = (userResp.headers.get('x-oauth-scopes') ?? '')
       .split(',')
       .map((s) => s.trim())
