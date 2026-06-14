@@ -24,6 +24,11 @@ function resolveConditionValue(condition: StepCondition, context: Record<string,
   return match ? deepGet(context, match[1].split('.')) ?? null : condition.value;
 }
 
+function rootMessage(err: Error): string {
+  if (err.message) return err.message;
+  return err.cause instanceof Error ? rootMessage(err.cause) : err.toString();
+}
+
 function coerce(val: unknown): unknown {
   return typeof val === 'string' && Number.isFinite(Number(val)) ? Number(val) : val;
 }
@@ -97,7 +102,7 @@ async function runSteps(
       error.message =
         error instanceof ExpectedError
           ? `${error.message}\n(step "${stepId}" in flow "${flowName}")`
-          : `Step "${stepId}" in flow "${flowName}" failed: ${error.message}`;
+          : `Step "${stepId}" in flow "${flowName}" failed: ${rootMessage(error)}`;
       return { stepId, error };
     }
 

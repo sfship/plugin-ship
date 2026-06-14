@@ -1,5 +1,6 @@
 import type { TaskContext, TaskDefinition } from '../../../task.js';
 import { ExpectedError } from '../../../util.error.js';
+import { withSuppressedStdout } from '../../../util.stdout.js';
 
 type AssignPermsetResult = {
   successes?: Array<{ name: string }>;
@@ -51,14 +52,9 @@ export default {
     for (const name of names) argv.push('--name', name);
     if (params['username']) argv.push('--on-behalf-of', params['username'] as string);
 
-    const originalWrite = process.stdout.write.bind(process.stdout);
-    process.stdout.write = (): boolean => true;
-    let result: AssignPermsetResult;
-    try {
-      result = (await flow.runCommand('org:assign:permset', argv)) as AssignPermsetResult;
-    } finally {
-      process.stdout.write = originalWrite;
-    }
+    const result = (await withSuppressedStdout(() =>
+      flow.runCommand('org:assign:permset', argv)
+    )) as AssignPermsetResult;
 
     const realFailures = (result.failures ?? []).filter(
       (f) => !f.message.includes('Duplicate PermissionSetAssignment')

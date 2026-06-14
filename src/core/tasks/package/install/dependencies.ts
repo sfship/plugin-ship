@@ -1,6 +1,7 @@
 import type { TaskContext, TaskDefinition } from '../../../task.js';
 import { resolveDependencies, type DependencyStep } from '../../../package.resolver.js';
 import { deployMetadataStep } from '../../../package.metadata.js';
+import { withSuppressedStdout } from '../../../util.stdout.js';
 
 function describeStep(step: DependencyStep): string {
   if (step.kind === 'package-id') return `package-id  ${step.versionId}${step.name ? ` (${step.name})` : ''}`;
@@ -70,8 +71,8 @@ export default {
     // a release alike — so one `package installed list` query covers them all.
     let installed = new Set<string>();
     if (params['force'] !== true) {
-      const listArgs = alias !== undefined ? ['--target-org', alias] : [];
-      const result = (await flow.runCommand('package:installed:list', listArgs)) as Array<{
+      const listArgs = ['--json', ...(alias !== undefined ? ['--target-org', alias] : [])];
+      const result = (await withSuppressedStdout(() => flow.runCommand('package:installed:list', listArgs))) as Array<{
         SubscriberPackageVersionId: string;
       }>;
       installed = new Set(result.map((p) => p.SubscriberPackageVersionId));

@@ -28,7 +28,7 @@ steps:
     params:
       path: force-app/main/default/classes
       pattern: ${{ config.project.package.testPattern }}
-  test:
+  run-tests:
     if:
       value: ${{ steps.find-test-classes.count }}
     task: apex/run/test

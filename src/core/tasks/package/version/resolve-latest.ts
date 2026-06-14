@@ -1,5 +1,6 @@
 import type { TaskContext, TaskDefinition } from '../../../task.js';
 import { ExpectedError } from '../../../util.error.js';
+import { withSuppressedStdout } from '../../../util.stdout.js';
 
 type PackageVersion = {
   SubscriberPackageVersionId: string;
@@ -71,14 +72,9 @@ export default {
     const wantReleased = params['released'] === true;
     if (wantReleased) argv.push('--released');
 
-    const originalWrite = process.stdout.write.bind(process.stdout);
-    process.stdout.write = (): boolean => true;
-    let versions: PackageVersion[];
-    try {
-      versions = (await flow.runCommand('package:version:list', argv)) as PackageVersion[];
-    } finally {
-      process.stdout.write = originalWrite;
-    }
+    const versions = (await withSuppressedStdout(() =>
+      flow.runCommand('package:version:list', argv)
+    )) as PackageVersion[];
 
     const matching = versions.filter((v) => {
       const released = v.IsReleased === true || v.IsReleased === 'true';
