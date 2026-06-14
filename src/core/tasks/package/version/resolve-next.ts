@@ -47,13 +47,6 @@ export default {
       required: false,
       description: 'GitHub repository URL. Falls back to config.project.git.repoUrl.',
     },
-    {
-      name: 'github-alias',
-      type: 'string',
-      required: false,
-      default: 'default',
-      description: 'GitHub token alias.',
-    },
   ],
   outputs: [
     {
