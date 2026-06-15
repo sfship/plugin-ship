@@ -29,7 +29,7 @@ describe('loadConfig', () => {
   it('parses optional dir field', () => {
     readTextStub = () => dedent`
       project:
-        name: my-project
+        slug: my-project
       dir: .custom
     `;
     assert.equal(loadConfig('ship.yml').dir, '.custom');
