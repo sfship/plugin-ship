@@ -6,6 +6,8 @@ params:
     default: minor
     description: Which part of the version to bump relative to the latest released version. One of build, patch, minor, major.
 steps:
+  verify-dependencies:
+    task: package/dependencies/verify
   resolve-next:
     task: package/version/resolve-next
     params:

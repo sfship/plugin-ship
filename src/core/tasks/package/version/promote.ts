@@ -1,5 +1,7 @@
+import { StandardColors } from '@salesforce/sf-plugins-core';
 import type { TaskContext, TaskDefinition } from '../../../task.js';
 import { resolvePassthroughArgs } from '../../../task.param.js';
+import { asError, ExpectedError } from '../../../util.error.js';
 
 export default {
   description: 'Promotes a 2GP package version from beta to released. Passthrough for `sf package version promote`.',
@@ -41,7 +43,27 @@ export default {
     });
 
     flow.log(`Promoting ${versionId} to released...`);
-    await flow.runCommand('package:version:promote', argv);
+    try {
+      await flow.runCommand('package:version:promote', argv);
+    } catch (err) {
+      const message = asError(err).message;
+      // Right after a 2GP beta is built, its SubscriberPackageVersionId (04t) exists for a few
+      // minutes before the Package2Version that `promote` looks up — a Salesforce propagation
+      // delay, not a real failure. Swap the cryptic platform error for something actionable.
+      if (/corresponding Package Version Id was not found/i.test(message)) {
+        throw new ExpectedError(
+          [
+            StandardColors.warning(`Beta package version ${versionId} can't be found by the Dev Hub yet.`),
+            '',
+            'If the beta release is recent, wait a few minutes and try again — Salesforce takes a moment to',
+            'register a newly-built version before it can be promoted.',
+            '',
+            StandardColors.info('Not recent? Make sure this version belongs to your default Dev Hub.'),
+          ].join('\n')
+        );
+      }
+      throw err;
+    }
     flow.log(`Promoted ${versionId}.`);
     output.set('version-id', versionId);
   },

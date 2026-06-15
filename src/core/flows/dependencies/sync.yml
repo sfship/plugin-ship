@@ -1,0 +1,4 @@
+description: Resolve ship.yml dependencies into sfdx-project.json. Run whenever your dependencies change, then commit the diff before cutting a release.
+steps:
+  sync:
+    task: package/dependencies/sync
