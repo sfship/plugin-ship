@@ -188,7 +188,7 @@ export default {
 
     // Flatten dependencies into the annotation so downstream resolution is one-shot.
     const depsForAnnotation: Array<{ version_id: string; package_name?: string }> = [];
-    const deps = flow.config.dependencies ?? [];
+    const deps = flow.config.project.package?.dependencies ?? [];
     if (deps.length > 0) {
       flow.log('Resolving dependencies for tag annotation...');
       const steps = await resolveDependencies(deps);

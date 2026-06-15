@@ -5,17 +5,9 @@ import type { ZodError } from 'zod';
 import { listDir, readText } from './util.file.js';
 import { FlowDefinition, FlowDefinitionSchema } from './flow.definition.schema.js';
 import { ExpectedError, formatZodError } from './util.error.js';
+import { normalizeName } from './util.path.js';
 
 export const builtinsDir = resolve(fileURLToPath(import.meta.url), '..', 'flows');
-
-/**
- * Normalizes a user-supplied flow name to a registry key: trims whitespace,
- * accepts OS-native separators, and tolerates a leading slash (users tend to
- * type `/ci`). Registry keys are slash-separated with no leading slash.
- */
-function normalizeName(name: string): string {
-  return name.trim().replaceAll('\\', '/').replace(/^\/+/, '');
-}
 
 function scanDir(dir: string): string[] {
   try {
@@ -61,14 +53,14 @@ export class FlowRegistry {
     this.builtinFiles = new Map();
 
     for (const file of scanDir(builtinsDir)) {
-      const name = file.replace(/\.yml$/, '');
+      const name = normalizeName(file.replace(/\.yml$/, ''));
       const path = resolve(builtinsDir, file);
       this.builtinFiles.set(name, path);
       this.flows.set(name, loadFromPath(path));
     }
 
     for (const file of scanDir(resolve(shipDir, 'flows')))
-      this.flows.set(file.replace(/\.yml$/, ''), loadFromPath(resolve(shipDir, 'flows', file)));
+      this.flows.set(normalizeName(file.replace(/\.yml$/, '')), loadFromPath(resolve(shipDir, 'flows', file)));
   }
 
   /** Lists all available flow names. */

@@ -39,7 +39,7 @@ export default {
     },
   ],
   async run({ flow, params }: TaskContext): Promise<void> {
-    const deps = flow.config.dependencies ?? [];
+    const deps = flow.config.project.package?.dependencies ?? [];
     if (deps.length === 0) {
       flow.log('No dependencies declared in ship.yml.');
       return;
