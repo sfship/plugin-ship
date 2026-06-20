@@ -1,6 +1,28 @@
 import { strict as assert } from 'node:assert';
 import { Store } from '../../src/core/flow.store.js';
 
+describe('Store constructor', () => {
+  it('pre-registers namespaces for each provided step', () => {
+    const store = new Store({ 'step-a': {}, 'step-b': {} });
+    store.set('step-a', 'key', 'value');
+    assert.equal(store.getSteps()['step-a']?.['key'], 'value');
+  });
+});
+
+describe('Store.get', () => {
+  it('returns a value previously written with set', () => {
+    const store = new Store();
+    store.getTaskOutput('step-a'); // registers the namespace
+    store.set('step-a', 'org', 'my-org');
+    assert.equal(store.get('step-a', 'org'), 'my-org');
+  });
+
+  it('returns undefined for an unknown step', () => {
+    const store = new Store();
+    assert.equal(store.get('missing', 'key'), undefined);
+  });
+});
+
 describe('Store.resolveParams', () => {
   it('returns non-string values unchanged', () => {
     const store = new Store();
