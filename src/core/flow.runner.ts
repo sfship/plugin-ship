@@ -103,6 +103,29 @@ async function runSteps(
   return undefined;
 }
 
+/**
+ * Handles an error that reaches the process while a flow owns the renderer.
+ *
+ * oclif converts Ctrl+C into an EEXIT error; we take over (the renderer is ours
+ * now) so an interrupt prints a clean failure instead of a raw stack, pass any
+ * other oclif exit code through unchanged, and route unexpected crashes back
+ * through the renderer.
+ */
+export function handleUncaught(renderer: FlowRenderer, err: unknown): void {
+  const e = asError(err);
+  if ((e as { code?: unknown }).code === 'EEXIT') {
+    const exitCode = (e as { oclif?: { exit?: number } }).oclif?.exit ?? 1;
+    if (exitCode === 130) {
+      (process.stdout as { write: unknown }).write = (): boolean => true;
+      (process.stderr as { write: unknown }).write = (): boolean => true;
+      renderer.interrupt();
+    }
+    process.exit(exitCode);
+  }
+  renderer.flowFailed(renderer.activeStep ?? '?', e);
+  process.exit(1);
+}
+
 export async function runFlow(flowName: string, flow: FlowDefinition, context: FlowContext): Promise<void> {
   const mainSteps = Object.entries(flow.steps);
   const finallySteps = Object.entries(flow.finally ?? {});
@@ -118,23 +141,8 @@ export async function runFlow(flowName: string, flow: FlowDefinition, context: F
     }
   }
 
-  // oclif converts Ctrl+C into an EEXIT error on the process. Take over here
-  // (the renderer is ours now) so an interrupt prints a clean failure instead
-  // of a raw stack, and unexpected crashes still report through the renderer.
-  const onUncaught = (err: unknown): void => {
-    const e = asError(err);
-    if ((e as { code?: unknown }).code === 'EEXIT') {
-      const exitCode = (e as { oclif?: { exit?: number } }).oclif?.exit ?? 1;
-      if (exitCode === 130) {
-        (process.stdout as { write: unknown }).write = (): boolean => true;
-        (process.stderr as { write: unknown }).write = (): boolean => true;
-        renderer.interrupt();
-      }
-      process.exit(exitCode);
-    }
-    renderer.flowFailed(renderer.activeStep ?? '?', e);
-    process.exit(1);
-  };
+  // Take over uncaught errors while we own the renderer (see handleUncaught).
+  const onUncaught = handleUncaught.bind(null, renderer);
   process.once('uncaughtException', onUncaught);
 
   try {

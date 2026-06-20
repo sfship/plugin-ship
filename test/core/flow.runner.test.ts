@@ -3,25 +3,12 @@ import { strict as assert } from 'node:assert';
 import esmock from 'esmock';
 import { ExpectedError } from '../../src/core/error.js';
 import { OrgRegistry } from '../../src/core/org.registry.js';
-import type { Task, TaskContext } from '../../src/core/task.definition.schema.js';
+import type { Task } from '../../src/core/task.definition.schema.js';
 import { createFlowContext, type FlowContext } from '../../src/core/flow.context.js';
-import type { FlowDefinition } from '../../src/core/flow.definition.schema.js';
-import type { runFlow as RunFlowFn } from '../../src/core/flow.runner.js';
+import type { FlowDefinition, FlowStep } from '../../src/core/flow.definition.schema.js';
+import type { FlowRenderer } from '../../src/core/flow.renderer.js';
+import { handleUncaught, type runFlow as RunFlowFn } from '../../src/core/flow.runner.js';
 import type { Params } from '../../src/core/task.param.schema.js';
-
-const mockRenderer = {
-  FlowRenderer: class {
-    public start(): void {}
-    public failedBeforeStart(): void {}
-    public stepStart(): void {}
-    public stepComplete(): void {}
-    public stepFailed(): void {}
-    public flowFailed(): void {}
-    public stepIgnored(): void {}
-    public stepSkipped(): void {}
-    public success(): void {}
-  },
-};
 
 function makeContext(params: Params = {}): FlowContext {
   return createFlowContext({
@@ -41,16 +28,34 @@ function makeTask(overrides: Partial<Task> = {}): Task {
     description: 'does nothing',
     params: [],
     outputs: [],
-    // eslint-disable-next-line @typescript-eslint/require-await
     async run(): Promise<void> {},
     ...overrides,
   };
 }
 
+/** A task that records its own name into `log` when it runs. */
+function recordingTask(name: string, log: string[]): Task {
+  return makeTask({
+    name,
+    async run() {
+      log.push(name);
+    },
+  });
+}
+
+/** A task that always throws, for exercising failure paths. */
+function failingTask(name: string, message = 'boom'): Task {
+  return makeTask({
+    name,
+    async run() {
+      throw new Error(message);
+    },
+  });
+}
+
 function makeMockRunner(tasks: Record<string, Task>) {
   return {
     TaskRegistry: class {
-      // eslint-disable-next-line class-methods-use-this
       public async resolveTask(taskName: string): Promise<Task> {
         const task = tasks[taskName];
         if (!task) throw new Error(`Unknown task "${taskName}"`);
@@ -60,26 +65,45 @@ function makeMockRunner(tasks: Record<string, Task>) {
   };
 }
 
+/**
+ * A no-op FlowRenderer mock that records the name of each method called on it.
+ * A Proxy stands in for every method, so new renderer methods need no changes
+ * here; `activeStep` is exposed as a real (null) property for handleUncaught.
+ */
+function makeRenderer(calls: string[] = []): { FlowRenderer: new (...args: unknown[]) => object } {
+  class MockRenderer {
+    public activeStep: string | null = null;
+    public constructor() {
+      return new Proxy(this, {
+        get(target, prop, receiver) {
+          if (typeof prop === 'symbol' || prop in target) return Reflect.get(target, prop, receiver);
+          return () => calls.push(prop);
+        },
+      });
+    }
+  }
+  return { FlowRenderer: MockRenderer };
+}
+
+function recordingRenderer(calls: string[] = []): FlowRenderer {
+  return new (makeRenderer(calls).FlowRenderer)() as unknown as FlowRenderer;
+}
+
+/** Loads `runFlow` with the task registry and renderer stubbed out. */
+async function loadRunFlow(tasks: Record<string, Task> = {}): Promise<typeof RunFlowFn> {
+  const { runFlow }: { runFlow: typeof RunFlowFn } = await esmock('../../src/core/flow.runner.js', {
+    '../../src/core/task.registry.js': makeMockRunner(tasks),
+    '../../src/core/flow.renderer.js': makeRenderer(),
+  });
+  return runFlow;
+}
+
 describe('runFlow', () => {
   it('runs each step in order', async () => {
-    const order: string[] = [];
-
-    const { runFlow }: { runFlow: typeof RunFlowFn } = await esmock('../../src/core/flow.runner.js', {
-      '../../src/core/task.registry.js': makeMockRunner({
-        'step-a': makeTask({
-          name: 'step-a',
-          async run() {
-            order.push('a');
-          },
-        }),
-        'step-b': makeTask({
-          name: 'step-b',
-          async run() {
-            order.push('b');
-          },
-        }),
-      }),
-      '../../src/core/flow.renderer.js': mockRenderer,
+    const log: string[] = [];
+    const runFlow = await loadRunFlow({
+      'step-a': recordingTask('step-a', log),
+      'step-b': recordingTask('step-b', log),
     });
 
     const flow: FlowDefinition = {
@@ -87,41 +111,26 @@ describe('runFlow', () => {
     };
 
     await runFlow('my-flow', flow, makeContext());
-    assert.deepEqual(order, ['a', 'b']);
+    assert.deepEqual(log, ['step-a', 'step-b']);
   });
 
   it('throws when a task fails', async () => {
-    const { runFlow }: { runFlow: typeof RunFlowFn } = await esmock('../../src/core/flow.runner.js', {
-      '../../src/core/task.registry.js': makeMockRunner({
-        fail: makeTask({
-          name: 'fail',
-          async run() {
-            throw new Error('boom');
-          },
-        }),
-      }),
-      '../../src/core/flow.renderer.js': mockRenderer,
-    });
-
+    const runFlow = await loadRunFlow({ fail: failingTask('fail') });
     const flow: FlowDefinition = { steps: { 'my-step': { task: 'fail' } } };
 
     await assert.rejects(() => runFlow('my-flow', flow, makeContext()), /boom/);
   });
 
   it('passes resolved params to the task', async () => {
-    let receivedParams: Record<string, unknown> = {};
-
-    const { runFlow }: { runFlow: typeof RunFlowFn } = await esmock('../../src/core/flow.runner.js', {
-      '../../src/core/task.registry.js': makeMockRunner({
-        'param-task': makeTask({
-          name: 'param-task',
-          params: [{ name: 'msg', type: 'string', required: true }],
-          async run(ctx: TaskContext): Promise<void> {
-            receivedParams = ctx.params;
-          },
-        }),
+    let received: Params = {};
+    const runFlow = await loadRunFlow({
+      'param-task': makeTask({
+        name: 'param-task',
+        params: [{ name: 'msg', type: 'string', required: true }],
+        async run(ctx) {
+          received = ctx.params;
+        },
       }),
-      '../../src/core/flow.renderer.js': mockRenderer,
     });
 
     const flow: FlowDefinition = {
@@ -129,15 +138,11 @@ describe('runFlow', () => {
     };
 
     await runFlow('my-flow', flow, makeContext({ greeting: 'hello' }));
-    assert.equal(receivedParams['msg'], 'hello');
+    assert.equal(received['msg'], 'hello');
   });
 
   it('throws before any step when a required flow param is missing', async () => {
-    const { runFlow }: { runFlow: typeof RunFlowFn } = await esmock('../../src/core/flow.runner.js', {
-      '../../src/core/task.registry.js': makeMockRunner({}),
-      '../../src/core/flow.renderer.js': mockRenderer,
-    });
-
+    const runFlow = await loadRunFlow();
     const flow: FlowDefinition = {
       params: [{ name: 'env', type: 'string', required: true }],
       steps: { 'my-step': { task: 'noop' } },
@@ -146,18 +151,14 @@ describe('runFlow', () => {
     await assert.rejects(() => runFlow('my-flow', flow, makeContext()), /Missing required params/);
   });
 
-  it('propagates ExpectedError thrown by a task', async () => {
-    const { runFlow }: { runFlow: typeof RunFlowFn } = await esmock('../../src/core/flow.runner.js', {
-      '../../src/core/task.registry.js': makeMockRunner({
-        'fail-task': makeTask({
-          name: 'fail-task',
-          params: [{ name: 'msg', type: 'string', required: true }],
-          async run() {
-            throw new ExpectedError('Missing required params:\n  msg');
-          },
-        }),
+  it('propagates an ExpectedError thrown by a task', async () => {
+    const runFlow = await loadRunFlow({
+      'fail-task': makeTask({
+        name: 'fail-task',
+        async run() {
+          throw new ExpectedError('user-facing failure');
+        },
       }),
-      '../../src/core/flow.renderer.js': mockRenderer,
     });
 
     const flow: FlowDefinition = { steps: { 'my-step': { task: 'fail-task' } } };
@@ -167,250 +168,96 @@ describe('runFlow', () => {
 });
 
 describe('runFlow — conditional steps', () => {
-  async function loadRunFlow(tasks: Record<string, Task> = {}): Promise<typeof RunFlowFn> {
-    const { runFlow }: { runFlow: typeof RunFlowFn } = await esmock('../../src/core/flow.runner.js', {
-      '../../src/core/task.registry.js': makeMockRunner(tasks),
-      '../../src/core/flow.renderer.js': mockRenderer,
+  type ConditionCase = {
+    name: string;
+    condition: Pick<FlowStep, 'if' | 'if-not'>;
+    params?: Params;
+    runs: boolean;
+  };
+
+  const cases: ConditionCase[] = [
+    {
+      name: 'skips when `if` resolves falsy',
+      condition: { if: { value: '${{ params.flag }}' } },
+      params: { flag: '' },
+      runs: false,
+    },
+    {
+      name: 'runs when `if` resolves truthy',
+      condition: { if: { value: '${{ params.flag }}' } },
+      params: { flag: 'yes' },
+      runs: true,
+    },
+    {
+      name: 'skips when `if` value !== equals',
+      condition: { if: { value: '${{ params.env }}', equals: 'prod' } },
+      params: { env: 'dev' },
+      runs: false,
+    },
+    {
+      name: 'runs when `if` value === equals',
+      condition: { if: { value: '${{ params.env }}', equals: 'prod' } },
+      params: { env: 'prod' },
+      runs: true,
+    },
+    {
+      name: 'skips when `if-not` resolves truthy',
+      condition: { 'if-not': { value: '${{ params.flag }}' } },
+      params: { flag: 'yes' },
+      runs: false,
+    },
+    {
+      name: 'runs when `if-not` resolves falsy',
+      condition: { 'if-not': { value: '${{ params.flag }}' } },
+      params: { flag: '' },
+      runs: true,
+    },
+    {
+      name: 'skips when `if-not` value === equals',
+      condition: { 'if-not': { value: '${{ params.env }}', equals: 'ci' } },
+      params: { env: 'ci' },
+      runs: false,
+    },
+    {
+      name: 'runs when `if-not` value !== equals',
+      condition: { 'if-not': { value: '${{ params.env }}', equals: 'ci' } },
+      params: { env: 'dev' },
+      runs: true,
+    },
+    {
+      name: 'resolves a literal (non-token) string as truthy',
+      condition: { if: { value: 'always-truthy' } },
+      runs: true,
+    },
+    {
+      name: 'treats a missing param token as falsy for `if`',
+      condition: { if: { value: '${{ params.missing }}' } },
+      runs: false,
+    },
+    {
+      name: 'treats the numeric string "0" as falsy for `if`',
+      condition: { if: { value: '${{ params.count }}' } },
+      params: { count: '0' },
+      runs: false,
+    },
+  ];
+
+  for (const c of cases) {
+    it(c.name, async () => {
+      const log: string[] = [];
+      const runFlow = await loadRunFlow({ noop: recordingTask('noop', log) });
+      const flow: FlowDefinition = { steps: { step: { task: 'noop', ...c.condition } } };
+
+      await runFlow('my-flow', flow, makeContext(c.params));
+      assert.deepEqual(log, c.runs ? ['noop'] : []);
     });
-    return runFlow;
   }
-
-  it('skips a step when `if` condition resolves to falsy', async () => {
-    const ran: string[] = [];
-    const runFlow = await loadRunFlow({
-      noop: makeTask({
-        name: 'noop',
-        async run() {
-          ran.push('noop');
-        },
-      }),
-    });
-
-    const flow: FlowDefinition = {
-      steps: {
-        'conditional-step': { task: 'noop', if: { value: '${{ params.flag }}' } },
-      },
-    };
-
-    await runFlow('my-flow', flow, makeContext({ flag: '' }));
-    assert.deepEqual(ran, []);
-  });
-
-  it('runs a step when `if` condition resolves to truthy', async () => {
-    const ran: string[] = [];
-    const runFlow = await loadRunFlow({
-      noop: makeTask({
-        name: 'noop',
-        async run() {
-          ran.push('noop');
-        },
-      }),
-    });
-
-    const flow: FlowDefinition = {
-      steps: {
-        'conditional-step': { task: 'noop', if: { value: '${{ params.flag }}' } },
-      },
-    };
-
-    await runFlow('my-flow', flow, makeContext({ flag: 'yes' }));
-    assert.deepEqual(ran, ['noop']);
-  });
-
-  it('skips a step when `if` condition value does not equal the expected value', async () => {
-    const ran: string[] = [];
-    const runFlow = await loadRunFlow({
-      noop: makeTask({
-        name: 'noop',
-        async run() {
-          ran.push('noop');
-        },
-      }),
-    });
-
-    const flow: FlowDefinition = {
-      steps: {
-        'conditional-step': { task: 'noop', if: { value: '${{ params.env }}', equals: 'prod' } },
-      },
-    };
-
-    await runFlow('my-flow', flow, makeContext({ env: 'dev' }));
-    assert.deepEqual(ran, []);
-  });
-
-  it('runs a step when `if` condition value equals the expected value', async () => {
-    const ran: string[] = [];
-    const runFlow = await loadRunFlow({
-      noop: makeTask({
-        name: 'noop',
-        async run() {
-          ran.push('noop');
-        },
-      }),
-    });
-
-    const flow: FlowDefinition = {
-      steps: {
-        'conditional-step': { task: 'noop', if: { value: '${{ params.env }}', equals: 'prod' } },
-      },
-    };
-
-    await runFlow('my-flow', flow, makeContext({ env: 'prod' }));
-    assert.deepEqual(ran, ['noop']);
-  });
-
-  it('skips a step when `if-not` condition resolves to truthy', async () => {
-    const ran: string[] = [];
-    const runFlow = await loadRunFlow({
-      noop: makeTask({
-        name: 'noop',
-        async run() {
-          ran.push('noop');
-        },
-      }),
-    });
-
-    const flow: FlowDefinition = {
-      steps: {
-        'conditional-step': { task: 'noop', 'if-not': { value: '${{ params.flag }}' } },
-      },
-    };
-
-    await runFlow('my-flow', flow, makeContext({ flag: 'yes' }));
-    assert.deepEqual(ran, []);
-  });
-
-  it('runs a step when `if-not` condition resolves to falsy', async () => {
-    const ran: string[] = [];
-    const runFlow = await loadRunFlow({
-      noop: makeTask({
-        name: 'noop',
-        async run() {
-          ran.push('noop');
-        },
-      }),
-    });
-
-    const flow: FlowDefinition = {
-      steps: {
-        'conditional-step': { task: 'noop', 'if-not': { value: '${{ params.flag }}' } },
-      },
-    };
-
-    await runFlow('my-flow', flow, makeContext({ flag: '' }));
-    assert.deepEqual(ran, ['noop']);
-  });
-
-  it('skips a step when `if-not` condition value equals the excluded value', async () => {
-    const ran: string[] = [];
-    const runFlow = await loadRunFlow({
-      noop: makeTask({
-        name: 'noop',
-        async run() {
-          ran.push('noop');
-        },
-      }),
-    });
-
-    const flow: FlowDefinition = {
-      steps: {
-        'conditional-step': { task: 'noop', 'if-not': { value: '${{ params.env }}', equals: 'ci' } },
-      },
-    };
-
-    await runFlow('my-flow', flow, makeContext({ env: 'ci' }));
-    assert.deepEqual(ran, []);
-  });
-
-  it('runs a step when `if-not` condition value does not equal the excluded value', async () => {
-    const ran: string[] = [];
-    const runFlow = await loadRunFlow({
-      noop: makeTask({
-        name: 'noop',
-        async run() {
-          ran.push('noop');
-        },
-      }),
-    });
-
-    const flow: FlowDefinition = {
-      steps: {
-        'conditional-step': { task: 'noop', 'if-not': { value: '${{ params.env }}', equals: 'ci' } },
-      },
-    };
-
-    await runFlow('my-flow', flow, makeContext({ env: 'dev' }));
-    assert.deepEqual(ran, ['noop']);
-  });
-
-  it('resolves a literal (non-token) string in a condition', async () => {
-    const ran: string[] = [];
-    const runFlow = await loadRunFlow({
-      noop: makeTask({
-        name: 'noop',
-        async run() {
-          ran.push('noop');
-        },
-      }),
-    });
-
-    const flow: FlowDefinition = {
-      steps: {
-        'conditional-step': { task: 'noop', if: { value: 'always-truthy' } },
-      },
-    };
-
-    await runFlow('my-flow', flow, makeContext());
-    assert.deepEqual(ran, ['noop']);
-  });
-
-  it('treats a missing param token as null (falsy) for `if`', async () => {
-    const ran: string[] = [];
-    const runFlow = await loadRunFlow({
-      noop: makeTask({
-        name: 'noop',
-        async run() {
-          ran.push('noop');
-        },
-      }),
-    });
-
-    const flow: FlowDefinition = {
-      steps: {
-        'conditional-step': { task: 'noop', if: { value: '${{ params.missing }}' } },
-      },
-    };
-
-    await runFlow('my-flow', flow, makeContext());
-    assert.deepEqual(ran, []);
-  });
 });
 
 describe('runFlow — ignore-failure', () => {
-  async function loadRunFlow(tasks: Record<string, Task> = {}): Promise<typeof RunFlowFn> {
-    const { runFlow }: { runFlow: typeof RunFlowFn } = await esmock('../../src/core/flow.runner.js', {
-      '../../src/core/task.registry.js': makeMockRunner(tasks),
-      '../../src/core/flow.renderer.js': mockRenderer,
-    });
-    return runFlow;
-  }
-
   it('continues the flow when a step fails with ignore-failure', async () => {
-    const ran: string[] = [];
-    const runFlow = await loadRunFlow({
-      fail: makeTask({
-        name: 'fail',
-        async run() {
-          throw new Error('boom');
-        },
-      }),
-      noop: makeTask({
-        name: 'noop',
-        async run() {
-          ran.push('noop');
-        },
-      }),
-    });
+    const log: string[] = [];
+    const runFlow = await loadRunFlow({ fail: failingTask('fail'), noop: recordingTask('noop', log) });
 
     const flow: FlowDefinition = {
       steps: {
@@ -420,26 +267,21 @@ describe('runFlow — ignore-failure', () => {
     };
 
     await runFlow('my-flow', flow, makeContext());
-    assert.deepEqual(ran, ['noop']);
+    assert.deepEqual(log, ['noop']);
   });
 
-  it('sets failed and error on the step output', async () => {
-    let receivedParams: Record<string, unknown> = {};
+  it('exposes failed and error on the ignored step output', async () => {
+    let received: Params = {};
     const runFlow = await loadRunFlow({
-      fail: makeTask({
-        name: 'fail',
-        async run() {
-          throw new Error('boom');
-        },
-      }),
+      fail: failingTask('fail'),
       'read-state': makeTask({
         name: 'read-state',
         params: [
           { name: 'failed', type: 'string', required: false },
           { name: 'error', type: 'string', required: false },
         ],
-        async run(ctx: TaskContext) {
-          receivedParams = ctx.params;
+        async run(ctx) {
+          received = ctx.params;
         },
       }),
     });
@@ -458,53 +300,22 @@ describe('runFlow — ignore-failure', () => {
     };
 
     await runFlow('my-flow', flow, makeContext());
-    assert.equal(receivedParams['failed'], 'true');
-    assert.equal(receivedParams['error'], 'boom');
+    assert.equal(received['failed'], 'true');
+    assert.equal(received['error'], 'boom');
   });
 
   it('still throws when a step fails without ignore-failure', async () => {
-    const runFlow = await loadRunFlow({
-      fail: makeTask({
-        name: 'fail',
-        async run() {
-          throw new Error('boom');
-        },
-      }),
-    });
-
-    const flow: FlowDefinition = {
-      steps: { 'fail-step': { task: 'fail' } },
-    };
+    const runFlow = await loadRunFlow({ fail: failingTask('fail') });
+    const flow: FlowDefinition = { steps: { 'fail-step': { task: 'fail' } } };
 
     await assert.rejects(() => runFlow('my-flow', flow, makeContext()), /boom/);
   });
 });
 
 describe('runFlow — finally steps', () => {
-  async function loadRunFlow(tasks: Record<string, Task> = {}): Promise<typeof RunFlowFn> {
-    const { runFlow }: { runFlow: typeof RunFlowFn } = await esmock('../../src/core/flow.runner.js', {
-      '../../src/core/task.registry.js': makeMockRunner(tasks),
-      '../../src/core/flow.renderer.js': mockRenderer,
-    });
-    return runFlow;
-  }
-
   it('runs finally steps after all main steps succeed', async () => {
-    const ran: string[] = [];
-    const runFlow = await loadRunFlow({
-      main: makeTask({
-        name: 'main',
-        async run() {
-          ran.push('main');
-        },
-      }),
-      cleanup: makeTask({
-        name: 'cleanup',
-        async run() {
-          ran.push('cleanup');
-        },
-      }),
-    });
+    const log: string[] = [];
+    const runFlow = await loadRunFlow({ main: recordingTask('main', log), cleanup: recordingTask('cleanup', log) });
 
     const flow: FlowDefinition = {
       steps: { 'main-step': { task: 'main' } },
@@ -512,25 +323,12 @@ describe('runFlow — finally steps', () => {
     };
 
     await runFlow('my-flow', flow, makeContext());
-    assert.deepEqual(ran, ['main', 'cleanup']);
+    assert.deepEqual(log, ['main', 'cleanup']);
   });
 
   it('runs finally steps even when a main step fails', async () => {
-    const ran: string[] = [];
-    const runFlow = await loadRunFlow({
-      fail: makeTask({
-        name: 'fail',
-        async run() {
-          throw new Error('boom');
-        },
-      }),
-      cleanup: makeTask({
-        name: 'cleanup',
-        async run() {
-          ran.push('cleanup');
-        },
-      }),
-    });
+    const log: string[] = [];
+    const runFlow = await loadRunFlow({ fail: failingTask('fail'), cleanup: recordingTask('cleanup', log) });
 
     const flow: FlowDefinition = {
       steps: { 'fail-step': { task: 'fail' } },
@@ -538,23 +336,13 @@ describe('runFlow — finally steps', () => {
     };
 
     await assert.rejects(() => runFlow('my-flow', flow, makeContext()));
-    assert.ok(ran.includes('cleanup'));
+    assert.ok(log.includes('cleanup'));
   });
 
   it('ignores failures in finally steps and still throws the original error', async () => {
     const runFlow = await loadRunFlow({
-      fail: makeTask({
-        name: 'fail',
-        async run() {
-          throw new Error('main error');
-        },
-      }),
-      'cleanup-fail': makeTask({
-        name: 'cleanup-fail',
-        async run() {
-          throw new Error('cleanup error');
-        },
-      }),
+      fail: failingTask('fail', 'main error'),
+      'cleanup-fail': failingTask('cleanup-fail', 'cleanup error'),
     });
 
     const flow: FlowDefinition = {
@@ -566,180 +354,7 @@ describe('runFlow — finally steps', () => {
   });
 });
 
-describe('runFlow — uncaught exception handler', () => {
-  class ProcessExitError extends Error {
-    public readonly code: number;
-    public constructor(code: number) {
-      super(`process.exit(${code})`);
-      this.code = code;
-    }
-  }
-
-  let savedProcessOnce: typeof process.once;
-  let savedProcessExit: typeof process.exit;
-  let savedStdoutWrite: typeof process.stdout.write;
-  let savedStderrWrite: typeof process.stderr.write;
-  let capturedHandler: ((err: unknown) => void) | undefined;
-
-  function makeTrackingRenderer(calls: string[]) {
-    return {
-      FlowRenderer: class {
-        public activeStep: string | null = null;
-        // eslint-disable-next-line class-methods-use-this
-        public start(): void {}
-        // eslint-disable-next-line class-methods-use-this
-        public failedBeforeStart(): void {}
-        // eslint-disable-next-line class-methods-use-this
-        public stepStart(): void {}
-        // eslint-disable-next-line class-methods-use-this
-        public stepComplete(): void {}
-        // eslint-disable-next-line class-methods-use-this
-        public stepFailed(): void {}
-        // eslint-disable-next-line class-methods-use-this
-        public flowFailed(): void {
-          calls.push('flowFailed');
-        }
-        // eslint-disable-next-line class-methods-use-this
-        public stepIgnored(): void {}
-        // eslint-disable-next-line class-methods-use-this
-        public stepSkipped(): void {}
-        // eslint-disable-next-line class-methods-use-this
-        public success(): void {}
-        // eslint-disable-next-line class-methods-use-this
-        public interrupt(): void {
-          calls.push('interrupt');
-        }
-      },
-    };
-  }
-
-  beforeEach(() => {
-    capturedHandler = undefined;
-    savedProcessOnce = process.once.bind(process);
-    savedProcessExit = process.exit.bind(process);
-    savedStdoutWrite = process.stdout.write.bind(process.stdout);
-    savedStderrWrite = process.stderr.write.bind(process.stderr);
-
-    process.once = ((event: string | symbol, listener: (...args: unknown[]) => void) => {
-      if (event === 'uncaughtException') {
-        capturedHandler = listener;
-      } else {
-        (savedProcessOnce as (e: string | symbol, l: (...args: unknown[]) => void) => typeof process)(event, listener);
-      }
-      return process;
-    }) as typeof process.once;
-
-    process.exit = ((code?: number) => {
-      throw new ProcessExitError(code ?? 0);
-    }) as typeof process.exit;
-  });
-
-  afterEach(() => {
-    process.once = savedProcessOnce;
-    process.exit = savedProcessExit;
-    process.stdout.write = savedStdoutWrite;
-    process.stderr.write = savedStderrWrite;
-  });
-
-  it('calls interrupt and exits with code 130 on Ctrl+C (EEXIT 130)', async () => {
-    const calls: string[] = [];
-    const { runFlow }: { runFlow: typeof RunFlowFn } = await esmock('../../src/core/flow.runner.js', {
-      '../../src/core/task.registry.js': makeMockRunner({ noop: makeTask({ name: 'noop' }) }),
-      '../../src/core/flow.renderer.js': makeTrackingRenderer(calls),
-    });
-    await runFlow('my-flow', { steps: { s: { task: 'noop' } } }, makeContext());
-
-    assert.ok(capturedHandler, 'handler was not captured from process.once');
-    const eexit = Object.assign(new Error('oclif exit'), { code: 'EEXIT', oclif: { exit: 130 } });
-    assert.throws(
-      () => capturedHandler!(eexit),
-      (e: unknown) => e instanceof ProcessExitError && e.code === 130
-    );
-    assert.deepEqual(calls, ['interrupt']);
-  });
-
-  it('exits with the oclif exit code for non-130 EEXIT', async () => {
-    const calls: string[] = [];
-    const { runFlow }: { runFlow: typeof RunFlowFn } = await esmock('../../src/core/flow.runner.js', {
-      '../../src/core/task.registry.js': makeMockRunner({ noop: makeTask({ name: 'noop' }) }),
-      '../../src/core/flow.renderer.js': makeTrackingRenderer(calls),
-    });
-    await runFlow('my-flow', { steps: { s: { task: 'noop' } } }, makeContext());
-
-    const eexit = Object.assign(new Error('oclif exit'), { code: 'EEXIT', oclif: { exit: 2 } });
-    assert.throws(
-      () => capturedHandler!(eexit),
-      (e: unknown) => e instanceof ProcessExitError && e.code === 2
-    );
-    assert.deepEqual(calls, []);
-  });
-
-  it('defaults to exit code 1 when EEXIT has no oclif exit property', async () => {
-    const { runFlow }: { runFlow: typeof RunFlowFn } = await esmock('../../src/core/flow.runner.js', {
-      '../../src/core/task.registry.js': makeMockRunner({ noop: makeTask({ name: 'noop' }) }),
-      '../../src/core/flow.renderer.js': makeTrackingRenderer([]),
-    });
-    await runFlow('my-flow', { steps: { s: { task: 'noop' } } }, makeContext());
-
-    const eexit = Object.assign(new Error('oclif exit'), { code: 'EEXIT' });
-    assert.throws(
-      () => capturedHandler!(eexit),
-      (e: unknown) => e instanceof ProcessExitError && e.code === 1
-    );
-  });
-
-  it('calls flowFailed and exits with 1 for non-EEXIT errors', async () => {
-    const calls: string[] = [];
-    const { runFlow }: { runFlow: typeof RunFlowFn } = await esmock('../../src/core/flow.runner.js', {
-      '../../src/core/task.registry.js': makeMockRunner({ noop: makeTask({ name: 'noop' }) }),
-      '../../src/core/flow.renderer.js': makeTrackingRenderer(calls),
-    });
-    await runFlow('my-flow', { steps: { s: { task: 'noop' } } }, makeContext());
-
-    assert.throws(
-      () => capturedHandler!(new Error('unexpected crash')),
-      (e: unknown) => e instanceof ProcessExitError && e.code === 1
-    );
-    assert.deepEqual(calls, ['flowFailed']);
-  });
-
-  it('suppresses stdout and stderr before calling interrupt on Ctrl+C', async () => {
-    const { runFlow }: { runFlow: typeof RunFlowFn } = await esmock('../../src/core/flow.runner.js', {
-      '../../src/core/task.registry.js': makeMockRunner({ noop: makeTask({ name: 'noop' }) }),
-      '../../src/core/flow.renderer.js': makeTrackingRenderer([]),
-    });
-    await runFlow('my-flow', { steps: { s: { task: 'noop' } } }, makeContext());
-
-    const written: string[] = [];
-    process.stdout.write = ((s: unknown): boolean => {
-      written.push(String(s));
-      return true;
-    }) as typeof process.stdout.write;
-    process.stderr.write = ((s: unknown): boolean => {
-      written.push(String(s));
-      return true;
-    }) as typeof process.stderr.write;
-
-    const eexit = Object.assign(new Error('oclif exit'), { code: 'EEXIT', oclif: { exit: 130 } });
-    try {
-      capturedHandler!(eexit);
-    } catch {
-      /* process.exit stub throws */
-    }
-
-    assert.deepEqual(written, [], 'handler should have swapped stdout/stderr to no-ops before interrupt ran');
-  });
-});
-
 describe('runFlow — error message formatting', () => {
-  async function loadRunFlow(tasks: Record<string, Task> = {}): Promise<typeof RunFlowFn> {
-    const { runFlow }: { runFlow: typeof RunFlowFn } = await esmock('../../src/core/flow.runner.js', {
-      '../../src/core/task.registry.js': makeMockRunner(tasks),
-      '../../src/core/flow.renderer.js': mockRenderer,
-    });
-    return runFlow;
-  }
-
   it('uses the cause message when the thrown error has no message of its own', async () => {
     const runFlow = await loadRunFlow({
       fail: makeTask({
@@ -753,23 +368,90 @@ describe('runFlow — error message formatting', () => {
     const flow: FlowDefinition = { steps: { 'fail-step': { task: 'fail' } } };
     await assert.rejects(() => runFlow('my-flow', flow, makeContext()), /root cause/);
   });
+});
 
-  it('treats a numeric string "0" as falsy in if conditions', async () => {
-    const ran: string[] = [];
-    const runFlow = await loadRunFlow({
-      noop: makeTask({
-        name: 'noop',
-        async run() {
-          ran.push('noop');
-        },
-      }),
+describe('handleUncaught', () => {
+  class ProcessExitError extends Error {
+    public readonly code: number;
+    public constructor(code: number) {
+      super(`process.exit(${code})`);
+      this.code = code;
+    }
+  }
+
+  let savedExit: typeof process.exit;
+  let savedStdoutWrite: typeof process.stdout.write;
+  let savedStderrWrite: typeof process.stderr.write;
+
+  beforeEach(() => {
+    savedExit = process.exit.bind(process);
+    savedStdoutWrite = process.stdout.write.bind(process.stdout);
+    savedStderrWrite = process.stderr.write.bind(process.stderr);
+    process.exit = ((code?: number) => {
+      throw new ProcessExitError(code ?? 0);
+    }) as typeof process.exit;
+  });
+
+  afterEach(() => {
+    process.exit = savedExit;
+    process.stdout.write = savedStdoutWrite;
+    process.stderr.write = savedStderrWrite;
+  });
+
+  /** Builds an oclif-style EEXIT error, optionally carrying an exit code. */
+  function eexit(exit?: number): Error {
+    return Object.assign(new Error('oclif exit'), {
+      code: 'EEXIT',
+      oclif: exit === undefined ? undefined : { exit },
     });
+  }
 
-    const flow: FlowDefinition = {
-      steps: { 'conditional-step': { task: 'noop', if: { value: '${{ params.count }}' } } },
-    };
+  function assertExits(fn: () => void, code: number): void {
+    assert.throws(fn, (e: unknown) => e instanceof ProcessExitError && e.code === code);
+  }
 
-    await runFlow('my-flow', flow, makeContext({ count: '0' }));
-    assert.deepEqual(ran, []);
+  it('calls interrupt and exits 130 on Ctrl+C (EEXIT 130)', () => {
+    const calls: string[] = [];
+    assertExits(() => handleUncaught(recordingRenderer(calls), eexit(130)), 130);
+    assert.deepEqual(calls, ['interrupt']);
+  });
+
+  it('passes a non-130 oclif exit code through without touching the renderer', () => {
+    const calls: string[] = [];
+    assertExits(() => handleUncaught(recordingRenderer(calls), eexit(2)), 2);
+    assert.deepEqual(calls, []);
+  });
+
+  it('defaults to exit code 1 when EEXIT carries no oclif exit code', () => {
+    assertExits(() => handleUncaught(recordingRenderer(), eexit()), 1);
+  });
+
+  it('reports through flowFailed and exits 1 for non-EEXIT errors', () => {
+    const calls: string[] = [];
+    assertExits(() => handleUncaught(recordingRenderer(calls), new Error('unexpected crash')), 1);
+    assert.deepEqual(calls, ['flowFailed']);
+  });
+
+  it('suppresses stdout and stderr before interrupt on Ctrl+C', () => {
+    const written: string[] = [];
+    const record = ((chunk: unknown): boolean => {
+      written.push(String(chunk));
+      return true;
+    }) as typeof process.stdout.write;
+    process.stdout.write = record;
+    process.stderr.write = record;
+
+    // The renderer's interrupt tries to write; the handler must already have
+    // swapped both streams to no-ops, so nothing reaches our recorder.
+    const renderer = {
+      activeStep: null,
+      interrupt() {
+        process.stdout.write('to stdout');
+        process.stderr.write('to stderr');
+      },
+    } as unknown as FlowRenderer;
+
+    assertExits(() => handleUncaught(renderer, eexit(130)), 130);
+    assert.deepEqual(written, []);
   });
 });
