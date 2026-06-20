@@ -1,5 +1,5 @@
 import { strict as assert } from 'node:assert';
-import { validateParams, parseCliParams } from '../../src/core/task.param.js';
+import { validateParams, parseCliParams, resolvePassthroughArgs } from '../../src/core/task.param.js';
 import { ParamDefinition } from '../../src/core/task.param.schema.js';
 
 describe('validateParams', () => {
@@ -118,5 +118,43 @@ describe('parseCliParams', () => {
 
   it('merges multiple dotted flags under the same parent', () => {
     assert.deepEqual(parseCliParams(['tokens.A=1', 'tokens.B=2']), { tokens: { A: '1', B: '2' } });
+  });
+});
+
+describe('resolvePassthroughArgs', () => {
+  it('returns empty array for empty params and no overrides', () => {
+    assert.deepEqual(resolvePassthroughArgs({}), []);
+  });
+
+  it('converts a string param to --key value', () => {
+    assert.deepEqual(resolvePassthroughArgs({ env: 'dev' }), ['--env', 'dev']);
+  });
+
+  it('converts a number param to --key value', () => {
+    assert.deepEqual(resolvePassthroughArgs({ count: 3 }), ['--count', '3']);
+  });
+
+  it('converts a boolean true param to --key with no value', () => {
+    assert.deepEqual(resolvePassthroughArgs({ flag: true }), ['--flag']);
+  });
+
+  it('omits a boolean false param entirely', () => {
+    assert.deepEqual(resolvePassthroughArgs({ flag: false }), []);
+  });
+
+  it('skips record params', () => {
+    assert.deepEqual(resolvePassthroughArgs({ tokens: { FOO: 'bar' } }), []);
+  });
+
+  it('applies a string override', () => {
+    assert.deepEqual(resolvePassthroughArgs({ env: 'dev' }, { env: 'prod' }), ['--env', 'prod']);
+  });
+
+  it('omits a key when the override is null', () => {
+    assert.deepEqual(resolvePassthroughArgs({ env: 'dev' }, { env: null }), []);
+  });
+
+  it('strips leading -- from override keys', () => {
+    assert.deepEqual(resolvePassthroughArgs({}, { '--target-org': 'myorg' }), ['--target-org', 'myorg']);
   });
 });
