@@ -1,7 +1,9 @@
 import { strict as assert } from 'node:assert';
+import { join, resolve, dirname } from 'node:path';
 import esmock from 'esmock';
 import dedent from 'dedent';
 import type { loadConfig as LoadConfigFn } from '../../src/core/config.loader.js';
+import { resolveProjectPaths } from '../../src/core/config.loader.js';
 
 type ConfigLoader = { loadConfig: typeof LoadConfigFn };
 
@@ -52,5 +54,19 @@ describe('loadConfig', () => {
       dir: .ship
     `;
     assert.throws(() => loadConfig('ship.yml'), /Invalid ship\.yml/);
+  });
+});
+
+describe('resolveProjectPaths', () => {
+  it('resolves projectDir from the config file path', () => {
+    const configPath = '/my/project/ship.yml';
+    const { projectDir } = resolveProjectPaths(configPath, { project: { slug: 'test' }, dir: '.ship' });
+    assert.equal(projectDir, resolve(dirname(configPath)));
+  });
+
+  it('resolves shipDir by joining projectDir with config.dir', () => {
+    const configPath = '/my/project/ship.yml';
+    const { projectDir, shipDir } = resolveProjectPaths(configPath, { project: { slug: 'test' }, dir: '.ship' });
+    assert.equal(shipDir, join(projectDir, '.ship'));
   });
 });
