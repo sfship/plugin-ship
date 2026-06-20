@@ -1,4 +1,4 @@
-import type { TaskContext, TaskDefinition } from '../../../task.js';
+import type { TaskContext, TaskDefinition } from '../../../task.definition.schema.js';
 import { resolveDependencies, type DependencyStep } from '../../../package.resolver.js';
 import { deployMetadataStep } from '../../../package.metadata.js';
 import { withSuppressedStdout } from '../../../stdout.js';

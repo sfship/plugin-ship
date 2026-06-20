@@ -1,4 +1,4 @@
-import type { TaskContext, TaskDefinition } from '../../../task.js';
+import type { TaskContext, TaskDefinition } from '../../../task.definition.schema.js';
 import { resolvePassthroughArgs } from '../../../task.param.js';
 
 export default {

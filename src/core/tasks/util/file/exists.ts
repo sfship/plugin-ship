@@ -1,6 +1,6 @@
 import { existsSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
-import type { TaskContext, TaskDefinition } from '../../../task.js';
+import type { TaskContext, TaskDefinition } from '../../../task.definition.schema.js';
 import { ExpectedError } from '../../../error.js';
 
 export default {

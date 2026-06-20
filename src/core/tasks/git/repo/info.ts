@@ -1,5 +1,5 @@
 import { getGithubToken } from '../../../service.github.js';
-import type { TaskDefinition, TaskContext } from '../../../task.js';
+import type { TaskDefinition, TaskContext } from '../../../task.definition.schema.js';
 import { ExpectedError } from '../../../error.js';
 
 type GithubRepo = {

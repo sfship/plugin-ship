@@ -1,6 +1,6 @@
 import { readdirSync } from 'node:fs';
 import { join, extname, basename, resolve } from 'node:path';
-import type { TaskContext, TaskDefinition } from '../../../task.js';
+import type { TaskContext, TaskDefinition } from '../../../task.definition.schema.js';
 
 function globToRegex(pattern: string): RegExp {
   const escaped = pattern

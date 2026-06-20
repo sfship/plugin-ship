@@ -1,5 +1,5 @@
 import { StandardColors } from '@salesforce/sf-plugins-core';
-import type { TaskContext, TaskDefinition } from '../../../task.js';
+import type { TaskContext, TaskDefinition } from '../../../task.definition.schema.js';
 import { resolveDependencies, type PackageIdStep } from '../../../package.resolver.js';
 import { readSfdxProject, defaultPackageDirectory } from '../../../sfdx-project.js';
 import { ExpectedError } from '../../../error.js';

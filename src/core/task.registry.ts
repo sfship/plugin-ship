@@ -1,7 +1,7 @@
 import { resolve } from 'node:path';
 import { pathToFileURL, fileURLToPath } from 'node:url';
 import { listDir } from './file.js';
-import { Task, TaskSchema } from './task.js';
+import { Task, TaskSchema } from './task.definition.schema.js';
 import { asError, ExpectedError, formatZodError } from './error.js';
 import { normalizeName } from './path.js';
 

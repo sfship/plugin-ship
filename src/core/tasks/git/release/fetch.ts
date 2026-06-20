@@ -1,5 +1,5 @@
 import { fetchRelease, fetchGitTag, normalizeRepo } from '../../../service.github.js';
-import type { TaskContext, TaskDefinition } from '../../../task.js';
+import type { TaskContext, TaskDefinition } from '../../../task.definition.schema.js';
 import { ExpectedError } from '../../../error.js';
 
 export default {

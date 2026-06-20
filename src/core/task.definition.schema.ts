@@ -1,3 +1,4 @@
+/* c8 ignore start */
 import { z } from 'zod';
 import { ParamDefinitionSchema, Params } from './task.param.schema.js';
 import { FlowContext } from './flow.context.js';
@@ -48,3 +49,4 @@ export type Task = Omit<z.infer<typeof TaskSchema>, 'run'> & {
   name: string;
   run: (context: TaskContext) => Promise<void>;
 };
+/* c8 ignore stop */

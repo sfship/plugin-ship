@@ -1,4 +1,4 @@
-import type { TaskContext, TaskDefinition } from '../../task.js';
+import type { TaskContext, TaskDefinition } from '../../task.definition.schema.js';
 
 /**
  * Sets environment variables for the remainder of the current flow run.

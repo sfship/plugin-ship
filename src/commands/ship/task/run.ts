@@ -8,7 +8,7 @@ import { createFlowContext } from '../../../core/flow.context.js';
 import { parseCliParams, validateParams } from '../../../core/task.param.js';
 import { OrgRegistry } from '../../../core/org.registry.js';
 import { TaskRegistry } from '../../../core/task.registry.js';
-import { TaskContext } from '../../../core/task.js';
+import { TaskContext } from '../../../core/task.definition.schema.js';
 import { Store } from '../../../core/flow.store.js';
 import { handleError } from '../../../core/error.js';
 

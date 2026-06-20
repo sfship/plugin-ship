@@ -1,5 +1,5 @@
 import { StandardColors } from '@salesforce/sf-plugins-core';
-import { Task } from './task.js';
+import { Task } from './task.definition.schema.js';
 
 /**
  * Returns a UX-formatted string with the task name and, if present, its description.

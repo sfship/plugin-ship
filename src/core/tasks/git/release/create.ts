@@ -1,6 +1,6 @@
 import { getGithubToken, normalizeRepo } from '../../../service.github.js';
 import { resolveDependencies } from '../../../package.resolver.js';
-import type { TaskContext, TaskDefinition } from '../../../task.js';
+import type { TaskContext, TaskDefinition } from '../../../task.definition.schema.js';
 import { ExpectedError } from '../../../error.js';
 
 type GitTagObject = { sha: string };

@@ -2,7 +2,7 @@ import { strict as assert } from 'node:assert';
 import esmock from 'esmock';
 import { ExpectedError } from '../../src/core/error.js';
 import { OrgRegistry } from '../../src/core/org.registry.js';
-import type { Task, TaskContext } from '../../src/core/task.js';
+import type { Task, TaskContext } from '../../src/core/task.definition.schema.js';
 import { createFlowContext, type FlowContext } from '../../src/core/flow.context.js';
 import type { FlowDefinition } from '../../src/core/flow.definition.schema.js';
 import type { runFlow as RunFlowFn } from '../../src/core/flow.runner.js';

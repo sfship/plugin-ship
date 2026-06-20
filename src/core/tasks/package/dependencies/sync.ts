@@ -1,4 +1,4 @@
-import type { TaskContext, TaskDefinition } from '../../../task.js';
+import type { TaskContext, TaskDefinition } from '../../../task.definition.schema.js';
 import { resolveDependencies, type PackageIdStep } from '../../../package.resolver.js';
 import { readSfdxProject, writeSfdxProject, defaultPackageDirectory } from '../../../sfdx-project.js';
 import { ExpectedError } from '../../../error.js';

@@ -6,7 +6,7 @@ import { Store } from './flow.store.js';
 import { FlowRenderer } from './flow.renderer.js';
 import { asError, ExpectedError } from './error.js';
 import { resolvePureToken } from './flow.interpolate.js';
-import { Task } from './task.js';
+import { Task } from './task.definition.schema.js';
 
 type StepCondition = NonNullable<FlowStep['if']>;
 
