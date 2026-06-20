@@ -1,5 +1,8 @@
-import { appendFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { fileExists, ensureDir, readText, writeText, writeJson, appendText, removeFile } from './file.js';
+
+const templateDir = join(fileURLToPath(import.meta.url), '..', 'templates');
 
 export type InitOptions = {
   packageName: string;
@@ -14,11 +17,11 @@ export type InitResult = {
 };
 
 function writeIfAbsent(absPath: string, relPath: string, content: string, result: InitResult): void {
-  if (existsSync(absPath)) {
+  if (fileExists(absPath)) {
     result.skipped.push(relPath);
     return;
   }
-  writeFileSync(absPath, content, 'utf8');
+  writeText(absPath, content);
   result.created.push(relPath);
 }
 
@@ -33,9 +36,9 @@ function buildShipYml({ packageName, namespace, packageType, repoUrl }: InitOpti
 
 function patchSfdxProjectJson(projectDir: string, { packageName, namespace, packageType }: InitOptions): void {
   const filePath = join(projectDir, 'sfdx-project.json');
-  if (!existsSync(filePath)) return;
+  if (!fileExists(filePath)) return;
 
-  const raw = JSON.parse(readFileSync(filePath, 'utf8')) as {
+  const raw = JSON.parse(readText(filePath)) as {
     [key: string]: unknown;
     packageDirectories: Array<Record<string, unknown>>;
     namespace?: string;
@@ -55,15 +58,15 @@ function patchSfdxProjectJson(projectDir: string, { packageName, namespace, pack
     raw.namespace = namespace;
   }
 
-  writeFileSync(filePath, JSON.stringify(raw, null, 4) + '\n', 'utf8');
+  writeJson(filePath, raw);
 }
 
 function appendToGitignore(projectDir: string): void {
   const filePath = join(projectDir, '.gitignore');
   const entry = '\n# sf-ship\n.ship/tmp/\n';
-  const existing = existsSync(filePath) ? readFileSync(filePath, 'utf8') : '';
+  const existing = fileExists(filePath) ? readText(filePath) : '';
   if (!existing.includes('.ship/tmp/')) {
-    appendFileSync(filePath, entry, 'utf8');
+    appendText(filePath, entry);
   }
 }
 
@@ -77,49 +80,10 @@ function appendToForceignore(projectDir: string): void {
     '**/sfdcInternalInt__*.permissionset-meta.xml',
     '',
   ].join('\n');
-  const existing = existsSync(filePath) ? readFileSync(filePath, 'utf8') : '';
+  const existing = fileExists(filePath) ? readText(filePath) : '';
   if (!existing.includes('# sf-ship')) {
-    appendFileSync(filePath, entry, 'utf8');
+    appendText(filePath, entry);
   }
-}
-
-function buildReadme({ packageName }: InitOptions): string {
-  return `# ${packageName}
-
-## Create a Dev Org
-
-Spin up a personal scratch org with your source deployed and dependencies installed:
-
-\`\`\`
-sf ship flow run deploy/dev
-\`\`\`
-
-## Retrieve Metadata
-
-After making changes in the org, pull them back locally:
-
-\`\`\`
-sf project retrieve start
-\`\`\`
-
-## Create a Release
-
-Build and promote a new package version through environments:
-
-\`\`\`
-sf ship flow run release/beta
-\`\`\`
-
-## Promote a Package Version
-
-\`\`\`
-sf ship flow run release/production
-\`\`\`
-
-## Documentation
-
-TODO
-`;
 }
 
 const commonSettings = {
@@ -154,14 +118,14 @@ export function initProject(options: InitOptions, projectDir: string): InitResul
   const result: InitResult = { created: [], skipped: [] };
 
   const orgsDir = join(projectDir, '.ship', 'orgs');
-  mkdirSync(orgsDir, { recursive: true });
+  ensureDir(orgsDir);
 
   patchSfdxProjectJson(projectDir, options);
   appendToGitignore(projectDir);
   appendToForceignore(projectDir);
-  writeFileSync(join(projectDir, 'README.md'), buildReadme(options), 'utf8');
+  writeIfAbsent(join(projectDir, 'README.md'), 'README.md', readText(join(templateDir, 'README.md')), result);
   const legacyConfigDir = join(projectDir, 'config');
-  if (existsSync(legacyConfigDir)) rmSync(legacyConfigDir, { recursive: true });
+  if (fileExists(legacyConfigDir)) removeFile(legacyConfigDir);
   writeIfAbsent(join(projectDir, 'ship.yml'), 'ship.yml', buildShipYml(options), result);
 
   for (const [name, def] of Object.entries(buildOrgDefs(options.packageName))) {

@@ -7,10 +7,10 @@
       "dependencies": ["compile", "lint", "copy-assets"]
     },
     "copy-assets": {
-      "command": "node -e \"require('fs').cpSync('src/core/flows', 'lib/core/flows', {recursive: true, force: true})\"",
+      "command": "node -e \"const fs=require('fs');fs.cpSync('src/core/flows','lib/core/flows',{recursive:true,force:true});fs.cpSync('src/core/templates','lib/core/templates',{recursive:true,force:true})\"",
       "dependencies": ["compile"],
-      "files": ["src/core/flows/**/*.yml"],
-      "output": ["lib/core/flows/**/*.yml"]
+      "files": ["src/core/flows/**/*.yml", "src/core/templates/**/*"],
+      "output": ["lib/core/flows/**/*.yml", "lib/core/templates/**/*"]
     },
     "test": {
       "dependencies": ["test:compile", "test:only", "lint"]

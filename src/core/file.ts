@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { appendFileSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { readdir } from 'node:fs/promises';
 import { join } from 'node:path';
 
@@ -32,6 +32,11 @@ export function readJson<T>(path: string): T {
 /** Writes a UTF-8 string to a file, appending a trailing newline if one is not already present. */
 export function writeText(path: string, content: string): void {
   writeFileSync(path, content.endsWith('\n') ? content : `${content}\n`);
+}
+
+/** Appends a UTF-8 string to a file, creating it if it does not exist. */
+export function appendText(path: string, content: string): void {
+  appendFileSync(path, content, 'utf8');
 }
 
 /** Writes a value as pretty-printed JSON to a file. */

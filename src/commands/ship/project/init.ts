@@ -54,7 +54,13 @@ export default class ProjectInit extends SfCommand<void> {
 
     this.log('');
     for (const f of created) this.log(`  created  ${f}`);
-    for (const f of skipped) this.log(`  skipped  ${f} (already exists)`);
+    for (const f of skipped) {
+      if (f === 'README.md') {
+        this.log(`  skipped  ${f} — your project already has one. See the SF Ship docs for recommended content.`);
+      } else {
+        this.log(`  skipped  ${f} (already exists)`);
+      }
+    }
     this.log('');
     this.styledHeader('Project Initialized!');
     this.styledObject({
