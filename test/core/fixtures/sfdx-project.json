@@ -1,0 +1,12 @@
+{
+  "packageDirectories": [
+    {
+      "path": "force-app",
+      "package": "MyPkg",
+      "default": true
+    }
+  ],
+  "packageAliases": {
+    "MyPkg": "0Ho000000000000AAA"
+  }
+}

@@ -1,5 +1,5 @@
-import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { readJson, writeJson } from './file.js';
 
 /** A single `packageDirectories` entry. Only the fields ship reads or writes are typed. */
 export type PackageDirectory = {
@@ -21,12 +21,12 @@ const FILE = 'sfdx-project.json';
 
 /** Reads and parses `sfdx-project.json` from the project directory. */
 export function readSfdxProject(projectDir: string): SfdxProject {
-  return JSON.parse(readFileSync(join(projectDir, FILE), 'utf8')) as SfdxProject;
+  return readJson<SfdxProject>(join(projectDir, FILE));
 }
 
 /** Writes `sfdx-project.json` back, preserving 2-space indentation and a trailing newline. */
 export function writeSfdxProject(projectDir: string, project: SfdxProject): void {
-  writeFileSync(join(projectDir, FILE), `${JSON.stringify(project, null, 2)}\n`, 'utf8');
+  writeJson(join(projectDir, FILE), project);
 }
 
 /** Returns the default packageDirectory (the one flagged `default`, else the first), or undefined if none exist. */

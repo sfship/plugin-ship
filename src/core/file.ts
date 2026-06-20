@@ -29,14 +29,14 @@ export function readJson<T>(path: string): T {
   return JSON.parse(readFileSync(path, 'utf8')) as T;
 }
 
-/** Writes a value as pretty-printed JSON to a file. */
-export function writeJson(path: string, data: unknown): void {
-  writeFileSync(path, JSON.stringify(data, null, 2));
+/** Writes a UTF-8 string to a file, appending a trailing newline if one is not already present. */
+export function writeText(path: string, content: string): void {
+  writeFileSync(path, content.endsWith('\n') ? content : `${content}\n`);
 }
 
-/** Writes a UTF-8 string to a file. */
-export function writeText(path: string, content: string): void {
-  writeFileSync(path, content);
+/** Writes a value as pretty-printed JSON to a file. */
+export function writeJson(path: string, data: unknown): void {
+  writeText(path, JSON.stringify(data, null, 2));
 }
 
 /** Removes a file. Throws if the file does not exist or cannot be removed. */
