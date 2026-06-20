@@ -487,3 +487,132 @@ describe('runFlow — ignore-failure', () => {
     await assert.rejects(() => runFlow('my-flow', flow, makeContext()), /boom/);
   });
 });
+
+describe('runFlow — finally steps', () => {
+  async function loadRunFlow(tasks: Record<string, Task> = {}): Promise<typeof RunFlowFn> {
+    const { runFlow }: { runFlow: typeof RunFlowFn } = await esmock('../../src/core/flow.runner.js', {
+      '../../src/core/task.registry.js': makeMockRunner(tasks),
+      '../../src/core/flow.renderer.js': mockRenderer,
+    });
+    return runFlow;
+  }
+
+  it('runs finally steps after all main steps succeed', async () => {
+    const ran: string[] = [];
+    const runFlow = await loadRunFlow({
+      main: makeTask({
+        name: 'main',
+        async run() {
+          ran.push('main');
+        },
+      }),
+      cleanup: makeTask({
+        name: 'cleanup',
+        async run() {
+          ran.push('cleanup');
+        },
+      }),
+    });
+
+    const flow: FlowDefinition = {
+      steps: { 'main-step': { task: 'main' } },
+      finally: { 'cleanup-step': { task: 'cleanup' } },
+    };
+
+    await runFlow('my-flow', flow, makeContext());
+    assert.deepEqual(ran, ['main', 'cleanup']);
+  });
+
+  it('runs finally steps even when a main step fails', async () => {
+    const ran: string[] = [];
+    const runFlow = await loadRunFlow({
+      fail: makeTask({
+        name: 'fail',
+        async run() {
+          throw new Error('boom');
+        },
+      }),
+      cleanup: makeTask({
+        name: 'cleanup',
+        async run() {
+          ran.push('cleanup');
+        },
+      }),
+    });
+
+    const flow: FlowDefinition = {
+      steps: { 'fail-step': { task: 'fail' } },
+      finally: { 'cleanup-step': { task: 'cleanup' } },
+    };
+
+    await assert.rejects(() => runFlow('my-flow', flow, makeContext()));
+    assert.ok(ran.includes('cleanup'));
+  });
+
+  it('ignores failures in finally steps and still throws the original error', async () => {
+    const runFlow = await loadRunFlow({
+      fail: makeTask({
+        name: 'fail',
+        async run() {
+          throw new Error('main error');
+        },
+      }),
+      'cleanup-fail': makeTask({
+        name: 'cleanup-fail',
+        async run() {
+          throw new Error('cleanup error');
+        },
+      }),
+    });
+
+    const flow: FlowDefinition = {
+      steps: { 'fail-step': { task: 'fail' } },
+      finally: { 'cleanup-step': { task: 'cleanup-fail' } },
+    };
+
+    await assert.rejects(() => runFlow('my-flow', flow, makeContext()), /main error/);
+  });
+});
+
+describe('runFlow — error message formatting', () => {
+  async function loadRunFlow(tasks: Record<string, Task> = {}): Promise<typeof RunFlowFn> {
+    const { runFlow }: { runFlow: typeof RunFlowFn } = await esmock('../../src/core/flow.runner.js', {
+      '../../src/core/task.registry.js': makeMockRunner(tasks),
+      '../../src/core/flow.renderer.js': mockRenderer,
+    });
+    return runFlow;
+  }
+
+  it('uses the cause message when the thrown error has no message of its own', async () => {
+    const runFlow = await loadRunFlow({
+      fail: makeTask({
+        name: 'fail',
+        async run() {
+          throw Object.assign(new Error(''), { cause: new Error('root cause') });
+        },
+      }),
+    });
+
+    const flow: FlowDefinition = { steps: { 'fail-step': { task: 'fail' } } };
+    await assert.rejects(() => runFlow('my-flow', flow, makeContext()), /root cause/);
+  });
+
+  it('treats a numeric string "0" as falsy in if conditions', async () => {
+    const ran: string[] = [];
+    const runFlow = await loadRunFlow({
+      noop: makeTask({
+        name: 'noop',
+        async run() {
+          ran.push('noop');
+        },
+      }),
+    });
+
+    const flow: FlowDefinition = {
+      steps: { 'conditional-step': { task: 'noop', if: { value: '${{ params.count }}' } } },
+    };
+
+    await runFlow('my-flow', flow, makeContext({ count: '0' }));
+    assert.deepEqual(ran, []);
+  });
+});
