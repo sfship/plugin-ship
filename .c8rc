@@ -1,5 +1,6 @@
 {
   "check-coverage": true,
+  "all": true,
   "lines": 90,
   "statements": 90,
   "functions": 90,
