@@ -1,6 +1,6 @@
 import type { TaskContext, TaskDefinition } from '../../../task.js';
-import { ExpectedError } from '../../../util.error.js';
-import { withSuppressedStdout } from '../../../util.stdout.js';
+import { ExpectedError } from '../../../error.js';
+import { withSuppressedStdout } from '../../../stdout.js';
 
 type PackageVersion = {
   SubscriberPackageVersionId: string;

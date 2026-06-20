@@ -10,7 +10,7 @@ import { OrgRegistry } from '../../../core/org.registry.js';
 import { TaskRegistry } from '../../../core/task.registry.js';
 import { TaskContext } from '../../../core/task.js';
 import { Store } from '../../../core/flow.store.js';
-import { handleError } from '../../../core/util.error.js';
+import { handleError } from '../../../core/error.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('plugin-ship', 'ship.task.run');

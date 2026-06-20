@@ -1,6 +1,6 @@
 import { getGithubToken } from '../../../service.github.js';
 import type { TaskDefinition, TaskContext } from '../../../task.js';
-import { ExpectedError } from '../../../util.error.js';
+import { ExpectedError } from '../../../error.js';
 
 type GithubRepo = {
   full_name: string;

@@ -1,9 +1,9 @@
 import { resolve } from 'node:path';
 import { pathToFileURL, fileURLToPath } from 'node:url';
-import { listDir } from './util.file.js';
+import { listDir } from './file.js';
 import { Task, TaskSchema } from './task.js';
-import { asError, ExpectedError, formatZodError } from './util.error.js';
-import { normalizeName } from './util.path.js';
+import { asError, ExpectedError, formatZodError } from './error.js';
+import { normalizeName } from './path.js';
 
 const builtinsDir = resolve(fileURLToPath(import.meta.url), '..', 'tasks');
 

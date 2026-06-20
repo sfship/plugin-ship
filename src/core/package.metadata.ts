@@ -1,5 +1,6 @@
 import { join } from 'node:path';
-import { walkFiles, replaceTokens, buildTokenMap } from './util.token.js';
+import { walkFiles } from './file.js';
+import { replaceTokens, buildTokenMap } from './package.namespace.js';
 import { normalizeRepo, downloadDir } from './service.github.js';
 import type { MetadataStep } from './package.resolver.js';
 

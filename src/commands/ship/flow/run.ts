@@ -6,7 +6,7 @@ import { loadConfig, resolveProjectPaths } from '../../../core/config.loader.js'
 import { createFlowContext } from '../../../core/flow.context.js';
 import { FlowRegistry } from '../../../core/flow.registry.js';
 import { parseCliParams } from '../../../core/task.param.js';
-import { asError, ExpectedError } from '../../../core/util.error.js';
+import { asError, ExpectedError } from '../../../core/error.js';
 import { runFlow } from '../../../core/flow.runner.js';
 import { OrgRegistry } from '../../../core/org.registry.js';
 

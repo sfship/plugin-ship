@@ -1,17 +1,4 @@
-import { readdir, readFile, writeFile } from 'node:fs/promises';
-import { join } from 'node:path';
-
-/** Recursively returns all file paths under `dir`. */
-export async function walkFiles(dir: string): Promise<string[]> {
-  const entries = await readdir(dir, { withFileTypes: true });
-  const nested = await Promise.all(
-    entries.map((entry) => {
-      const fullPath = join(dir, entry.name);
-      return entry.isDirectory() ? walkFiles(fullPath) : Promise.resolve([fullPath]);
-    })
-  );
-  return nested.flat();
-}
+import { readFile, writeFile } from 'node:fs/promises';
 
 /**
  * Replaces `%%%TOKEN%%%` placeholders in a file in-place.

@@ -2,8 +2,8 @@ import { dirname, join, resolve } from 'node:path';
 import type { ZodError } from 'zod';
 import { parse } from 'yaml';
 import { ShipConfig, ShipConfigSchema } from './config.ship.schema.js';
-import { readText } from './util.file.js';
-import { ExpectedError, formatZodError } from './util.error.js';
+import { readText } from './file.js';
+import { ExpectedError, formatZodError } from './error.js';
 
 /**
  * Reads and parses a `ship.yml` config file, validating it against {@link ShipConfigSchema}.

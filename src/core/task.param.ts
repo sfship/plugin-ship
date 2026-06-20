@@ -1,4 +1,4 @@
-import { ExpectedError } from './util.error.js';
+import { ExpectedError } from './error.js';
 import type { ParamValue, ParamDefinition, Params } from './task.param.schema.js';
 
 export type { ParamValue, ParamDefinition, Params };

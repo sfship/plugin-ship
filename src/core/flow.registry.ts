@@ -2,10 +2,10 @@ import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parse } from 'yaml';
 import type { ZodError } from 'zod';
-import { listDir, readText } from './util.file.js';
+import { listDir, readText } from './file.js';
 import { FlowDefinition, FlowDefinitionSchema } from './flow.definition.schema.js';
-import { ExpectedError, formatZodError } from './util.error.js';
-import { normalizeName } from './util.path.js';
+import { ExpectedError, formatZodError } from './error.js';
+import { normalizeName } from './path.js';
 
 export const builtinsDir = resolve(fileURLToPath(import.meta.url), '..', 'flows');
 

@@ -3,7 +3,7 @@ import { SfCommand, Flags, Ux, StandardColors } from '@salesforce/sf-plugins-cor
 import { Messages } from '@salesforce/core';
 import { loadConfig, resolveProjectPaths } from '../../../core/config.loader.js';
 import { FlowRegistry } from '../../../core/flow.registry.js';
-import { asError } from '../../../core/util.error.js';
+import { asError } from '../../../core/error.js';
 import { formatFlowPreview } from '../../../core/flow.view.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);

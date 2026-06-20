@@ -2,7 +2,7 @@ import { SfCommand, Flags, StandardColors } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
 import { loadConfig, resolveProjectPaths } from '../../../core/config.loader.js';
 import { TaskRegistry } from '../../../core/task.registry.js';
-import { renderTree } from '../../../core/util.tree.js';
+import { renderTree } from '../../../core/tree.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('plugin-ship', 'ship.task.list');

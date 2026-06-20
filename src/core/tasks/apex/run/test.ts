@@ -1,6 +1,6 @@
 import type { TaskContext, TaskDefinition } from '../../../task.js';
 import { resolvePassthroughArgs } from '../../../task.param.js';
-import { ExpectedError } from '../../../util.error.js';
+import { ExpectedError } from '../../../error.js';
 
 // Default --wait value in minutes
 const DEFAULT_WAIT_TIME = 15;

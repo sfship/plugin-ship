@@ -1,8 +1,3 @@
-/**
- * `${{ path }}` token interpolation, shared by the flow store (param resolution)
- * and the flow runner (`if` / `if-not` condition evaluation)
- */
-
 /** Matches a value that is exactly one `${{ path }}` token, capturing the path. */
 const PURE_TOKEN = /^\$\{\{\s*([\w.-]+)\s*\}\}$/;
 /** Matches each `${{ path }}` token embedded within a larger string. */

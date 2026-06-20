@@ -1,7 +1,7 @@
 import { StandardColors } from '@salesforce/sf-plugins-core';
 import type { TaskContext, TaskDefinition } from '../../../task.js';
 import { resolvePassthroughArgs } from '../../../task.param.js';
-import { asError, ExpectedError } from '../../../util.error.js';
+import { asError, ExpectedError } from '../../../error.js';
 
 export default {
   description: 'Promotes a 2GP package version from beta to released. Passthrough for `sf package version promote`.',

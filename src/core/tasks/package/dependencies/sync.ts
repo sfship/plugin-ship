@@ -1,7 +1,7 @@
 import type { TaskContext, TaskDefinition } from '../../../task.js';
 import { resolveDependencies, type PackageIdStep } from '../../../package.resolver.js';
 import { readSfdxProject, writeSfdxProject, defaultPackageDirectory } from '../../../sfdx-project.js';
-import { ExpectedError } from '../../../util.error.js';
+import { ExpectedError } from '../../../error.js';
 
 export default {
   description:

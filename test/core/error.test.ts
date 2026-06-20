@@ -1,6 +1,6 @@
 import { strict as assert } from 'node:assert';
 import { z } from 'zod';
-import { asError, handleError, ExpectedError, formatZodError } from '../../src/core/util.error.js';
+import { asError, handleError, ExpectedError, formatZodError } from '../../src/core/error.js';
 
 describe('asError', () => {
   it('returns thrown Errors as is', () => {

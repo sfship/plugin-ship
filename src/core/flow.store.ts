@@ -1,5 +1,5 @@
 import { TaskOutput } from './task.output.js';
-import { interpolate } from './util.interpolate.js';
+import { interpolate } from './flow.interpolate.js';
 
 /**
  * Holds all step outputs for a flow run and owns param interpolation.

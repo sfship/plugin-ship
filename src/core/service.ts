@@ -1,7 +1,7 @@
 import { join } from 'node:path';
 import { homedir } from 'node:os';
 import { Entry } from '@napi-rs/keyring';
-import { ensureDir, listDir, readJson, writeJson, removeFile } from './util.file.js';
+import { ensureDir, listDir, readJson, writeJson, removeFile } from './file.js';
 
 const KEYRING_SERVICE = 'plugin-ship';
 

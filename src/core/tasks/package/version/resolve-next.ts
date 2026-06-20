@@ -1,5 +1,5 @@
 import type { TaskContext, TaskDefinition } from '../../../task.js';
-import { ExpectedError } from '../../../util.error.js';
+import { ExpectedError } from '../../../error.js';
 import { normalizeRepo, fetchRelease } from '../../../service.github.js';
 
 const VERSION_TYPES = ['build', 'patch', 'minor', 'major'] as const;

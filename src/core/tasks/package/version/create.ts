@@ -2,7 +2,7 @@ import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import type { TaskContext, TaskDefinition } from '../../../task.js';
 import { resolvePassthroughArgs } from '../../../task.param.js';
-import { ExpectedError } from '../../../util.error.js';
+import { ExpectedError } from '../../../error.js';
 
 /** Reads sfdx-project.json and returns the package alias of the default packageDirectory, if any. */
 async function getDefaultPackageAlias(projectDir: string): Promise<string | null> {

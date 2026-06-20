@@ -1,7 +1,7 @@
 import { StandardColors } from '@salesforce/sf-plugins-core';
 import { FlowStep } from './flow.definition.schema.js';
 import { FlowContext } from './flow.context.js';
-import { ExpectedError } from './util.error.js';
+import { ExpectedError } from './error.js';
 import { formatFlowPlan, formatStepHeading, formatFlowSummary, type FlowOutcome } from './flow.view.js';
 
 type OutputStream = {

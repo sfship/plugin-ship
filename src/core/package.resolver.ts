@@ -1,5 +1,5 @@
 import type { ShipDependency, ShipGitHubDependency } from './config.dependency.schema.js';
-import { ExpectedError } from './util.error.js';
+import { ExpectedError } from './error.js';
 import { normalizeRepo, fetchRelease, fetchGitTag, fetchCciNamespace, fetchSubdirs } from './service.github.js';
 
 /** Install a specific package version by its 04t ID. */

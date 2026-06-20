@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { parse } from 'yaml';
 import { getToken, setToken } from './service.js';
 import type { ServiceMeta } from './service.js';
-import { ExpectedError } from './util.error.js';
+import { ExpectedError } from './error.js';
 
 const SERVICE = 'github';
 

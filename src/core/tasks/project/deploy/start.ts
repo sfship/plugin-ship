@@ -1,8 +1,8 @@
 import { join } from 'node:path';
 import type { TaskContext, TaskDefinition } from '../../../task.js';
 import { resolvePassthroughArgs } from '../../../task.param.js';
-import { ExpectedError } from '../../../util.error.js';
-import { withSuppressedStdout } from '../../../util.stdout.js';
+import { ExpectedError } from '../../../error.js';
+import { withSuppressedStdout } from '../../../stdout.js';
 
 type DeployFile = {
   fullName: string;

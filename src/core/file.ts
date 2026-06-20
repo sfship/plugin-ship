@@ -1,4 +1,6 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { readdir } from 'node:fs/promises';
+import { join } from 'node:path';
 
 /* c8 ignore start */
 
@@ -43,3 +45,15 @@ export function removeFile(path: string): void {
 }
 
 /* c8 ignore stop */
+
+/** Recursively returns all file paths under `dir`. */
+export async function walkFiles(dir: string): Promise<string[]> {
+  const entries = await readdir(dir, { withFileTypes: true });
+  const nested = await Promise.all(
+    entries.map((entry) => {
+      const fullPath = join(dir, entry.name);
+      return entry.isDirectory() ? walkFiles(fullPath) : Promise.resolve([fullPath]);
+    })
+  );
+  return nested.flat();
+}

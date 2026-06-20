@@ -1,5 +1,5 @@
 import { strict as assert } from 'node:assert';
-import { renderTree } from '../../src/core/util.tree.js';
+import { renderTree } from '../../src/core/tree.js';
 
 describe('renderTree', () => {
   it('renders a single flat entry', () => {

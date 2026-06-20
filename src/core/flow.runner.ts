@@ -4,8 +4,8 @@ import { validateParams } from './task.param.js';
 import { TaskRegistry } from './task.registry.js';
 import { Store } from './flow.store.js';
 import { FlowRenderer } from './flow.renderer.js';
-import { asError, ExpectedError } from './util.error.js';
-import { resolvePureToken } from './util.interpolate.js';
+import { asError, ExpectedError } from './error.js';
+import { resolvePureToken } from './flow.interpolate.js';
 import { Task } from './task.js';
 
 type StepCondition = NonNullable<FlowStep['if']>;
