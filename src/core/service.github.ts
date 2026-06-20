@@ -1,6 +1,6 @@
-import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { parse } from 'yaml';
+import { ensureDir, writeBinary } from './file.js';
 import { getToken, setToken } from './service.js';
 import type { ServiceMeta } from './service.js';
 import { ExpectedError } from './error.js';
@@ -82,7 +82,7 @@ export type GithubUser = { login: string };
  */
 export async function fetchRelease(repo: string, tag?: string, prerelease = false): Promise<Release | null> {
   if (prerelease && !tag) {
-    const res = await fetch(`https://api.github.com/repos/${repo}/releases?per_page=10`, {
+    const res = await fetch(`https://api.github.com/repos/${repo}/releases?per_page=100`, {
       headers: githubHeaders(),
     });
     if (!res.ok) return null;
@@ -158,7 +158,7 @@ export async function downloadDir(repo: string, ref: string, remotePath: string,
   if (!res.ok) throw new ExpectedError(`Failed to fetch ${remotePath} from ${repo}@${ref}: ${res.statusText}`);
   const entries = (await res.json()) as GithubContentEntry[];
 
-  await mkdir(localDir, { recursive: true });
+  ensureDir(localDir);
 
   await Promise.all(
     entries.map(async (entry) => {
@@ -175,7 +175,7 @@ export async function downloadDir(repo: string, ref: string, remotePath: string,
         } else {
           throw new ExpectedError(`Cannot download ${entry.path}: no content or download_url available`);
         }
-        await writeFile(entryLocal, buf);
+        writeBinary(entryLocal, buf);
       }
     })
   );

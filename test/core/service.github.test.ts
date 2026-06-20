@@ -1,9 +1,12 @@
 /* eslint-disable camelcase */
 import { strict as assert } from 'node:assert';
 import esmock from 'esmock';
+import { normalizeRepo } from '../../src/core/service.github.js';
 import type {
   getGithubToken as GetTokenFn,
   setGithubToken as SetTokenFn,
+  fetchRelease as FetchReleaseFn,
+  fetchRaw as FetchRawFn,
   downloadDir as DownloadDirFn,
   requestDeviceCode as RequestDeviceCodeFn,
   pollForToken as PollForTokenFn,
@@ -15,6 +18,8 @@ import type {
 type GithubService = {
   getGithubToken: typeof GetTokenFn;
   setGithubToken: typeof SetTokenFn;
+  fetchRelease: typeof FetchReleaseFn;
+  fetchRaw: typeof FetchRawFn;
   downloadDir: typeof DownloadDirFn;
   requestDeviceCode: typeof RequestDeviceCodeFn;
   pollForToken: typeof PollForTokenFn;
@@ -32,6 +37,8 @@ let mkdirCalled = false;
 const {
   getGithubToken,
   setGithubToken,
+  fetchRelease,
+  fetchRaw,
   downloadDir,
   requestDeviceCode,
   pollForToken,
@@ -43,11 +50,11 @@ const {
     getToken: (service: string, alias: string) => getTokenStub(service, alias),
     setToken: (...args: unknown[]) => setTokenStub(...args),
   },
-  'node:fs/promises': {
-    mkdir: async () => {
+  '../../src/core/file.js': {
+    ensureDir: () => {
       mkdirCalled = true;
     },
-    writeFile: async (path: string, data: Buffer) => {
+    writeBinary: (path: string, data: Buffer) => {
       written.set(path, data);
     },
   },
@@ -56,7 +63,27 @@ const {
 beforeEach(() => {
   written.clear();
   mkdirCalled = false;
+  getTokenStub = () => null;
+  setTokenStub = () => {};
 });
+
+// ---- normalizeRepo ----------------------------------------------------------
+
+describe('normalizeRepo', () => {
+  it('passes through an owner/repo slug', () => {
+    assert.equal(normalizeRepo('owner/repo'), 'owner/repo');
+  });
+
+  it('strips https://github.com/ prefix', () => {
+    assert.equal(normalizeRepo('https://github.com/owner/repo'), 'owner/repo');
+  });
+
+  it('strips .git suffix', () => {
+    assert.equal(normalizeRepo('owner/repo.git'), 'owner/repo');
+  });
+});
+
+// ---- getGithubToken / setGithubToken ----------------------------------------
 
 describe('getGithubToken', () => {
   it('returns the stored token', () => {
@@ -80,6 +107,74 @@ describe('setGithubToken', () => {
     assert.ok((calls[0] as string[]).includes('bdematt'));
   });
 });
+
+// ---- fetchRelease -----------------------------------------------------------
+
+describe('fetchRelease', () => {
+  it('returns the latest release', async () => {
+    global.fetch = async () => ({ ok: true, status: 200, json: async () => ({ tag_name: 'v1.0.0' }) } as Response);
+    assert.deepEqual(await fetchRelease('owner/repo'), { tagName: 'v1.0.0' });
+  });
+
+  it('returns null on 404', async () => {
+    global.fetch = async () => ({ ok: false, status: 404 } as Response);
+    assert.equal(await fetchRelease('owner/repo'), null);
+  });
+
+  it('throws on a non-404 error', async () => {
+    global.fetch = async () => ({ ok: false, status: 500, statusText: 'Internal Server Error' } as Response);
+    await assert.rejects(() => fetchRelease('owner/repo'), /Internal Server Error/);
+  });
+
+  it('returns the latest prerelease', async () => {
+    global.fetch = async () =>
+      ({
+        ok: true,
+        status: 200,
+        json: async () => [
+          { tag_name: 'v1.0.0', prerelease: false },
+          { tag_name: 'v1.1.0-beta', prerelease: true },
+        ],
+      } as Response);
+    assert.deepEqual(await fetchRelease('owner/repo', undefined, true), { tagName: 'v1.1.0-beta' });
+  });
+
+  it('returns a specific release by tag', async () => {
+    global.fetch = async () => ({ ok: true, status: 200, json: async () => ({ tag_name: 'v1.0.0' }) } as Response);
+    assert.deepEqual(await fetchRelease('owner/repo', 'v1.0.0'), { tagName: 'v1.0.0' });
+  });
+
+  it('returns null when no prerelease exists in the listing', async () => {
+    global.fetch = async () =>
+      ({
+        ok: true,
+        status: 200,
+        json: async () => [{ tag_name: 'v1.0.0', prerelease: false }],
+      } as Response);
+    assert.equal(await fetchRelease('owner/repo', undefined, true), null);
+  });
+});
+
+// ---- fetchRaw ---------------------------------------------------------------
+
+describe('fetchRaw', () => {
+  it('returns the file text on success', async () => {
+    global.fetch = async () => ({ ok: true, status: 200, text: async () => 'file contents' } as Response);
+    assert.equal(await fetchRaw('owner/repo', 'main', 'file.txt'), 'file contents');
+  });
+
+  it('returns null on 404', async () => {
+    global.fetch = async () => ({ ok: false, status: 404 } as Response);
+    assert.equal(await fetchRaw('owner/repo', 'main', 'missing.txt'), null);
+  });
+
+  it('throws on a non-404 error', async () => {
+    global.fetch = async () => ({ ok: false, status: 500, statusText: 'Server Error' } as Response);
+    await assert.rejects(() => fetchRaw('owner/repo', 'main', 'file.txt'), /Server Error/);
+  });
+});
+
+// ---- downloadDir ------------------------------------------------------------
 
 describe('downloadDir', () => {
   it('writes a base64-encoded file to localDir', async () => {
@@ -108,7 +203,6 @@ describe('downloadDir', () => {
           ok: true,
           status: 200,
           json: async () => [
-            // eslint-disable-next-line camelcase
             { name: 'data.xml', path: 'src/data.xml', type: 'file', download_url: 'https://raw.example.com/data.xml' },
           ],
         } as Response;
@@ -163,6 +257,8 @@ describe('downloadDir', () => {
   });
 });
 
+// ---- requestDeviceCode ------------------------------------------------------
+
 describe('requestDeviceCode', () => {
   it('returns the device code response from GitHub', async () => {
     const expected = {
@@ -178,9 +274,10 @@ describe('requestDeviceCode', () => {
   });
 });
 
+// ---- pollForToken -----------------------------------------------------------
+
 describe('pollForToken', () => {
   it('returns the access token when the user authorizes', async () => {
-    // eslint-disable-next-line camelcase
     global.fetch = async () => ({ json: async () => ({ access_token: 'ghp_final' }) } as Response);
     const token = await pollForToken('dc_code', 0);
     assert.equal(token, 'ghp_final');
@@ -215,18 +312,28 @@ describe('pollForToken', () => {
   });
 });
 
+// ---- fetchGitTag ------------------------------------------------------------
+
 describe('fetchGitTag', () => {
-  it('returns null when the ref fetch is not ok', async () => {
-    global.fetch = async () => ({ ok: false, status: 404 } as Response);
-    const result = await fetchGitTag('org/repo', 'v1.0');
-    assert.equal(result, null);
+  it('returns the tag message for an annotated tag', async () => {
+    let calls = 0;
+    global.fetch = async () => {
+      calls++;
+      if (calls === 1) return { ok: true, json: async () => ({ object: { type: 'tag', sha: 'abc' } }) } as Response;
+      return { ok: true, json: async () => ({ message: 'Release v1.0' }) } as Response;
+    };
+    assert.deepEqual(await fetchGitTag('org/repo', 'v1.0'), { message: 'Release v1.0' });
   });
 
-  it('returns null for a lightweight tag (type is not "tag")', async () => {
+  it('returns null when the ref fetch is not ok', async () => {
+    global.fetch = async () => ({ ok: false, status: 404 } as Response);
+    assert.equal(await fetchGitTag('org/repo', 'v1.0'), null);
+  });
+
+  it('returns null for a lightweight tag', async () => {
     global.fetch = async () =>
       ({ ok: true, json: async () => ({ object: { type: 'commit', sha: 'abc' } }) } as Response);
-    const result = await fetchGitTag('org/repo', 'v1.0');
-    assert.equal(result, null);
+    assert.equal(await fetchGitTag('org/repo', 'v1.0'), null);
   });
 
   it('returns null when the tag object fetch is not ok', async () => {
@@ -236,20 +343,52 @@ describe('fetchGitTag', () => {
       if (calls === 1) return { ok: true, json: async () => ({ object: { type: 'tag', sha: 'abc' } }) } as Response;
       return { ok: false, status: 404 } as Response;
     };
-    const result = await fetchGitTag('org/repo', 'v1.0');
-    assert.equal(result, null);
+    assert.equal(await fetchGitTag('org/repo', 'v1.0'), null);
   });
 });
+
+// ---- fetchCciNamespace ------------------------------------------------------
 
 describe('fetchCciNamespace', () => {
+  it('returns the namespace from cumulusci.yml', async () => {
+    global.fetch = async () =>
+      ({ ok: true, status: 200, text: async () => 'project:\n  package:\n    namespace: myns\n' } as Response);
+    assert.equal(await fetchCciNamespace('org/repo', 'v1.0'), 'myns');
+  });
+
   it('returns an empty string when cumulusci.yml has no namespace field', async () => {
     global.fetch = async () => ({ ok: true, status: 200, text: async () => 'project:\n  name: myproject' } as Response);
-    const ns = await fetchCciNamespace('org/repo', 'v1.0');
-    assert.equal(ns, '');
+    assert.equal(await fetchCciNamespace('org/repo', 'v1.0'), '');
+  });
+
+  it('returns an empty string when the file does not exist', async () => {
+    global.fetch = async () => ({ ok: false, status: 404 } as Response);
+    assert.equal(await fetchCciNamespace('org/repo', 'v1.0'), '');
   });
 });
 
+// ---- fetchSubdirs -----------------------------------------------------------
+
 describe('fetchSubdirs', () => {
+  it('returns subdirectory paths', async () => {
+    global.fetch = async () =>
+      ({
+        ok: true,
+        status: 200,
+        json: async () => [
+          { name: 'v1', type: 'dir' },
+          { name: 'v2', type: 'dir' },
+          { name: 'README.md', type: 'file' },
+        ],
+      } as Response);
+    assert.deepEqual(await fetchSubdirs('org/repo', 'v1.0', 'releases'), ['releases/v1', 'releases/v2']);
+  });
+
+  it('returns an empty array on 404', async () => {
+    global.fetch = async () => ({ ok: false, status: 404 } as Response);
+    assert.deepEqual(await fetchSubdirs('org/repo', 'v1.0', 'missing'), []);
+  });
+
   it('throws on non-404 errors', async () => {
     global.fetch = async () => ({ ok: false, status: 403, statusText: 'Forbidden' } as Response);
     await assert.rejects(() => fetchSubdirs('org/repo', 'v1.0', 'unpackaged/pre'), /Failed to list/);

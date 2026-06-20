@@ -39,6 +39,11 @@ export function writeJson(path: string, data: unknown): void {
   writeText(path, JSON.stringify(data, null, 2));
 }
 
+/** Writes binary data to a file. */
+export function writeBinary(path: string, data: Buffer): void {
+  writeFileSync(path, data);
+}
+
 /** Removes a file. Throws if the file does not exist or cannot be removed. */
 export function removeFile(path: string): void {
   rmSync(path);
