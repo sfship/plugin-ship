@@ -54,6 +54,11 @@ export function removeFile(path: string): void {
   rmSync(path);
 }
 
+/** Canonicalizes a task or flow name into its registry key form: trimmed, lowercased, forward-slash separated, no leading slash. */
+export function normalizePath(name: string): string {
+  return name.trim().toLowerCase().replaceAll('\\', '/').replace(/^\/+/, '');
+}
+
 /* c8 ignore stop */
 
 /** Recursively returns all file paths under `dir`. */

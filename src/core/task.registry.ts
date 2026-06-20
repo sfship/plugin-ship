@@ -3,7 +3,7 @@ import { pathToFileURL, fileURLToPath } from 'node:url';
 import { listDir } from './file.js';
 import { Task, TaskSchema } from './task.definition.schema.js';
 import { asError, ExpectedError, formatZodError } from './error.js';
-import { normalizeName } from './path.js';
+import { normalizePath } from './file.js';
 
 const builtinsDir = resolve(fileURLToPath(import.meta.url), '..', 'tasks');
 
@@ -48,9 +48,9 @@ export class TaskRegistry {
     this.shipDir = shipDir;
     this.tasks = new Map();
     for (const file of scanDir(builtinsDir))
-      this.tasks.set(normalizeName(file.replace(/(?:\/index)?\.(mjs|js|ts)$/, '')), resolve(builtinsDir, file));
+      this.tasks.set(normalizePath(file.replace(/(?:\/index)?\.(mjs|js|ts)$/, '')), resolve(builtinsDir, file));
     for (const file of scanDir(resolve(shipDir, 'tasks')))
-      this.tasks.set(normalizeName(file.replace(/(?:\/index)?\.(mjs|js|ts)$/, '')), resolve(shipDir, 'tasks', file));
+      this.tasks.set(normalizePath(file.replace(/(?:\/index)?\.(mjs|js|ts)$/, '')), resolve(shipDir, 'tasks', file));
   }
 
   /** Lists all available task names. */
@@ -65,7 +65,7 @@ export class TaskRegistry {
    * @throws If the task cannot be found in either location.
    */
   public async resolveTask(taskName: string): Promise<Task> {
-    const name = normalizeName(taskName);
+    const name = normalizePath(taskName);
     const taskPath = this.tasks.get(name);
     if (!taskPath)
       throw new ExpectedError(`Unknown task "${taskName}". Looked in: ${resolve(this.shipDir, 'tasks', name)}`);

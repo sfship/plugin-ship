@@ -2,10 +2,9 @@ import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parse } from 'yaml';
 import type { ZodError } from 'zod';
-import { listDir, readText } from './file.js';
+import { listDir, normalizePath, readText } from './file.js';
 import { FlowDefinition, FlowDefinitionSchema } from './flow.definition.schema.js';
 import { ExpectedError, formatZodError } from './error.js';
-import { normalizeName } from './path.js';
 
 export const builtinsDir = resolve(fileURLToPath(import.meta.url), '..', 'flows');
 
@@ -53,14 +52,14 @@ export class FlowRegistry {
     this.builtinFiles = new Map();
 
     for (const file of scanDir(builtinsDir)) {
-      const name = normalizeName(file.replace(/\.yml$/, ''));
+      const name = normalizePath(file.replace(/\.yml$/, ''));
       const path = resolve(builtinsDir, file);
       this.builtinFiles.set(name, path);
       this.flows.set(name, loadFromPath(path));
     }
 
     for (const file of scanDir(resolve(shipDir, 'flows')))
-      this.flows.set(normalizeName(file.replace(/\.yml$/, '')), loadFromPath(resolve(shipDir, 'flows', file)));
+      this.flows.set(normalizePath(file.replace(/\.yml$/, '')), loadFromPath(resolve(shipDir, 'flows', file)));
   }
 
   /** Lists all available flow names. */
@@ -75,7 +74,7 @@ export class FlowRegistry {
    * @throws If the flow cannot be found in any source.
    */
   public resolveFlow(flowName: string): FlowDefinition {
-    const name = normalizeName(flowName);
+    const name = normalizePath(flowName);
     const flow = this.flows.get(name);
     if (!flow)
       throw new ExpectedError(`Unknown flow "${flowName}". Looked in: ${resolve(this.shipDir, 'flows', name)}`);
@@ -89,6 +88,6 @@ export class FlowRegistry {
    * @param flowName - The flow name, e.g. "ci" or "managed-package/release".
    */
   public builtinSource(flowName: string): string | null {
-    return this.builtinFiles.get(normalizeName(flowName)) ?? null;
+    return this.builtinFiles.get(normalizePath(flowName)) ?? null;
   }
 }
