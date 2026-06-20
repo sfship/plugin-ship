@@ -1,6 +1,6 @@
 import { strict as assert } from 'node:assert';
 import esmock from 'esmock';
-import { ExpectedError } from '../../src/core/util.error.js';
+import { ExpectedError } from '../../src/core/error.js';
 import { OrgRegistry } from '../../src/core/org.registry.js';
 import type { Task, TaskContext } from '../../src/core/task.js';
 import { createFlowContext, type FlowContext } from '../../src/core/flow.context.js';
