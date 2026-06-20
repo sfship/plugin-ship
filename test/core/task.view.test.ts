@@ -3,7 +3,7 @@ import { formatTaskPreview } from '../../src/core/task.view.js';
 
 describe('formatTaskPreview', () => {
   it('returns name only when description is absent', () => {
-    const result = formatTaskPreview({ name: 'my-task', description: undefined });
+    const result = formatTaskPreview({ name: 'my-task' });
     assert.match(result, /my-task/);
     assert.doesNotMatch(result, /Description/);
   });
