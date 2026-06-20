@@ -61,7 +61,7 @@ async function setup(): Promise<ServiceModule & { keyring: Map<string, string>; 
 
   const mod: ServiceModule = await esmock('../../src/core/service.js', {
     '@napi-rs/keyring': { Entry: makeFakeEntry(keyring) },
-    '../../src/core/util.file.js': fileMock,
+    '../../src/core/file.js': fileMock,
     'node:os': { homedir: () => '/fake' },
   });
 
@@ -156,7 +156,7 @@ describe('deleteToken', () => {
     const keyring = new Map<string, string>();
     const mod: ServiceModule = await esmock('../../src/core/service.js', {
       '@napi-rs/keyring': { Entry: makeFakeEntry(keyring) },
-      '../../src/core/util.file.js': { ...fileMock },
+      '../../src/core/file.js': { ...fileMock },
       'node:os': { homedir: () => '/fake' },
     });
     assert.throws(

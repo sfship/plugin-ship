@@ -8,7 +8,7 @@ type ConfigLoader = { loadConfig: typeof LoadConfigFn };
 let readTextStub: (path: string) => string = () => '';
 
 const { loadConfig }: ConfigLoader = await esmock('../../src/core/config.loader.js', {
-  '../../src/core/util.file.js': {
+  '../../src/core/file.js': {
     readText: (path: string) => readTextStub(path),
   },
 });

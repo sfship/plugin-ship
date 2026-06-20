@@ -10,7 +10,7 @@ const files = new Map<string, string>();
 let orgCreateStub: () => Promise<object> = async () => ({});
 
 const { OrgRegistry }: { OrgRegistry: typeof OrgRegistryType } = await esmock('../../src/core/org.registry.js', {
-  '../../src/core/util.file.js': {
+  '../../src/core/file.js': {
     fileExists: (path: string) => files.has(path),
     readText: (path: string) => files.get(path),
   },

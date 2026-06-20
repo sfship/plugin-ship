@@ -53,7 +53,7 @@ describe('TaskRegistry.list', () => {
     const { TaskRegistry: MockedRegistry }: { TaskRegistry: typeof TaskRegistry } = await esmock(
       '../../src/core/task.registry.js',
       {
-        '../../src/core/util.file.js': {
+        '../../src/core/file.js': {
           listDir: () => {
             throw permError;
           },
