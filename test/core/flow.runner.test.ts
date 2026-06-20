@@ -1,3 +1,4 @@
+/* eslint-disable class-methods-use-this */
 import { strict as assert } from 'node:assert';
 import esmock from 'esmock';
 import { ExpectedError } from '../../src/core/error.js';
@@ -10,23 +11,14 @@ import type { Params } from '../../src/core/task.param.schema.js';
 
 const mockRenderer = {
   FlowRenderer: class {
-    // eslint-disable-next-line class-methods-use-this
     public start(): void {}
-    // eslint-disable-next-line class-methods-use-this
     public failedBeforeStart(): void {}
-    // eslint-disable-next-line class-methods-use-this
     public stepStart(): void {}
-    // eslint-disable-next-line class-methods-use-this
     public stepComplete(): void {}
-    // eslint-disable-next-line class-methods-use-this
     public stepFailed(): void {}
-    // eslint-disable-next-line class-methods-use-this
     public flowFailed(): void {}
-    // eslint-disable-next-line class-methods-use-this
     public stepIgnored(): void {}
-    // eslint-disable-next-line class-methods-use-this
     public stepSkipped(): void {}
-    // eslint-disable-next-line class-methods-use-this
     public success(): void {}
   },
 };
@@ -571,6 +563,171 @@ describe('runFlow — finally steps', () => {
     };
 
     await assert.rejects(() => runFlow('my-flow', flow, makeContext()), /main error/);
+  });
+});
+
+describe('runFlow — uncaught exception handler', () => {
+  class ProcessExitError extends Error {
+    public readonly code: number;
+    public constructor(code: number) {
+      super(`process.exit(${code})`);
+      this.code = code;
+    }
+  }
+
+  let savedProcessOnce: typeof process.once;
+  let savedProcessExit: typeof process.exit;
+  let savedStdoutWrite: typeof process.stdout.write;
+  let savedStderrWrite: typeof process.stderr.write;
+  let capturedHandler: ((err: unknown) => void) | undefined;
+
+  function makeTrackingRenderer(calls: string[]) {
+    return {
+      FlowRenderer: class {
+        public activeStep: string | null = null;
+        // eslint-disable-next-line class-methods-use-this
+        public start(): void {}
+        // eslint-disable-next-line class-methods-use-this
+        public failedBeforeStart(): void {}
+        // eslint-disable-next-line class-methods-use-this
+        public stepStart(): void {}
+        // eslint-disable-next-line class-methods-use-this
+        public stepComplete(): void {}
+        // eslint-disable-next-line class-methods-use-this
+        public stepFailed(): void {}
+        // eslint-disable-next-line class-methods-use-this
+        public flowFailed(): void {
+          calls.push('flowFailed');
+        }
+        // eslint-disable-next-line class-methods-use-this
+        public stepIgnored(): void {}
+        // eslint-disable-next-line class-methods-use-this
+        public stepSkipped(): void {}
+        // eslint-disable-next-line class-methods-use-this
+        public success(): void {}
+        // eslint-disable-next-line class-methods-use-this
+        public interrupt(): void {
+          calls.push('interrupt');
+        }
+      },
+    };
+  }
+
+  beforeEach(() => {
+    capturedHandler = undefined;
+    savedProcessOnce = process.once.bind(process);
+    savedProcessExit = process.exit.bind(process);
+    savedStdoutWrite = process.stdout.write.bind(process.stdout);
+    savedStderrWrite = process.stderr.write.bind(process.stderr);
+
+    process.once = ((event: string | symbol, listener: (...args: unknown[]) => void) => {
+      if (event === 'uncaughtException') {
+        capturedHandler = listener;
+      } else {
+        (savedProcessOnce as (e: string | symbol, l: (...args: unknown[]) => void) => typeof process)(event, listener);
+      }
+      return process;
+    }) as typeof process.once;
+
+    process.exit = ((code?: number) => {
+      throw new ProcessExitError(code ?? 0);
+    }) as typeof process.exit;
+  });
+
+  afterEach(() => {
+    process.once = savedProcessOnce;
+    process.exit = savedProcessExit;
+    process.stdout.write = savedStdoutWrite;
+    process.stderr.write = savedStderrWrite;
+  });
+
+  it('calls interrupt and exits with code 130 on Ctrl+C (EEXIT 130)', async () => {
+    const calls: string[] = [];
+    const { runFlow }: { runFlow: typeof RunFlowFn } = await esmock('../../src/core/flow.runner.js', {
+      '../../src/core/task.registry.js': makeMockRunner({ noop: makeTask({ name: 'noop' }) }),
+      '../../src/core/flow.renderer.js': makeTrackingRenderer(calls),
+    });
+    await runFlow('my-flow', { steps: { s: { task: 'noop' } } }, makeContext());
+
+    assert.ok(capturedHandler, 'handler was not captured from process.once');
+    const eexit = Object.assign(new Error('oclif exit'), { code: 'EEXIT', oclif: { exit: 130 } });
+    assert.throws(
+      () => capturedHandler!(eexit),
+      (e: unknown) => e instanceof ProcessExitError && e.code === 130
+    );
+    assert.deepEqual(calls, ['interrupt']);
+  });
+
+  it('exits with the oclif exit code for non-130 EEXIT', async () => {
+    const calls: string[] = [];
+    const { runFlow }: { runFlow: typeof RunFlowFn } = await esmock('../../src/core/flow.runner.js', {
+      '../../src/core/task.registry.js': makeMockRunner({ noop: makeTask({ name: 'noop' }) }),
+      '../../src/core/flow.renderer.js': makeTrackingRenderer(calls),
+    });
+    await runFlow('my-flow', { steps: { s: { task: 'noop' } } }, makeContext());
+
+    const eexit = Object.assign(new Error('oclif exit'), { code: 'EEXIT', oclif: { exit: 2 } });
+    assert.throws(
+      () => capturedHandler!(eexit),
+      (e: unknown) => e instanceof ProcessExitError && e.code === 2
+    );
+    assert.deepEqual(calls, []);
+  });
+
+  it('defaults to exit code 1 when EEXIT has no oclif exit property', async () => {
+    const { runFlow }: { runFlow: typeof RunFlowFn } = await esmock('../../src/core/flow.runner.js', {
+      '../../src/core/task.registry.js': makeMockRunner({ noop: makeTask({ name: 'noop' }) }),
+      '../../src/core/flow.renderer.js': makeTrackingRenderer([]),
+    });
+    await runFlow('my-flow', { steps: { s: { task: 'noop' } } }, makeContext());
+
+    const eexit = Object.assign(new Error('oclif exit'), { code: 'EEXIT' });
+    assert.throws(
+      () => capturedHandler!(eexit),
+      (e: unknown) => e instanceof ProcessExitError && e.code === 1
+    );
+  });
+
+  it('calls flowFailed and exits with 1 for non-EEXIT errors', async () => {
+    const calls: string[] = [];
+    const { runFlow }: { runFlow: typeof RunFlowFn } = await esmock('../../src/core/flow.runner.js', {
+      '../../src/core/task.registry.js': makeMockRunner({ noop: makeTask({ name: 'noop' }) }),
+      '../../src/core/flow.renderer.js': makeTrackingRenderer(calls),
+    });
+    await runFlow('my-flow', { steps: { s: { task: 'noop' } } }, makeContext());
+
+    assert.throws(
+      () => capturedHandler!(new Error('unexpected crash')),
+      (e: unknown) => e instanceof ProcessExitError && e.code === 1
+    );
+    assert.deepEqual(calls, ['flowFailed']);
+  });
+
+  it('suppresses stdout and stderr before calling interrupt on Ctrl+C', async () => {
+    const { runFlow }: { runFlow: typeof RunFlowFn } = await esmock('../../src/core/flow.runner.js', {
+      '../../src/core/task.registry.js': makeMockRunner({ noop: makeTask({ name: 'noop' }) }),
+      '../../src/core/flow.renderer.js': makeTrackingRenderer([]),
+    });
+    await runFlow('my-flow', { steps: { s: { task: 'noop' } } }, makeContext());
+
+    const written: string[] = [];
+    process.stdout.write = ((s: unknown): boolean => {
+      written.push(String(s));
+      return true;
+    }) as typeof process.stdout.write;
+    process.stderr.write = ((s: unknown): boolean => {
+      written.push(String(s));
+      return true;
+    }) as typeof process.stderr.write;
+
+    const eexit = Object.assign(new Error('oclif exit'), { code: 'EEXIT', oclif: { exit: 130 } });
+    try {
+      capturedHandler!(eexit);
+    } catch {
+      /* process.exit stub throws */
+    }
+
+    assert.deepEqual(written, [], 'handler should have swapped stdout/stderr to no-ops before interrupt ran');
   });
 });
 
