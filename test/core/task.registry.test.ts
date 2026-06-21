@@ -3,7 +3,7 @@ import { resolve } from 'node:path';
 import esmock from 'esmock';
 import { TaskRegistry } from '../../src/core/task.registry.js';
 
-const shipDir = resolve('test/core');
+const shipDir = resolve('test/fixtures');
 
 describe('TaskRegistry.resolve', () => {
   it('loads a valid .mjs task from the tasks directory', async () => {

@@ -7,5 +7,5 @@
   "branches": 75,
   "reporter": ["lcov", "text"],
   "include": ["src/**/*.ts"],
-  "exclude": ["**/*.d.ts", "**/*.test.ts", "src/core/tasks/**", "src/commands/**"]
+  "exclude": ["**/*.d.ts", "**/*.test.ts", "src/commands/**"]
 }

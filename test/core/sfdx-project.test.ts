@@ -4,7 +4,7 @@ import esmock from 'esmock';
 import { readSfdxProject, defaultPackageDirectory, type SfdxProject } from '../../src/core/sfdx-project.js';
 import type { writeSfdxProject as WriteFn } from '../../src/core/sfdx-project.js';
 
-const fixtureDir = resolve('test/core/fixtures');
+const fixtureDir = resolve('test/fixtures');
 
 describe('readSfdxProject', () => {
   it('reads and parses sfdx-project.json from the project directory', () => {
