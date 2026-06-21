@@ -1,21 +1,11 @@
-import { readFile, writeFile } from 'node:fs/promises';
-import { join } from 'node:path';
 import type { TaskContext, TaskDefinition } from '../../task.definition.schema.js';
 import { resolvePassthroughArgs } from '../../task.param.js';
 import { ExpectedError } from '../../error.js';
+import { readSfdxProject, writeSfdxProject } from '../../sfdx-project.js';
+
 type PackageCreateResult = {
   Id?: string;
 };
-
-async function readPackageAliases(projectDir: string): Promise<Record<string, string>> {
-  try {
-    const raw = await readFile(join(projectDir, 'sfdx-project.json'), 'utf8');
-    const parsed = JSON.parse(raw) as { packageAliases?: Record<string, string> };
-    return parsed.packageAliases ?? {};
-  } catch {
-    return {};
-  }
-}
 
 export default {
   description:
@@ -84,7 +74,7 @@ export default {
       throw new ExpectedError('No package name. Pass `name` param or set project.package.name in ship.yml.');
     }
 
-    const existing = await readPackageAliases(flow.projectDir);
+    const existing = readSfdxProject(flow.projectDir).packageAliases ?? {};
     if (existing[name]) {
       flow.log(`Package "${name}" already registered as ${existing[name]} — skipping.`);
       output.set('package-id', existing[name]);
@@ -106,13 +96,9 @@ export default {
       throw new ExpectedError('Package create completed without a Package2Id.');
     }
 
-    const sfdxProjectPath = join(flow.projectDir, 'sfdx-project.json');
-    const sfdxProject = JSON.parse(await readFile(sfdxProjectPath, 'utf8')) as {
-      [key: string]: unknown;
-      packageAliases?: Record<string, string>;
-    };
+    const sfdxProject = readSfdxProject(flow.projectDir);
     sfdxProject.packageAliases = { ...sfdxProject.packageAliases, [name]: result.Id };
-    await writeFile(sfdxProjectPath, JSON.stringify(sfdxProject, null, 2) + '\n', 'utf8');
+    writeSfdxProject(flow.projectDir, sfdxProject);
 
     flow.log(`Created package ${result.Id} and wrote alias "${name}" to sfdx-project.json.`);
     output.set('package-id', result.Id);
