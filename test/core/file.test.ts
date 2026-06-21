@@ -2,7 +2,11 @@ import { strict as assert } from 'node:assert';
 import { join } from 'node:path';
 import esmock from 'esmock';
 import { normalizePath } from '../../src/core/file.js';
-import type { walkFiles as WalkFilesFn, findFiles as FindFilesFn } from '../../src/core/file.js';
+import type {
+  walkFiles as WalkFilesFn,
+  findFiles as FindFilesFn,
+  pathExists as PathExistsFn,
+} from '../../src/core/file.js';
 
 describe('normalizePath', () => {
   it('lowercases the name', () => {
@@ -25,6 +29,72 @@ describe('normalizePath', () => {
     assert.equal(normalizePath('Deploy'), 'deploy');
   });
 });
+
+// — pathExists —
+
+let existsSyncStub: () => boolean = () => false;
+let statSyncStub: (() => { isFile: () => boolean; isDirectory: () => boolean }) | null = null;
+let statSyncError: (Error & { code?: string }) | null = null;
+
+const { pathExists }: { pathExists: typeof PathExistsFn } = await esmock('../../src/core/file.js', {
+  'node:fs': {
+    existsSync: () => existsSyncStub(),
+    statSync: () => {
+      if (statSyncError) throw statSyncError;
+      return statSyncStub?.();
+    },
+  },
+});
+
+beforeEach(() => {
+  existsSyncStub = () => false;
+  statSyncStub = null;
+  statSyncError = null;
+});
+
+describe('pathExists', () => {
+  it('returns true for kind=any when the path exists', () => {
+    existsSyncStub = () => true;
+    assert.equal(pathExists('/some/path', 'any'), true);
+  });
+
+  it('returns false for kind=any when the path does not exist', () => {
+    existsSyncStub = () => false;
+    assert.equal(pathExists('/some/path', 'any'), false);
+  });
+
+  it('returns true for kind=file when stat reports a file', () => {
+    statSyncStub = () => ({ isFile: () => true, isDirectory: () => false });
+    assert.equal(pathExists('/some/file', 'file'), true);
+  });
+
+  it('returns false for kind=file when stat reports a directory', () => {
+    statSyncStub = () => ({ isFile: () => false, isDirectory: () => true });
+    assert.equal(pathExists('/some/dir', 'file'), false);
+  });
+
+  it('returns true for kind=dir when stat reports a directory', () => {
+    statSyncStub = () => ({ isFile: () => false, isDirectory: () => true });
+    assert.equal(pathExists('/some/dir', 'dir'), true);
+  });
+
+  it('returns false for kind=dir when stat reports a file', () => {
+    statSyncStub = () => ({ isFile: () => true, isDirectory: () => false });
+    assert.equal(pathExists('/some/file', 'dir'), false);
+  });
+
+  it('returns false for kind=file when stat throws ENOENT', () => {
+    statSyncError = Object.assign(new Error('ENOENT'), { code: 'ENOENT' });
+    assert.equal(pathExists('/missing', 'file'), false);
+  });
+
+  it('rethrows non-ENOENT errors from stat', () => {
+    statSyncError = Object.assign(new Error('EPERM'), { code: 'EPERM' });
+    assert.throws(() => pathExists('/forbidden', 'file'), /EPERM/);
+  });
+});
+
+// — walkFiles / findFiles —
 
 type Dirent = { name: string; isDirectory: () => boolean; isFile: () => boolean };
 const fsEntries = new Map<string, Dirent[]>();

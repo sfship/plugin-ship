@@ -1,4 +1,13 @@
-import { appendFileSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+  appendFileSync,
+} from 'node:fs';
 import { readdir } from 'node:fs/promises';
 import { basename, extname, join } from 'node:path';
 
@@ -60,6 +69,18 @@ export function normalizePath(name: string): string {
 }
 
 /* c8 ignore stop */
+
+/** Returns true if the path exists and matches the given kind (`any`, `file`, or `dir`). */
+export function pathExists(path: string, kind: 'any' | 'file' | 'dir'): boolean {
+  if (kind === 'any') return existsSync(path);
+  try {
+    const stat = statSync(path);
+    return kind === 'file' ? stat.isFile() : stat.isDirectory();
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return false;
+    throw err;
+  }
+}
 
 function globToRegex(pattern: string): RegExp {
   const escaped = pattern

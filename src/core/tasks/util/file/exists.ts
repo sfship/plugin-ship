@@ -1,5 +1,5 @@
-import { existsSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { pathExists } from '../../../file.js';
 import type { TaskContext, TaskDefinition } from '../../../task.definition.schema.js';
 import { ExpectedError } from '../../../error.js';
 
@@ -36,19 +36,7 @@ export default {
       throw new ExpectedError(`Invalid kind "${kind}". Use one of: any, file, dir.`);
     }
 
-    let exists: boolean;
-    if (kind === 'any') {
-      exists = existsSync(target);
-    } else {
-      try {
-        const stat = statSync(target);
-        exists = kind === 'file' ? stat.isFile() : stat.isDirectory();
-      } catch (err) {
-        if ((err as NodeJS.ErrnoException).code === 'ENOENT') exists = false;
-        else throw err;
-      }
-    }
-
+    const exists = pathExists(target, kind as 'any' | 'file' | 'dir');
     flow.log(`${target} ${exists ? 'exists' : 'does not exist'} (kind: ${kind})`);
     output.set('exists', exists);
   },
