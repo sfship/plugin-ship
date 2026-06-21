@@ -1,3 +1,24 @@
+export type PackageVersion = {
+  SubscriberPackageVersionId: string;
+  Version?: string;
+  IsReleased: boolean;
+  Branch?: string | null;
+  Name?: string;
+  CreatedDate: string;
+};
+
+export function selectLatest(versions: PackageVersion[], wantReleased: boolean): PackageVersion | null {
+  const matching = versions.filter((v) => v.IsReleased === wantReleased);
+  if (matching.length === 0) return null;
+  matching.sort((a, b) => (a.CreatedDate < b.CreatedDate ? 1 : -1));
+  return matching[0];
+}
+
+export function extractVersionBase(version: string): string | undefined {
+  const parts = version.split('.');
+  return parts.length >= 3 ? `${parts[0]}.${parts[1]}.${parts[2]}` : undefined;
+}
+
 export const VERSION_TYPES = ['build', 'patch', 'minor', 'major'] as const;
 export type VersionType = (typeof VERSION_TYPES)[number];
 

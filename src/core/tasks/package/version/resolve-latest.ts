@@ -1,16 +1,7 @@
 import type { TaskContext, TaskDefinition } from '../../../task.definition.schema.js';
 import { ExpectedError } from '../../../error.js';
 import { withSuppressedStdout } from '../../../stdout.js';
-
-type PackageVersion = {
-  SubscriberPackageVersionId: string;
-  Version?: string;
-  // sf serializes this as the string "true"/"false" in --json output, even though the upstream field is boolean.
-  IsReleased: boolean | string;
-  Branch?: string | null;
-  Name?: string;
-  CreatedDate: string;
-};
+import { selectLatest, extractVersionBase, type PackageVersion } from '../../../package.version.js';
 
 export default {
   description:
@@ -76,20 +67,13 @@ export default {
       flow.runCommand('package:version:list', argv)
     )) as PackageVersion[];
 
-    const matching = versions.filter((v) => {
-      const released = v.IsReleased === true || v.IsReleased === 'true';
-      return released === wantReleased;
-    });
+    const latest = selectLatest(versions, wantReleased);
 
-    if (matching.length === 0) {
+    if (!latest) {
       throw new ExpectedError(
         `No ${wantReleased ? 'released' : 'unreleased'} versions found for package "${packageName}".`
       );
     }
-
-    // Latest = most recently created. CLI usually returns sorted; sort defensively.
-    matching.sort((a, b) => (a.CreatedDate < b.CreatedDate ? 1 : -1));
-    const latest = matching[0];
 
     flow.log(
       `Resolved ${packageName} → ${latest.Version ?? '(unknown version)'} (${latest.SubscriberPackageVersionId})${
@@ -99,10 +83,8 @@ export default {
     output.set('version-id', latest.SubscriberPackageVersionId);
     if (latest.Version) {
       output.set('version-number', latest.Version);
-      const parts = latest.Version.split('.');
-      if (parts.length >= 3) {
-        output.set('version-base', `${parts[0]}.${parts[1]}.${parts[2]}`);
-      }
+      const base = extractVersionBase(latest.Version);
+      if (base) output.set('version-base', base);
     }
   },
 } satisfies TaskDefinition;
