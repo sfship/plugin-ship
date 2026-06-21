@@ -1,5 +1,12 @@
 import { strict as assert } from 'node:assert';
-import { parseSemver, bump, resolveNextVersion } from '../../src/core/package.version.js';
+import {
+  parseSemver,
+  bump,
+  resolveNextVersion,
+  selectLatest,
+  extractVersionBase,
+} from '../../src/core/package.version.js';
+import type { PackageVersion } from '../../src/core/package.version.js';
 
 describe('parseSemver', () => {
   it('parses a bare version string', () => {
@@ -58,5 +65,35 @@ describe('resolveNextVersion', () => {
 
   it('falls back to 0.0.0 base when the tag is unparseable', () => {
     assert.equal(resolveNextVersion('not-a-version', 'minor'), '0.1.0.NEXT');
+  });
+});
+
+describe('selectLatest', () => {
+  function makeVersion(id: string, IsReleased: boolean, CreatedDate: string): PackageVersion {
+    return { SubscriberPackageVersionId: id, IsReleased, CreatedDate };
+  }
+
+  it('returns null when no versions match', () => {
+    assert.equal(selectLatest([makeVersion('04tAAA', true, '2026-01-01')], false), null);
+  });
+
+  it('returns the most recently created matching version', () => {
+    const versions = [makeVersion('04tOLD', false, '2026-01-01'), makeVersion('04tNEW', false, '2026-06-01')];
+    assert.equal(selectLatest(versions, false)?.SubscriberPackageVersionId, '04tNEW');
+  });
+
+  it('filters by IsReleased', () => {
+    const versions = [makeVersion('04tBETA', false, '2026-06-01'), makeVersion('04tREL', true, '2026-01-01')];
+    assert.equal(selectLatest(versions, true)?.SubscriberPackageVersionId, '04tREL');
+  });
+});
+
+describe('extractVersionBase', () => {
+  it('extracts major.minor.patch from a four-part version', () => {
+    assert.equal(extractVersionBase('0.3.0.1'), '0.3.0');
+  });
+
+  it('returns undefined for a string with fewer than three parts', () => {
+    assert.equal(extractVersionBase('1.2'), undefined);
   });
 });
