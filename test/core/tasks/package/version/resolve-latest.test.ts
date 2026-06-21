@@ -64,4 +64,61 @@ describe('package/version/resolve-latest', () => {
     assert.ok(logs[0]?.includes('04tAAA'));
     assert.ok(logs[0]?.includes('0.3.0.1'));
   });
+
+  it('logs [released] when released=true', async () => {
+    selectLatestResult = { SubscriberPackageVersionId: '04tAAA', IsReleased: true, CreatedDate: '2026-06-01' };
+    const { logs } = await runTask(resolveLatest, {
+      params: { package: 'My Package', released: true },
+      runCommand: async () => [],
+    });
+    assert.ok(logs[0]?.includes('[released]'));
+  });
+
+  it('mentions "released" in the error when released=true and no match', async () => {
+    await assert.rejects(
+      () => runTask(resolveLatest, { params: { package: 'My Package', released: true }, runCommand: async () => [] }),
+      (e: unknown) => e instanceof ExpectedError && e.message.includes('No released versions found')
+    );
+  });
+
+  it('passes target-dev-hub to the command', async () => {
+    let capturedArgv: string[] = [];
+    selectLatestResult = { SubscriberPackageVersionId: '04tAAA', IsReleased: false, CreatedDate: '2026-06-01' };
+    await runTask(resolveLatest, {
+      params: { package: 'My Package', 'target-dev-hub': 'my-hub' },
+      runCommand: async (_id, argv) => {
+        capturedArgv = argv;
+        return [];
+      },
+    });
+    assert.ok(capturedArgv.includes('--target-dev-hub') && capturedArgv.includes('my-hub'));
+  });
+
+  it('passes branch to the command', async () => {
+    let capturedArgv: string[] = [];
+    selectLatestResult = { SubscriberPackageVersionId: '04tAAA', IsReleased: false, CreatedDate: '2026-06-01' };
+    await runTask(resolveLatest, {
+      params: { package: 'My Package', branch: 'main' },
+      runCommand: async (_id, argv) => {
+        capturedArgv = argv;
+        return [];
+      },
+    });
+    assert.ok(capturedArgv.includes('--branch') && capturedArgv.includes('main'));
+  });
+
+  it('falls back to package name from config', async () => {
+    selectLatestResult = { SubscriberPackageVersionId: '04tAAA', IsReleased: false, CreatedDate: '2026-06-01' };
+    const { outputs } = await runTask(resolveLatest, {
+      params: {},
+      runCommand: async () => [],
+      context: {
+        config: {
+          project: { slug: 'test', package: { name: 'Config Package', type: 'Unlocked', testPattern: '**/*Test*' } },
+          dir: '.ship',
+        },
+      },
+    });
+    assert.equal(outputs['version-id'], '04tAAA');
+  });
 });
