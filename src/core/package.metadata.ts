@@ -2,7 +2,7 @@ import { join } from 'node:path';
 import { walkFiles } from './file.js';
 import { replaceTokens, buildTokenMap } from './package.namespace.js';
 import { normalizeRepo, downloadDir } from './service.github.js';
-import type { MetadataStep } from './package.resolver.js';
+import type { MetadataStep } from './package.dependencies.js';
 
 /**
  * Downloads a CCI `unpackaged/pre` or `unpackaged/post` subfolder from GitHub,

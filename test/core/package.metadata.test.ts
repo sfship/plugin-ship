@@ -2,7 +2,7 @@ import { strict as assert } from 'node:assert';
 import { join } from 'node:path';
 import esmock from 'esmock';
 import type { deployMetadataStep as DeployFn } from '../../src/core/package.metadata.js';
-import type { MetadataStep } from '../../src/core/package.resolver.js';
+import type { MetadataStep } from '../../src/core/package.dependencies.js';
 
 type Module = { deployMetadataStep: typeof DeployFn };
 

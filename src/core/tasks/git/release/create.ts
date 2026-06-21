@@ -1,5 +1,5 @@
 import { getGithubToken, normalizeRepo } from '../../../service.github.js';
-import { resolveDependencies } from '../../../package.resolver.js';
+import { resolveDependencies } from '../../../package.dependencies.js';
 import type { TaskContext, TaskDefinition } from '../../../task.definition.schema.js';
 import { ExpectedError } from '../../../error.js';
 
