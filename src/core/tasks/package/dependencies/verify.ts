@@ -37,7 +37,7 @@ export default {
           ),
           '',
           `${StandardColors.info('→ To fix, run this and commit the change:')}`,
-          `    ${StandardColors.success('sf ship flow run dependencies/sync')}`,
+          `    ${StandardColors.success('sf ship flow run dependencies/lock')}`,
         ].join('\n')
       );
     }
