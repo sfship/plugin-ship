@@ -19,6 +19,29 @@ export function extractVersionBase(version: string): string | undefined {
   return parts.length >= 3 ? `${parts[0]}.${parts[1]}.${parts[2]}` : undefined;
 }
 
+export type PackageVersionCreateResult = {
+  Id?: string;
+  Status?: string;
+  Package2Id?: string;
+  Package2VersionId?: string;
+  SubscriberPackageVersionId?: string;
+  Branch?: string | null;
+  Tag?: string | null;
+  VersionNumber?: string;
+  MajorVersion?: number;
+  MinorVersion?: number;
+  PatchVersion?: number;
+  BuildNumber?: number;
+};
+
+export function formatVersionNumber(result: PackageVersionCreateResult): string | undefined {
+  if (result.VersionNumber) return result.VersionNumber;
+  if (result.MajorVersion !== undefined) {
+    return `${result.MajorVersion}.${result.MinorVersion ?? 0}.${result.PatchVersion ?? 0}.${result.BuildNumber ?? 0}`;
+  }
+  return undefined;
+}
+
 export const VERSION_TYPES = ['build', 'patch', 'minor', 'major'] as const;
 export type VersionType = (typeof VERSION_TYPES)[number];
 

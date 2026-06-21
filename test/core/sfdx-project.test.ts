@@ -1,10 +1,21 @@
 import { strict as assert } from 'node:assert';
 import { resolve, join } from 'node:path';
 import esmock from 'esmock';
-import { readSfdxProject, defaultPackageDirectory, type SfdxProject } from '../../src/core/sfdx-project.js';
+import {
+  readSfdxProject,
+  defaultPackageDirectory,
+  defaultPackageAlias,
+  type SfdxProject,
+} from '../../src/core/sfdx-project.js';
 import type { writeSfdxProject as WriteFn } from '../../src/core/sfdx-project.js';
 
 const fixtureDir = resolve('test/fixtures');
+
+let readJsonStub: () => unknown = () => ({ packageDirectories: [] });
+const { defaultPackageAlias: stubbedDefaultPackageAlias }: { defaultPackageAlias: typeof defaultPackageAlias } =
+  await esmock('../../src/core/sfdx-project.js', {
+    '../../src/core/file.js': { readJson: () => readJsonStub(), writeJson: () => {} },
+  });
 
 describe('readSfdxProject', () => {
   it('reads and parses sfdx-project.json from the project directory', () => {
@@ -46,5 +57,28 @@ describe('defaultPackageDirectory', () => {
 
   it('returns undefined when packageDirectories is empty', () => {
     assert.equal(defaultPackageDirectory({ packageDirectories: [] }), undefined);
+  });
+});
+
+describe('defaultPackageAlias', () => {
+  beforeEach(() => {
+    readJsonStub = () => ({ packageDirectories: [] });
+  });
+
+  it('returns the package alias of the default directory', () => {
+    readJsonStub = () => ({ packageDirectories: [{ path: 'force-app', package: 'MyPkg', default: true }] });
+    assert.equal(stubbedDefaultPackageAlias('/proj'), 'MyPkg');
+  });
+
+  it('returns null when the default directory has no package alias', () => {
+    readJsonStub = () => ({ packageDirectories: [{ path: 'force-app' }] });
+    assert.equal(stubbedDefaultPackageAlias('/proj'), null);
+  });
+
+  it('returns null when the file cannot be read', () => {
+    readJsonStub = () => {
+      throw new Error('ENOENT');
+    };
+    assert.equal(stubbedDefaultPackageAlias('/proj'), null);
   });
 });

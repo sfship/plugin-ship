@@ -5,6 +5,7 @@ import {
   resolveNextVersion,
   selectLatest,
   extractVersionBase,
+  formatVersionNumber,
 } from '../../src/core/package.version.js';
 import type { PackageVersion } from '../../src/core/package.version.js';
 
@@ -95,5 +96,23 @@ describe('extractVersionBase', () => {
 
   it('returns undefined for a string with fewer than three parts', () => {
     assert.equal(extractVersionBase('1.2'), undefined);
+  });
+});
+
+describe('formatVersionNumber', () => {
+  it('returns VersionNumber when present', () => {
+    assert.equal(formatVersionNumber({ VersionNumber: '1.2.3.4' }), '1.2.3.4');
+  });
+
+  it('assembles from numeric parts when VersionNumber is absent', () => {
+    assert.equal(formatVersionNumber({ MajorVersion: 1, MinorVersion: 2, PatchVersion: 3, BuildNumber: 4 }), '1.2.3.4');
+  });
+
+  it('defaults missing numeric parts to 0', () => {
+    assert.equal(formatVersionNumber({ MajorVersion: 2 }), '2.0.0.0');
+  });
+
+  it('returns undefined when neither VersionNumber nor MajorVersion is present', () => {
+    assert.equal(formatVersionNumber({}), undefined);
   });
 });

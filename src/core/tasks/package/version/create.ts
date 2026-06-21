@@ -1,35 +1,8 @@
-import { readFile } from 'node:fs/promises';
-import { join } from 'node:path';
 import type { TaskContext, TaskDefinition } from '../../../task.definition.schema.js';
 import { resolvePassthroughArgs } from '../../../task.param.js';
 import { ExpectedError } from '../../../error.js';
-
-/** Reads sfdx-project.json and returns the package alias of the default packageDirectory, if any. */
-async function getDefaultPackageAlias(projectDir: string): Promise<string | null> {
-  try {
-    const raw = await readFile(join(projectDir, 'sfdx-project.json'), 'utf8');
-    const parsed = JSON.parse(raw) as { packageDirectories?: Array<{ default?: boolean; package?: string }> };
-    const defaultDir = parsed.packageDirectories?.find((d) => d.default) ?? parsed.packageDirectories?.[0];
-    return defaultDir?.package ?? null;
-  } catch {
-    return null;
-  }
-}
-
-type PackageVersionCreateResult = {
-  Id?: string;
-  Status?: string;
-  Package2Id?: string;
-  Package2VersionId?: string;
-  SubscriberPackageVersionId?: string;
-  Branch?: string | null;
-  Tag?: string | null;
-  MajorVersion?: number;
-  MinorVersion?: number;
-  PatchVersion?: number;
-  BuildNumber?: number;
-  VersionNumber?: string;
-};
+import { defaultPackageAlias } from '../../../sfdx-project.js';
+import { formatVersionNumber, type PackageVersionCreateResult } from '../../../package.version.js';
 
 export default {
   description:
@@ -139,7 +112,7 @@ export default {
     // auto-fall-back to the default packageDirectory. Do that fallback ourselves by
     // reading the default packageDirectory's package alias from sfdx-project.json.
     if (!params['package'] && !params['path']) {
-      const defaultPackage = await getDefaultPackageAlias(flow.projectDir);
+      const defaultPackage = defaultPackageAlias(flow.projectDir);
       if (defaultPackage) overrides['--package'] = defaultPackage;
     }
 
@@ -159,11 +132,7 @@ export default {
       );
     }
 
-    const versionNumber =
-      result.VersionNumber ??
-      (result.MajorVersion !== undefined
-        ? `${result.MajorVersion}.${result.MinorVersion ?? 0}.${result.PatchVersion ?? 0}.${result.BuildNumber ?? 0}`
-        : undefined);
+    const versionNumber = formatVersionNumber(result);
 
     flow.log(
       `Created ${result.SubscriberPackageVersionId}${versionNumber ? ` (${versionNumber})` : ''} (status: ${

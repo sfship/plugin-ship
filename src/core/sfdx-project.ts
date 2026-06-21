@@ -33,3 +33,13 @@ export function writeSfdxProject(projectDir: string, project: SfdxProject): void
 export function defaultPackageDirectory(project: SfdxProject): PackageDirectory | undefined {
   return project.packageDirectories?.find((d) => d.default) ?? project.packageDirectories?.[0];
 }
+
+/** Reads sfdx-project.json and returns the package alias of the default packageDirectory. Returns null on any error. */
+export function defaultPackageAlias(projectDir: string): string | null {
+  try {
+    const project = readSfdxProject(projectDir);
+    return defaultPackageDirectory(project)?.package ?? null;
+  } catch {
+    return null;
+  }
+}
