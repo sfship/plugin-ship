@@ -1,6 +1,6 @@
 import { appendFileSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { readdir } from 'node:fs/promises';
-import { join } from 'node:path';
+import { basename, extname, join } from 'node:path';
 
 /* c8 ignore start */
 
@@ -60,6 +60,47 @@ export function normalizePath(name: string): string {
 }
 
 /* c8 ignore stop */
+
+function globToRegex(pattern: string): RegExp {
+  const escaped = pattern
+    .replace(/[.+^${}()|[\]\\]/g, '\\$&')
+    .replace(/\*/g, '.*')
+    .replace(/\?/g, '.');
+  return new RegExp(`^${escaped}$`, 'i');
+}
+
+async function collectFiles(dir: string, regex: RegExp, recursive: boolean, stripExt: boolean): Promise<string[]> {
+  let entries;
+  try {
+    entries = await readdir(dir, { withFileTypes: true });
+  } catch {
+    return [];
+  }
+  const results: string[] = [];
+  for (const entry of entries) {
+    if (entry.isDirectory()) {
+      if (recursive) {
+        // eslint-disable-next-line no-await-in-loop
+        results.push(...(await collectFiles(join(dir, entry.name), regex, recursive, stripExt)));
+      }
+    } else if (entry.isFile()) {
+      const nameNoExt = basename(entry.name, extname(entry.name));
+      if (regex.test(nameNoExt)) {
+        results.push(stripExt ? nameNoExt : entry.name);
+      }
+    }
+  }
+  return results;
+}
+
+/** Finds files in `dir` whose names (without extension) match a glob pattern. */
+export async function findFiles(
+  dir: string,
+  options: { pattern?: string; recursive?: boolean; stripExtension?: boolean } = {}
+): Promise<string[]> {
+  const { pattern = '*', recursive = true, stripExtension = true } = options;
+  return collectFiles(dir, globToRegex(pattern), recursive, stripExtension);
+}
 
 /** Recursively returns all file paths under `dir`. */
 export async function walkFiles(dir: string): Promise<string[]> {

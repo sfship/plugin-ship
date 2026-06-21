@@ -1,35 +1,6 @@
-import { readdirSync } from 'node:fs';
-import { join, extname, basename, resolve } from 'node:path';
+import { resolve } from 'node:path';
+import { findFiles } from '../../../file.js';
 import type { TaskContext, TaskDefinition } from '../../../task.definition.schema.js';
-
-function globToRegex(pattern: string): RegExp {
-  const escaped = pattern
-    .replace(/[.+^${}()|[\]\\]/g, '\\$&')
-    .replace(/\*/g, '.*')
-    .replace(/\?/g, '.');
-  return new RegExp(`^${escaped}$`, 'i');
-}
-
-function collectFiles(dir: string, regex: RegExp, recursive: boolean, stripExt: boolean): string[] {
-  const results: string[] = [];
-  let entries;
-  try {
-    entries = readdirSync(dir, { withFileTypes: true });
-  } catch {
-    return results;
-  }
-  for (const entry of entries) {
-    if (entry.isDirectory()) {
-      if (recursive) results.push(...collectFiles(join(dir, entry.name), regex, recursive, stripExt));
-    } else if (entry.isFile()) {
-      const nameNoExt = basename(entry.name, extname(entry.name));
-      if (regex.test(nameNoExt)) {
-        results.push(stripExt ? nameNoExt : entry.name);
-      }
-    }
-  }
-  return results;
-}
 
 export default {
   description: 'Finds files in a directory whose names match a glob pattern.',
@@ -74,13 +45,13 @@ export default {
       description: 'Number of matching files found.',
     },
   ],
-  run({ flow, params, output }: TaskContext): void {
+  async run({ flow, params, output }: TaskContext): Promise<void> {
     const dir = resolve(flow.projectDir, params['path'] as string);
     const pattern = (params['pattern'] as string | undefined) ?? '*';
     const recursive = params['recursive'] !== false;
-    const stripExt = params['strip-extension'] !== false;
+    const stripExtension = params['strip-extension'] !== false;
 
-    const files = collectFiles(dir, globToRegex(pattern), recursive, stripExt);
+    const files = await findFiles(dir, { pattern, recursive, stripExtension });
 
     flow.log(`Found ${files.length} file(s) matching "${pattern}" in ${params['path'] as string}.`);
     output.set('files', files.join(','));
