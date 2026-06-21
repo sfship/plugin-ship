@@ -12,7 +12,7 @@ beforeEach(() => {
   findFilesResult = [];
 });
 
-describe('util:file:find', () => {
+describe('util/file/find', () => {
   it('writes matching file names and count to outputs', async () => {
     findFilesResult = ['deploy', 'build'];
     const { outputs } = await runTask(find, { params: { path: 'src' } });

@@ -13,7 +13,7 @@ beforeEach(() => {
   pathExistsResult = false;
 });
 
-describe('util:file:exists', () => {
+describe('util/file/exists', () => {
   it('writes true when the path exists', async () => {
     pathExistsResult = true;
     const { outputs } = await runTask(exists, { params: { path: 'src', kind: 'any' } });
