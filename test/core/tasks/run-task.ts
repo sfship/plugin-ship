@@ -1,7 +1,7 @@
 import { createFlowContext, type FlowContext } from '../../../src/core/flow.context.js';
 import { OrgRegistry } from '../../../src/core/org.registry.js';
+import { Store } from '../../../src/core/flow.store.js';
 import type { Task } from '../../../src/core/task.definition.schema.js';
-import type { TaskOutput } from '../../../src/core/task.output.js';
 import type { Params } from '../../../src/core/task.param.schema.js';
 
 /** A single in-process `sf` command invocation captured during a task run. */
@@ -25,6 +25,8 @@ export type RunTaskResult = {
   logs: string[];
   /** Commands the task invoked via `flow.runCommand`, in order. */
   commands: CommandCall[];
+  /** Named values the task wrote via `output.set`. */
+  outputs: Record<string, unknown>;
 };
 
 function makeTaskContext(overrides: Partial<Omit<FlowContext, 'hasFailures'>>): FlowContext {
@@ -53,6 +55,11 @@ export async function runTask(task: Pick<Task, 'run'>, options: RunTaskOptions =
   const commands: CommandCall[] = [];
   const params = options.params ?? {};
 
+  // A real store-backed output, so tasks that call `output.set` run for real.
+  const stepId = 'step';
+  const store = new Store();
+  const output = store.getTaskOutput(stepId);
+
   const flow = makeTaskContext({
     ...options.context,
     params,
@@ -63,9 +70,7 @@ export async function runTask(task: Pick<Task, 'run'>, options: RunTaskOptions =
     },
   });
 
-  // `output` is required by TaskContext but unused by passthrough tasks; add a
-  // shared TaskOutput fake here once a task under test actually needs one.
-  await task.run({ flow, params, output: {} as TaskOutput });
+  await task.run({ flow, params, output });
 
-  return { logs, commands };
+  return { logs, commands, outputs: store.getSteps()[stepId] ?? {} };
 }

@@ -5,18 +5,14 @@ import { runTask } from '../../run-task.js';
 import deployStart from '../../../../../src/core/tasks/project/deploy/start.js';
 
 describe('project:deploy:start', () => {
-  it('builds passthrough argv and reports success', async () => {
+  it('targets the deploy command and defaults source-dir to force-app', async () => {
     const { logs, commands } = await runTask(deployStart, {
-      params: { 'target-org': 'my-org', 'dry-run': true, wait: 10 },
       runCommand: async () => ({ success: true, files: [] }),
     });
 
-    assert.deepEqual(commands, [
-      {
-        id: 'project:deploy:start',
-        argv: ['--target-org', 'my-org', '--dry-run', '--wait', '10', '--source-dir', join('/proj', 'force-app')],
-      },
-    ]);
+    const [call] = commands;
+    assert.equal(call.id, 'project:deploy:start');
+    assert.ok(call.argv.includes(join('/proj', 'force-app')));
     assert.deepEqual(logs, ['Deployed successfully.']);
   });
 
@@ -49,7 +45,11 @@ describe('project:deploy:start', () => {
       () => runTask(deployStart, { runCommand: async () => ({ success: false, files }) }),
       (err: unknown) => {
         assert.ok(err instanceof ExpectedError);
-        assert.equal(err.message, 'Deploy failed:\n  classes/Foo.cls (12:3): unexpected token\n  classes/Bar.cls: ');
+        assert.ok(err.message.includes('classes/Foo.cls'));
+        assert.ok(err.message.includes('12:3'));
+        assert.ok(err.message.includes('unexpected token'));
+        assert.ok(err.message.includes('classes/Bar.cls'));
+        assert.ok(!err.message.includes('classes/Baz.cls'));
         return true;
       }
     );

@@ -113,7 +113,8 @@ export default {
       const lines = failed.map((f) => {
         const loc =
           f.lineNumber !== undefined && f.columnNumber !== undefined ? ` (${f.lineNumber}:${f.columnNumber})` : '';
-        return `  ${f.filePath}${loc}: ${f.error ?? ''}`;
+        const err = f.error ? `: ${f.error}` : '';
+        return `  ${f.filePath}${loc}${err}`;
       });
       throw new ExpectedError(`Deploy failed:\n${lines.join('\n')}`);
     }
