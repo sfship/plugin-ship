@@ -12,7 +12,7 @@ let fetchGitTagStub: (repo: string, tag: string) => Promise<GitTag | null> = asy
 let fetchCciNamespaceStub: () => Promise<string> = async () => '';
 let fetchSubdirsStub: (repo: string, tag: string, path: string) => Promise<string[]> = async () => [];
 
-const { resolveDependencies }: Resolver = await esmock('../../src/core/package.resolver.js', {
+const { resolveDependencies }: Resolver = await esmock('../../src/core/package.dependencies.js', {
   '../../src/core/service.github.js': {
     normalizeRepo: (r: string) => r,
     fetchRelease: (repo: string, tag?: string) => fetchReleaseStub(repo, tag),
