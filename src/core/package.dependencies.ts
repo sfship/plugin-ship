@@ -1,6 +1,7 @@
 import type { ShipDependency, ShipGitHubDependency } from './config.dependency.schema.js';
 import { ExpectedError } from './error.js';
 import { normalizeRepo, fetchRelease, fetchGitTag, fetchCciNamespace, fetchSubdirs } from './service.github.js';
+import { type SfdxProject, defaultPackageDirectory } from './sfdx-project.js';
 
 /** Install a specific package version by its 04t ID. */
 export type PackageIdStep = { kind: 'package-id'; versionId: string; name?: string };
@@ -169,4 +170,36 @@ async function resolveShipDeps(deps: ShipDependency[], visited: Set<string>): Pr
  */
 export async function resolveDependencies(deps: ShipDependency[]): Promise<DependencyStep[]> {
   return resolveShipDeps(deps, new Set<string>());
+}
+
+export type DriftResult = {
+  /** Version IDs present in ship.yml but missing from sfdx-project.json. */
+  missing: string[];
+  /** Version IDs present in sfdx-project.json but no longer in ship.yml. */
+  stale: string[];
+  /** versionId → human-readable name, gathered from both sides for use in error output. */
+  names: Map<string, string>;
+};
+
+/** Compares resolved ship.yml package-id steps against the dependencies committed in sfdx-project.json. */
+export function computeDrift(steps: PackageIdStep[], project: SfdxProject): DriftResult {
+  const expected = new Set(steps.map((s) => s.versionId));
+  const names = new Map<string, string>();
+  for (const step of steps) {
+    if (step.name) names.set(step.versionId, step.name);
+  }
+
+  const aliases = project.packageAliases ?? {};
+  const committed = new Set<string>();
+  for (const dep of defaultPackageDirectory(project)?.dependencies ?? []) {
+    const versionId = aliases[dep.package] ?? dep.package;
+    committed.add(versionId);
+    if (dep.package !== versionId && !names.has(versionId)) names.set(versionId, dep.package);
+  }
+
+  return {
+    missing: [...expected].filter((id) => !committed.has(id)),
+    stale: [...committed].filter((id) => !expected.has(id)),
+    names,
+  };
 }

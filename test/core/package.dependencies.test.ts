@@ -1,9 +1,13 @@
 /* eslint-disable camelcase */
 import { strict as assert } from 'node:assert';
 import esmock from 'esmock';
-import type { resolveDependencies as ResolveFn } from '../../src/core/package.dependencies.js';
+import type {
+  resolveDependencies as ResolveFn,
+  computeDrift as ComputeDriftFn,
+} from '../../src/core/package.dependencies.js';
+import type { SfdxProject } from '../../src/core/sfdx-project.js';
 
-type Resolver = { resolveDependencies: typeof ResolveFn };
+type Resolver = { resolveDependencies: typeof ResolveFn; computeDrift: typeof ComputeDriftFn };
 type Release = { tagName: string };
 type GitTag = { message: string };
 
@@ -12,7 +16,7 @@ let fetchGitTagStub: (repo: string, tag: string) => Promise<GitTag | null> = asy
 let fetchCciNamespaceStub: () => Promise<string> = async () => '';
 let fetchSubdirsStub: (repo: string, tag: string, path: string) => Promise<string[]> = async () => [];
 
-const { resolveDependencies }: Resolver = await esmock('../../src/core/package.dependencies.js', {
+const { resolveDependencies, computeDrift }: Resolver = await esmock('../../src/core/package.dependencies.js', {
   '../../src/core/service.github.js': {
     normalizeRepo: (r: string) => r,
     fetchRelease: (repo: string, tag?: string) => fetchReleaseStub(repo, tag),
@@ -116,5 +120,60 @@ describe('resolveDependencies', () => {
       const steps = await resolveDependencies([{ github: 'org/repo' }]);
       assert.equal(steps.length, 1);
     });
+  });
+});
+
+describe('computeDrift', () => {
+  const step = (versionId: string, name?: string) => ({ kind: 'package-id' as const, versionId, name });
+
+  const project = (deps: Array<{ package: string }>, aliases: Record<string, string> = {}): SfdxProject => ({
+    packageDirectories: [{ path: 'force-app', default: true, dependencies: deps }],
+    packageAliases: aliases,
+  });
+
+  it('returns empty arrays when both sides are empty', () => {
+    const { missing, stale } = computeDrift([], project([]));
+    assert.deepEqual(missing, []);
+    assert.deepEqual(stale, []);
+  });
+
+  it('reports missing when a step is not in sfdx-project.json', () => {
+    const { missing } = computeDrift([step('04tAAA')], project([]));
+    assert.deepEqual(missing, ['04tAAA']);
+  });
+
+  it('reports stale when committed is not in steps', () => {
+    const { stale } = computeDrift([], project([{ package: '04tAAA' }]));
+    assert.deepEqual(stale, ['04tAAA']);
+  });
+
+  it('returns empty arrays when both sides match', () => {
+    const { missing, stale } = computeDrift([step('04tAAA')], project([{ package: '04tAAA' }]));
+    assert.deepEqual(missing, []);
+    assert.deepEqual(stale, []);
+  });
+
+  it('resolves packageAlias to versionId for comparison', () => {
+    const { missing, stale } = computeDrift([step('04tAAA')], project([{ package: 'My Pkg' }], { 'My Pkg': '04tAAA' }));
+    assert.deepEqual(missing, []);
+    assert.deepEqual(stale, []);
+  });
+
+  it('carries step name into the names map', () => {
+    const { names } = computeDrift([step('04tAAA', 'My Pkg')], project([]));
+    assert.equal(names.get('04tAAA'), 'My Pkg');
+  });
+
+  it('uses the alias key as name when a packageAlias is resolved', () => {
+    const { names } = computeDrift([step('04tAAA')], project([{ package: 'My Pkg' }], { 'My Pkg': '04tAAA' }));
+    assert.equal(names.get('04tAAA'), 'My Pkg');
+  });
+
+  it('does not overwrite a step name with the alias key', () => {
+    const { names } = computeDrift(
+      [step('04tAAA', 'Step Name')],
+      project([{ package: 'Alias Name' }], { 'Alias Name': '04tAAA' })
+    );
+    assert.equal(names.get('04tAAA'), 'Step Name');
   });
 });

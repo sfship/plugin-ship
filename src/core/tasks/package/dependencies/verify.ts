@@ -1,7 +1,7 @@
 import { StandardColors } from '@salesforce/sf-plugins-core';
 import type { TaskContext, TaskDefinition } from '../../../task.definition.schema.js';
-import { resolveDependencies, type PackageIdStep } from '../../../package.dependencies.js';
-import { readSfdxProject, defaultPackageDirectory } from '../../../sfdx-project.js';
+import { resolveDependencies, computeDrift, type PackageIdStep } from '../../../package.dependencies.js';
+import { readSfdxProject } from '../../../sfdx-project.js';
 import { ExpectedError } from '../../../error.js';
 
 export default {
@@ -10,26 +10,7 @@ export default {
   async run({ flow }: TaskContext): Promise<void> {
     const deps = flow.config.project.package?.dependencies ?? [];
     const steps = (await resolveDependencies(deps)).filter((s): s is PackageIdStep => s.kind === 'package-id');
-    const expected = new Set(steps.map((s) => s.versionId));
-
-    // versionId -> human-readable name, gathered from both sides so drift can name the package.
-    const names = new Map<string, string>();
-    for (const step of steps) {
-      if (step.name) names.set(step.versionId, step.name);
-    }
-
-    const project = readSfdxProject(flow.projectDir);
-    const aliases = project.packageAliases ?? {};
-    const committed = new Set<string>();
-    for (const dep of defaultPackageDirectory(project)?.dependencies ?? []) {
-      const versionId = aliases[dep.package] ?? dep.package;
-      committed.add(versionId);
-      // A committed dep referenced by a packageAlias carries its name in `package`.
-      if (dep.package !== versionId && !names.has(versionId)) names.set(versionId, dep.package);
-    }
-
-    const missing = [...expected].filter((id) => !committed.has(id));
-    const stale = [...committed].filter((id) => !expected.has(id));
+    const { missing, stale, names } = computeDrift(steps, readSfdxProject(flow.projectDir));
 
     if (missing.length || stale.length) {
       const label = (id: string): string => {
@@ -61,6 +42,6 @@ export default {
       );
     }
 
-    flow.log(`Dependencies in sync (${expected.size} package${expected.size === 1 ? '' : 's'}).`);
+    flow.log(`Dependencies in sync (${steps.length} package${steps.length === 1 ? '' : 's'}).`);
   },
 } satisfies TaskDefinition;
