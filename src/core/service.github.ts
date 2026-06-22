@@ -127,6 +127,25 @@ export async function fetchGitTag(repo: string, tagName: string): Promise<{ mess
   return (await tagRes.json()) as { message: string };
 }
 
+/** Basic metadata for a GitHub repository. */
+export type GithubRepo = {
+  full_name: string;
+  description: string | null;
+  default_branch: string;
+  stargazers_count: number;
+  open_issues_count: number;
+  visibility: string;
+};
+
+/** Fetches basic repository metadata from the GitHub API using an explicit token. */
+export async function fetchRepoInfo(repo: string, token: string): Promise<GithubRepo> {
+  const resp = await fetch(`https://api.github.com/repos/${repo}`, {
+    headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json' },
+  });
+  if (!resp.ok) throw new ExpectedError(`GitHub API error: ${resp.status} ${resp.statusText}`);
+  return (await resp.json()) as GithubRepo;
+}
+
 /**
  * Returns the package namespace declared in a CCI repo's `cumulusci.yml` at `ref`.
  * Returns an empty string if the file is missing or declares no namespace.

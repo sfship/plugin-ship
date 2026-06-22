@@ -4,21 +4,11 @@ import { runTask } from '../../run-task.js';
 import { mockTask } from '../../mock-task.js';
 import { ExpectedError } from '../../../../../src/core/error.js';
 import type { ShipConfig } from '../../../../../src/core/config.ship.schema.js';
+import type { GithubRepo } from '../../../../../src/core/service.github.js';
 
 let tokenValue: string | undefined = 'ghp_test';
-
-const info = await mockTask('git/repo/info.js', {
-  'service.github.js': {
-    getGithubToken: () => tokenValue,
-  },
-});
-
-const configWithRepo = (repoUrl: string): ShipConfig => ({
-  project: { slug: 'test', git: { repoUrl } },
-  dir: '.ship',
-});
-
-const mockRepo = {
+let capturedRepo = '';
+let fetchRepoResult: GithubRepo | Error = {
   full_name: 'acme/my-repo',
   description: 'A repo',
   default_branch: 'main',
@@ -27,38 +17,58 @@ const mockRepo = {
   visibility: 'public',
 };
 
-const okFetch = (data: object) => (global.fetch = async () => ({ ok: true, json: async () => data } as Response));
+const info = await mockTask('git/repo/info.js', {
+  'service.github.js': {
+    getGithubToken: () => tokenValue,
+    normalizeRepo: (url: string) => url.replace('https://github.com/', ''),
+    fetchRepoInfo: async (repo: string) => {
+      capturedRepo = repo;
+      if (fetchRepoResult instanceof Error) throw fetchRepoResult;
+      return fetchRepoResult;
+    },
+  },
+});
+
+const configWithRepo = (repoUrl: string): ShipConfig => ({
+  project: { slug: 'test', git: { repoUrl } },
+  dir: '.ship',
+});
+
+const baseContext = { config: configWithRepo('https://github.com/acme/my-repo') };
 
 beforeEach(() => {
   tokenValue = 'ghp_test';
-  okFetch(mockRepo);
+  capturedRepo = '';
+  fetchRepoResult = {
+    full_name: 'acme/my-repo',
+    description: 'A repo',
+    default_branch: 'main',
+    stargazers_count: 42,
+    open_issues_count: 3,
+    visibility: 'public',
+  };
 });
 
 describe('git/repo/info', () => {
   it('logs repo info from the API response', async () => {
-    const { logs } = await runTask(info, { context: { config: configWithRepo('https://github.com/acme/my-repo') } });
+    const { logs } = await runTask(info, { context: baseContext });
     assert.ok(logs.some((l) => l.includes('acme/my-repo')));
     assert.ok(logs.some((l) => l.includes('main')));
     assert.ok(logs.some((l) => l.includes('42')));
   });
 
   it('uses repo-url param over config', async () => {
-    let calledUrl = '';
-    global.fetch = async (url: string | URL | Request) => {
-      calledUrl = String(url);
-      return { ok: true, json: async () => mockRepo } as Response;
-    };
     await runTask(info, {
       params: { 'repo-url': 'https://github.com/other/repo' },
-      context: { config: configWithRepo('https://github.com/acme/my-repo') },
+      context: baseContext,
     });
-    assert.ok(calledUrl.includes('other/repo'));
+    assert.ok(capturedRepo.includes('other/repo'));
   });
 
   it('throws ExpectedError when no token found', async () => {
     tokenValue = undefined;
     await assert.rejects(
-      () => runTask(info, { context: { config: configWithRepo('https://github.com/acme/my-repo') } }),
+      () => runTask(info, { context: baseContext }),
       (e: unknown) => e instanceof ExpectedError && e.message.includes('No GitHub token')
     );
   });
@@ -70,17 +80,10 @@ describe('git/repo/info', () => {
     );
   });
 
-  it('throws ExpectedError when repo url cannot be parsed', async () => {
+  it('throws ExpectedError on API error', async () => {
+    fetchRepoResult = new ExpectedError('GitHub API error: 404 Not Found');
     await assert.rejects(
-      () => runTask(info, { params: { 'repo-url': 'https://not-github.com/foo' } }),
-      (e: unknown) => e instanceof ExpectedError && e.message.includes('Could not parse')
-    );
-  });
-
-  it('throws ExpectedError on non-ok API response', async () => {
-    global.fetch = async () => ({ ok: false, status: 404, statusText: 'Not Found' } as Response);
-    await assert.rejects(
-      () => runTask(info, { context: { config: configWithRepo('https://github.com/acme/my-repo') } }),
+      () => runTask(info, { context: baseContext }),
       (e: unknown) => e instanceof ExpectedError && e.message.includes('404')
     );
   });
