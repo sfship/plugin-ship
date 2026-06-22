@@ -56,6 +56,7 @@ export default {
       flow.runCommand('org:assign:permset', argv)
     )) as AssignPermsetResult;
 
+    // Reassigning perm sets reports as a failure, so we filter those out
     const realFailures = (result.failures ?? []).filter(
       (f) => !f.message.includes('Duplicate PermissionSetAssignment')
     );
