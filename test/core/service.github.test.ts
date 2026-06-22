@@ -13,6 +13,9 @@ import type {
   fetchGitTag as FetchGitTagFn,
   fetchCciNamespace as FetchCciNamespaceFn,
   fetchSubdirs as FetchSubdirsFn,
+  gh as GhFn,
+  fetchFirstCommitSha as FetchFirstCommitShaFn,
+  resolveCommitSha as ResolveCommitShaFn,
 } from '../../src/core/service.github.js';
 
 type GithubService = {
@@ -26,6 +29,9 @@ type GithubService = {
   fetchGitTag: typeof FetchGitTagFn;
   fetchCciNamespace: typeof FetchCciNamespaceFn;
   fetchSubdirs: typeof FetchSubdirsFn;
+  gh: typeof GhFn;
+  fetchFirstCommitSha: typeof FetchFirstCommitShaFn;
+  resolveCommitSha: typeof ResolveCommitShaFn;
 };
 
 let getTokenStub: (service: string, alias: string) => string | null = () => null;
@@ -45,6 +51,9 @@ const {
   fetchGitTag,
   fetchCciNamespace,
   fetchSubdirs,
+  gh,
+  fetchFirstCommitSha,
+  resolveCommitSha,
 }: GithubService = await esmock('../../src/core/service.github.js', {
   '../../src/core/service.js': {
     getToken: (service: string, alias: string) => getTokenStub(service, alias),
@@ -392,5 +401,97 @@ describe('fetchSubdirs', () => {
   it('throws on non-404 errors', async () => {
     global.fetch = async () => ({ ok: false, status: 403, statusText: 'Forbidden' } as Response);
     await assert.rejects(() => fetchSubdirs('org/repo', 'v1.0', 'unpackaged/pre'), /Failed to list/);
+  });
+});
+
+// ---- gh ---------------------------------------------------------------------
+
+describe('gh', () => {
+  it('returns parsed JSON on success', async () => {
+    global.fetch = async () => ({ ok: true, json: async () => ({ sha: 'abc123' }) } as Response);
+    const result = await gh<{ sha: string }>('ghp_test', '/repos/org/repo/git/tags');
+    assert.equal(result.sha, 'abc123');
+  });
+
+  it('throws ExpectedError on non-ok response', async () => {
+    global.fetch = async () =>
+      ({ ok: false, status: 422, statusText: 'Unprocessable', text: async () => 'invalid' } as Response);
+    await assert.rejects(() => gh('ghp_test', '/repos/org/repo/git/tags'), /422/);
+  });
+
+  it('sends JSON body and Content-Type header', async () => {
+    let capturedInit: RequestInit | undefined;
+    global.fetch = async (_url: string | URL | Request, init?: RequestInit) => {
+      capturedInit = init;
+      return { ok: true, json: async () => ({}) } as Response;
+    };
+    await gh('ghp_test', '/repos/org/repo/git/refs', { method: 'POST', body: { ref: 'refs/tags/v1' } });
+    assert.ok((capturedInit?.headers as Record<string, string>)['Content-Type']?.includes('application/json'));
+    assert.ok(String(capturedInit?.body).includes('refs/tags/v1'));
+  });
+});
+
+// ---- fetchFirstCommitSha ----------------------------------------------------
+
+describe('fetchFirstCommitSha', () => {
+  it('returns the commit SHA when there is only one page', async () => {
+    global.fetch = async () =>
+      ({
+        ok: true,
+        headers: { get: () => null },
+        json: async () => [{ sha: 'first-sha' }],
+      } as unknown as Response);
+    assert.equal(await fetchFirstCommitSha('org/repo', 'ghp_test'), 'first-sha');
+  });
+
+  it('fetches the last page when a link header is present', async () => {
+    let callCount = 0;
+    global.fetch = async () => {
+      callCount++;
+      if (callCount === 1)
+        return {
+          ok: true,
+          headers: { get: () => '<https://api.github.com/repos/org/repo/commits?per_page=1&page=42>; rel="last"' },
+          json: async () => [{ sha: 'recent-sha' }],
+        } as unknown as Response;
+      return {
+        ok: true,
+        headers: { get: () => null },
+        json: async () => [{ sha: 'oldest-sha' }],
+      } as unknown as Response;
+    };
+    assert.equal(await fetchFirstCommitSha('org/repo', 'ghp_test'), 'oldest-sha');
+    assert.equal(callCount, 2);
+  });
+
+  it('returns null when the initial fetch fails', async () => {
+    global.fetch = async () => ({ ok: false, status: 404 } as Response);
+    assert.equal(await fetchFirstCommitSha('org/repo', 'ghp_test'), null);
+  });
+});
+
+// ---- resolveCommitSha -------------------------------------------------------
+
+describe('resolveCommitSha', () => {
+  it('returns a 40-char SHA directly without fetching', async () => {
+    const sha = 'a'.repeat(40);
+    const result = await resolveCommitSha(sha, 'ghp_test', 'org/repo');
+    assert.equal(result, sha);
+  });
+
+  it('resolves a branch name to its commit SHA', async () => {
+    global.fetch = async () => ({ ok: true, json: async () => ({ commit: { sha: 'branch-tip-sha' } }) } as Response);
+    assert.equal(await resolveCommitSha('main', 'ghp_test', 'org/repo'), 'branch-tip-sha');
+  });
+
+  it('looks up the default branch when no target is given', async () => {
+    let callCount = 0;
+    global.fetch = async () => {
+      callCount++;
+      if (callCount === 1) return { ok: true, json: async () => ({ default_branch: 'main' }) } as Response;
+      return { ok: true, json: async () => ({ commit: { sha: 'default-sha' } }) } as Response;
+    };
+    assert.equal(await resolveCommitSha(undefined, 'ghp_test', 'org/repo'), 'default-sha');
+    assert.equal(callCount, 2);
   });
 });
