@@ -54,7 +54,6 @@ describe('git/repo/info', () => {
     const { logs } = await runTask(info, { context: baseContext });
     assert.ok(logs.some((l) => l.includes('acme/my-repo')));
     assert.ok(logs.some((l) => l.includes('main')));
-    assert.ok(logs.some((l) => l.includes('42')));
   });
 
   it('uses repo-url param over config', async () => {

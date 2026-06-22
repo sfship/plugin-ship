@@ -44,7 +44,11 @@ function githubHeaders(): Record<string, string> {
 // ---- API types ---------------------------------------------------------------
 
 /** A GitHub release with its associated tag name. */
-export type Release = { tagName: string };
+export type ReleaseRef = { tagName: string };
+
+export type GitTagObject = { sha: string };
+export type Release = { html_url: string };
+export type ReleaseListItem = { tag_name: string; prerelease: boolean };
 
 type GithubContentEntry = {
   name: string;
@@ -80,7 +84,7 @@ export type GithubUser = { login: string };
  * When `tag` is provided, fetches that specific release.
  * When `prerelease` is true, fetches the latest pre-release; otherwise fetches the latest production release.
  */
-export async function fetchRelease(repo: string, tag?: string, prerelease = false): Promise<Release | null> {
+export async function fetchRelease(repo: string, tag?: string, prerelease = false): Promise<ReleaseRef | null> {
   if (prerelease && !tag) {
     const res = await fetch(`https://api.github.com/repos/${repo}/releases?per_page=100`, {
       headers: githubHeaders(),
@@ -198,6 +202,62 @@ export async function downloadDir(repo: string, ref: string, remotePath: string,
       }
     })
   );
+}
+
+// ---- Authenticated API helper ------------------------------------------------
+
+/** Authenticated GitHub API call. Throws ExpectedError on non-2xx. */
+export async function gh<T>(token: string, path: string, init?: { method?: string; body?: unknown }): Promise<T> {
+  const headers: Record<string, string> = {
+    Authorization: `Bearer ${token}`,
+    Accept: 'application/vnd.github+json',
+  };
+  if (init?.body !== undefined) headers['Content-Type'] = 'application/json';
+  const resp = await fetch(`https://api.github.com${path}`, {
+    method: init?.method,
+    headers,
+    body: init?.body !== undefined ? JSON.stringify(init.body) : undefined,
+  });
+  if (!resp.ok) {
+    const text = await resp.text();
+    throw new ExpectedError(`GitHub API ${resp.status} ${resp.statusText} on ${path}: ${text}`);
+  }
+  const data: unknown = await resp.json();
+  return data as T;
+}
+
+/** Returns the SHA of the first commit on the repo's default branch, or null. */
+export async function fetchFirstCommitSha(repo: string, token: string): Promise<string | null> {
+  const headers = { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json' };
+  const resp = await fetch(`https://api.github.com/repos/${repo}/commits?per_page=1`, { headers });
+  if (!resp.ok) return null;
+  const linkHeader = resp.headers.get('link');
+  if (!linkHeader) {
+    const data: unknown = await resp.json();
+    const commits = data as Array<{ sha: string }>;
+    return commits[0]?.sha ?? null;
+  }
+  const lastMatch = linkHeader.match(/<[^>]*[?&]page=(\d+)[^>]*>;\s*rel="last"/);
+  if (!lastMatch) return null;
+  const lastResp = await fetch(`https://api.github.com/repos/${repo}/commits?per_page=1&page=${lastMatch[1]}`, {
+    headers,
+  });
+  if (!lastResp.ok) return null;
+  const lastData: unknown = await lastResp.json();
+  const lastCommits = lastData as Array<{ sha: string }>;
+  return lastCommits[0]?.sha ?? null;
+}
+
+/** Resolves a commit SHA from a full 40-char SHA, branch name, or the repo's default branch. */
+export async function resolveCommitSha(target: string | undefined, token: string, repo: string): Promise<string> {
+  if (target && /^[0-9a-f]{40}$/i.test(target)) return target;
+  let branchName = target;
+  if (!branchName) {
+    const repoInfo = await gh<{ default_branch: string }>(token, `/repos/${repo}`);
+    branchName = repoInfo.default_branch;
+  }
+  const branchInfo = await gh<{ commit: { sha: string } }>(token, `/repos/${repo}/branches/${branchName}`);
+  return branchInfo.commit.sha;
 }
 
 // ---- OAuth device flow -------------------------------------------------------
