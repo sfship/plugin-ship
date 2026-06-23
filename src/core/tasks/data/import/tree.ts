@@ -1,5 +1,10 @@
+import { resolve } from 'node:path';
 import type { TaskContext, TaskDefinition } from '../../../task.definition.schema.js';
 import { resolvePassthroughArgs } from '../../../task.param.js';
+import { pathExists } from '../../../file.js';
+
+/** Conventional plan file imported when neither `plan` nor `files` is given. */
+const DEFAULT_PLAN = 'data/plan.json';
 
 export default {
   description: 'Imports records into an org from tree/plan files. Passthrough for `sf data import tree`.',
@@ -14,7 +19,8 @@ export default {
       name: 'plan',
       type: 'string',
       required: false,
-      description: 'Path to a plan file describing the ordered tree of records to import.',
+      description:
+        'Path to a plan file describing the ordered tree of records to import. Defaults to `.ship/data/plan.json` if present; otherwise the import is skipped.',
     },
     {
       name: 'files',
@@ -24,12 +30,23 @@ export default {
     },
   ],
   async run({ flow, params }: TaskContext): Promise<void> {
+    const overrides: Record<string, string | null> = {};
+
+    // Explicit plan/files win. Otherwise fall back to the conventional
+    // `.ship/data/plan.json`; if a project hasn't created one, there's nothing
+    // to import, so skip rather than fail.
     if (!params['plan'] && !params['files']) {
-      flow.log('No plan or files configured — skipping data import.');
-      return;
+      const defaultPlan = resolve(flow.shipDir, DEFAULT_PLAN);
+      if (!pathExists(defaultPlan, 'file')) {
+        flow.log(`No plan or files configured and no ${DEFAULT_PLAN} found — skipping data import.`);
+        return;
+      }
+      overrides['--plan'] = defaultPlan;
+      flow.log(`Importing records from ${defaultPlan}.`);
     }
-    const alias = flow.orgs.resolveAlias(params['target-org'] as string | undefined);
-    const argv = resolvePassthroughArgs(params, { '--target-org': alias ?? null });
+
+    overrides['--target-org'] = flow.orgs.resolveAlias(params['target-org'] as string | undefined) ?? null;
+    const argv = resolvePassthroughArgs(params, overrides);
     await flow.runCommand('data:import:tree', argv);
     flow.log('Imported records.');
   },

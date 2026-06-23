@@ -1,9 +1,11 @@
 import { strict as assert } from 'node:assert';
+import esmock from 'esmock';
 import { runTask } from '../../run-task.js';
 import tree from '../../../../../src/core/tasks/data/import/tree.js';
+import type { Task } from '../../../../../src/core/task.definition.schema.js';
 
 describe('data/import/tree', () => {
-  it('skips when neither plan nor files is provided', async () => {
+  it('skips when neither plan nor files is provided and no default plan exists', async () => {
     const { commands, logs } = await runTask(tree, {});
     assert.equal(commands.length, 0);
     assert.ok(logs[0]?.includes('skipping'));
@@ -29,5 +31,31 @@ describe('data/import/tree', () => {
   it('logs success', async () => {
     const { logs } = await runTask(tree, { params: { plan: 'data/plan.json' } });
     assert.ok(logs[0]?.includes('Imported'));
+  });
+
+  // — default `.ship/data/plan.json` convention —
+
+  it('falls back to .ship/data/plan.json when it exists and no params are given', async () => {
+    const { default: treeWithPlan }: { default: Pick<Task, 'run'> } = await esmock(
+      '../../../../../src/core/tasks/data/import/tree.js',
+      {
+        '../../../../../src/core/file.js': {
+          pathExists: () => true,
+        },
+      }
+    );
+
+    const { commands, logs } = await runTask(treeWithPlan, { context: { shipDir: '/proj/.ship' } });
+    assert.equal(commands[0]?.id, 'data:import:tree');
+    const planIndex = commands[0]?.argv.indexOf('--plan') ?? -1;
+    assert.notEqual(planIndex, -1);
+    assert.ok(commands[0]?.argv[planIndex + 1]?.endsWith('plan.json'));
+    assert.ok(logs.some((line) => line.includes('plan.json')));
+  });
+
+  it('explicit files take precedence over the default plan', async () => {
+    const { commands } = await runTask(tree, { params: { files: 'data/accounts.json' } });
+    assert.ok(commands[0]?.argv.includes('data/accounts.json'));
+    assert.ok(!commands[0]?.argv.includes('--plan'));
   });
 });
