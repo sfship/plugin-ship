@@ -7,6 +7,13 @@
     "@napi-rs/keyring": "^1.2.0",
     "@oclif/core": "^4",
     "@salesforce/core": "^8.2.7",
+    "@salesforce/plugin-apex": "^3.9.38",
+    "@salesforce/plugin-data": "^4.0.110",
+    "@salesforce/plugin-deploy-retrieve": "^3.24.54",
+    "@salesforce/plugin-org": "^5.11.12",
+    "@salesforce/plugin-packaging": "^2.29.6",
+    "@salesforce/plugin-templates": "^56.18.9",
+    "@salesforce/plugin-user": "^3.10.4",
     "@salesforce/sf-plugins-core": "^12",
     "@salesforce/source-deploy-retrieve": "^12.31.21",
     "yaml": "^2.8.2",
@@ -54,6 +61,15 @@
     "topicSeparator": " ",
     "devPlugins": [
       "@oclif/plugin-help"
+    ],
+    "plugins": [
+      "@salesforce/plugin-deploy-retrieve",
+      "@salesforce/plugin-data",
+      "@salesforce/plugin-packaging",
+      "@salesforce/plugin-org",
+      "@salesforce/plugin-user",
+      "@salesforce/plugin-apex",
+      "@salesforce/plugin-templates"
     ],
     "topics": {
       "ship": {

@@ -4,11 +4,13 @@ import { execCmd, TestSession } from '@salesforce/cli-plugins-testkit';
 /**
  * Tests the `deploy/dev` flow
  *
+ * Runs against the plugin's own `bin/run.js` (testkit's default executable).
+ *
  * Prerequisites:
- * - `yarn build` then `sf plugins link .` so the global `sf` loads this plugin.
+ * - `yarn build` so `lib/` exists for `bin/run.js`.
  * - A dev hub for testkit's AUTO strategy. TestSession authenticates into an
  * isolated stubbed home and does NOT inherit your machine's default hub.
- * Set `TESTKIT_HUB_USERNAME` to your hub's username (not alias).
+ * Set `TESTKIT_AUTH_URL` to the hub's sfdx auth URL.
  */
 
 /** The scratch org the flow creates: `<project slug>:<scratch def name>`. */
@@ -20,7 +22,6 @@ type CountResult = { totalSize: number };
 function count(soql: string): number {
   const result = execCmd<CountResult>(`data query --query "${soql}" --target-org ${TARGET_ORG} --json`, {
     ensureExitCode: 0,
-    cli: 'sf',
   });
   return result.jsonOutput?.result.totalSize ?? -1;
 }
@@ -36,7 +37,6 @@ describe('deploy/dev flow (NUT)', () => {
 
     execCmd('ship flow run deploy/dev', {
       ensureExitCode: 0,
-      cli: 'sf',
       cwd: session.project.dir,
     });
   });
@@ -44,7 +44,7 @@ describe('deploy/dev flow (NUT)', () => {
   after(async () => {
     // The flow created the org, not TestSession, so session.clean() won't remove
     // it — delete it explicitly to avoid leaking a 30-day scratch org per run.
-    execCmd(`org delete scratch --target-org ${TARGET_ORG} --no-prompt`, { cli: 'sf' });
+    execCmd(`org delete scratch --target-org ${TARGET_ORG} --no-prompt`);
     await session?.clean();
   });
 

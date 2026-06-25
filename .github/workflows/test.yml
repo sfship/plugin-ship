@@ -17,6 +17,3 @@ jobs:
       fail-fast: false
     with:
       os: ${{ matrix.os }}
-      # The flow invokes core plugin commands (packaging, deploy, data) in-process,
-      # so the global sf must have this plugin loaded. Link it before the NUTs run.
-      command: 'sf plugins link . --no-install && yarn test:nuts'
