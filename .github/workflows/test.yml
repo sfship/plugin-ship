@@ -5,12 +5,6 @@ on:
   workflow_dispatch:
 
 jobs:
-  check-secret:
-    runs-on: ubuntu-latest
-    steps:
-      - run: |
-          echo "auth_url_set=${{ secrets.TESTKIT_AUTH_URL != '' }}"
-          echo "hub_username_set=${{ secrets.TESTKIT_HUB_USERNAME != '' }}"
   unit-tests:
     uses: salesforcecli/github-workflows/.github/workflows/unitTest.yml@main
   nuts:
@@ -24,3 +18,4 @@ jobs:
       fail-fast: false
     with:
       os: ${{ matrix.os }}
+      nodeVersion: '22'
