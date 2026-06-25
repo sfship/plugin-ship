@@ -35,6 +35,10 @@ describe('deploy/dev flow (NUT)', () => {
       devhubAuthStrategy: 'AUTO',
     });
 
+    // Pin the authenticated hub as the default so the flow's create-org resolves it.
+    const devHub = session.hubOrg.username;
+    if (devHub) execCmd(`config set target-dev-hub=${devHub} --global`, { ensureExitCode: 0, cli: 'sf' });
+
     execCmd('ship flow run deploy/dev', {
       ensureExitCode: 0,
       cwd: session.project.dir,
