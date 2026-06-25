@@ -41,9 +41,6 @@ oclif.lock
 .wireit
 node_modules
 
-# scratch file for local experimentation
-scratch.ts
-
 # wireit stdout/stderr temp files
 stdout*.txt
 stderr*.txt
