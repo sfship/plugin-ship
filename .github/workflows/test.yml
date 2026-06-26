@@ -7,16 +7,25 @@ on:
 jobs:
   unit-tests:
     uses: salesforcecli/github-workflows/.github/workflows/unitTest.yml@main
+
   nuts:
     needs: unit-tests
-    uses: salesforcecli/github-workflows/.github/workflows/nut.yml@main
-    secrets: inherit
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest]
       fail-fast: false
-    with:
-      os: ${{ matrix.os }}
-      # Pinning is a workaround for this issue:
-      # https://github.com/jsforce/jsforce/pull/1807
-      nodeVersion: '22.22.3'
+    env:
+      TESTKIT_AUTH_URL: ${{ secrets.TESTKIT_AUTH_URL }}
+      SF_USE_GENERIC_UNIX_KEYCHAIN: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          # Pinning is a workaround for this issue:
+          # https://github.com/jsforce/jsforce/pull/1807
+          node-version: '22.22.3'
+      - run: npm install -g @salesforce/cli
+      - run: yarn install --frozen-lockfile
+      - run: yarn build
+      - run: yarn test:nuts
