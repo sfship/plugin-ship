@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import { strict as assert } from 'node:assert';
 import { execCmd, TestSession } from '@salesforce/cli-plugins-testkit';
 
@@ -21,6 +22,7 @@ type CountResult = { totalSize: number };
 /** Runs a SOQL count against the flow's scratch org and returns the row count. */
 function count(soql: string): number {
   const result = execCmd<CountResult>(`data query --query "${soql}" --target-org ${TARGET_ORG} --json`, {
+    cli: 'sf',
     ensureExitCode: 0,
   });
   return result.jsonOutput?.result.totalSize ?? -1;
@@ -34,6 +36,20 @@ describe('deploy/dev flow (NUT)', () => {
       project: { gitClone: 'https://github.com/bdematt/Mock-Ship-Project.git' },
       devhubAuthStrategy: 'AUTO',
     });
+
+    // AUTO authenticates the hub from TESTKIT_AUTH_URL and sets it as the default
+    // dev hub. Verify that before running the flow.
+    const result = execCmd<{
+      devHubs?: Array<{ isDefaultDevHubUsername?: boolean }>;
+      nonScratchOrgs?: Array<{ isDevHub?: boolean; isDefaultDevHubUsername?: boolean }>;
+    }>('org list --json', { ensureExitCode: 0 }).jsonOutput?.result;
+
+    const hub = result?.devHubs?.[0] ?? result?.nonScratchOrgs?.find((o) => o.isDevHub);
+
+    assert.ok(
+      hub?.isDefaultDevHubUsername,
+      'AUTO did not set a default dev hub — is TESTKIT_AUTH_URL set in this environment?'
+    );
 
     execCmd('ship flow run deploy/dev', {
       ensureExitCode: 0,
