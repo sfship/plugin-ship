@@ -34,11 +34,10 @@ describe('deploy/dev flow (NUT)', () => {
   before(async () => {
     session = await TestSession.create({
       project: { gitClone: 'https://github.com/bdematt/Mock-Ship-Project.git' },
-      devhubAuthStrategy: 'AUTO',
+      devhubAuthStrategy: 'AUTH_URL',
     });
 
-    // AUTO authenticates the hub from TESTKIT_AUTH_URL and sets it as the default
-    // dev hub. Verify that before running the flow.
+    // Verify devhub set before running the flow.
     const result = execCmd<{
       devHubs?: Array<{ isDefaultDevHubUsername?: boolean }>;
       nonScratchOrgs?: Array<{ isDevHub?: boolean; isDefaultDevHubUsername?: boolean }>;
