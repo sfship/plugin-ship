@@ -32,8 +32,6 @@ describe('deploy/dev flow (NUT)', () => {
   let session: TestSession;
 
   before(async () => {
-    const raw = process.env.TESTKIT_AUTH_URL ?? '';
-    console.log('len', raw.length, 'startsForce', raw.startsWith('force://'), 'tail', JSON.stringify(raw.slice(-3)));
     session = await TestSession.create({
       project: { gitClone: 'https://github.com/bdematt/Mock-Ship-Project.git' },
       devhubAuthStrategy: 'AUTH_URL',
