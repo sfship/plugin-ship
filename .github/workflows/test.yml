@@ -5,19 +5,20 @@ on:
   workflow_dispatch:
 
 jobs:
-  nuts:
+  check-secret:
     runs-on: ubuntu-latest
-    env:
-      TESTKIT_AUTH_URL: ${{ secrets.TESTKIT_AUTH_URL }}
-      SF_USE_GENERIC_UNIX_KEYCHAIN: true
-      SF_DISABLE_TELEMETRY: true
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-      - run: npm install -g @salesforce/cli@2.135.7
-      - run: sf version --verbose # warm-up: absorb the first-run notice here, not inside testkit's captured auth
-      - run: yarn install --frozen-lockfile
-      - run: yarn build
-      - run: yarn test:nuts
+      - run: if [ -z "$TESTKIT_AUTH_URL" ]; then echo "NOT SET"; else echo "len=${#TESTKIT_AUTH_URL}"; fi
+        env:
+          TESTKIT_AUTH_URL: ${{ secrets.TESTKIT_AUTH_URL }}
+
+  nuts:
+    uses: salesforcecli/github-workflows/.github/workflows/nut.yml@main
+    secrets: inherit
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+      fail-fast: false
+    with:
+      os: ${{ matrix.os }}
+      nodeVersion: '20'
