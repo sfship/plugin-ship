@@ -91,6 +91,25 @@ describe('ship project init', () => {
     assert.equal(opts.repoUrl, 'https://github.com/acme/repo');
   });
 
+  it('uses flags instead of prompting when all are provided', async () => {
+    await ProjectInit.run([
+      '--name',
+      'FlagPkg',
+      '--namespace',
+      'flagns',
+      '--package-type',
+      'Unlocked',
+      '--repo-url',
+      'https://github.com/acme/flag',
+    ]);
+    assert.equal(inputCallCount, 0, 'no prompts should fire when flags are provided');
+    const [opts] = initArgs as [{ packageName: string; namespace: string; packageType: string; repoUrl: string }];
+    assert.equal(opts.packageName, 'FlagPkg');
+    assert.equal(opts.namespace, 'flagns');
+    assert.equal(opts.packageType, 'Unlocked');
+    assert.equal(opts.repoUrl, 'https://github.com/acme/flag');
+  });
+
   it('logs created files', async () => {
     initResult = { created: ['ship.yml', '.ship/orgs/dev.json'], skipped: [] };
     await ProjectInit.run([]);

@@ -27,6 +27,19 @@ export default class ProjectInit extends SfCommand<void> {
   public static readonly enableJsonFlag = false;
 
   public static readonly flags = {
+    name: Flags.string({
+      summary: messages.getMessage('flags.name.summary'),
+    }),
+    namespace: Flags.string({
+      summary: messages.getMessage('flags.namespace.summary'),
+    }),
+    'package-type': Flags.option({
+      summary: messages.getMessage('flags.package-type.summary'),
+      options: ['Managed', 'Unlocked'] as const,
+    })(),
+    'repo-url': Flags.string({
+      summary: messages.getMessage('flags.repo-url.summary'),
+    }),
     template: Flags.string({
       summary: messages.getMessage('flags.template.summary'),
       default: 'standard',
@@ -42,17 +55,19 @@ export default class ProjectInit extends SfCommand<void> {
   public async run(): Promise<void> {
     const { flags } = await this.parse(ProjectInit);
 
-    const packageName = await input({ message: 'Project Name:' });
-    const namespaceRaw = await input({ message: 'Namespace:' });
+    const packageName = flags.name ?? (await input({ message: 'Project Name:' }));
+    const namespaceRaw = flags.namespace ?? (await input({ message: 'Namespace:' }));
     const namespace = namespaceRaw.trim() || undefined;
-    const packageType = await select({
-      message: 'Package Type:',
-      choices: [
-        { value: 'Managed', name: '2GP Managed' },
-        { value: 'Unlocked', name: 'Unlocked' },
-      ],
-    });
-    const repoUrlRaw = await input({ message: 'GitHub Repository URL:' });
+    const packageType =
+      flags['package-type'] ??
+      (await select({
+        message: 'Package Type:',
+        choices: [
+          { value: 'Managed', name: '2GP Managed' },
+          { value: 'Unlocked', name: 'Unlocked' },
+        ],
+      }));
+    const repoUrlRaw = flags['repo-url'] ?? (await input({ message: 'GitHub Repository URL:' }));
     const repoUrl = repoUrlRaw.trim() || undefined;
 
     const cwd = resolve('.');
