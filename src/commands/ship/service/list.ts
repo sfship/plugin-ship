@@ -3,7 +3,7 @@ import { Messages } from '@salesforce/core';
 import { listMetas } from '../../../core/service.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
-const messages = Messages.loadMessages('plugin-ship', 'ship.service.list');
+const messages = Messages.loadMessages('@sfship/plugin-ship', 'ship.service.list');
 
 /** Lists all connected services. */
 export default class ServiceList extends SfCommand<void> {

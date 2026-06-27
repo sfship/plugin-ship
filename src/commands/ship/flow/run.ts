@@ -11,7 +11,7 @@ import { runFlow } from '../../../core/flow.runner.js';
 import { OrgRegistry } from '../../../core/org.registry.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
-const messages = Messages.loadMessages('plugin-ship', 'ship.flow.run');
+const messages = Messages.loadMessages('@sfship/plugin-ship', 'ship.flow.run');
 
 /** Executes a built-in flow or one defined in `ship.yml`. */
 export default class FlowRun extends SfCommand<void> {

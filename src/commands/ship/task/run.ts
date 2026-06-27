@@ -13,7 +13,7 @@ import { Store } from '../../../core/flow.store.js';
 import { handleError } from '../../../core/error.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
-const messages = Messages.loadMessages('plugin-ship', 'ship.task.run');
+const messages = Messages.loadMessages('@sfship/plugin-ship', 'ship.task.run');
 
 /** Runs a single task directly, outside of a flow. */
 export default class TaskRun extends SfCommand<void> {

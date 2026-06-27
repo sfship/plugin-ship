@@ -4,7 +4,7 @@ import { Messages } from '@salesforce/core';
 import { getMeta } from '../../../core/service.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
-const messages = Messages.loadMessages('plugin-ship', 'ship.service.info');
+const messages = Messages.loadMessages('@sfship/plugin-ship', 'ship.service.info');
 
 /** Shows details for a stored service credential. */
 export default class ServiceInfo extends SfCommand<void> {

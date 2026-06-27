@@ -5,7 +5,7 @@ import { TaskRegistry } from '../../../core/task.registry.js';
 import { renderTree } from '../../../core/tree.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
-const messages = Messages.loadMessages('plugin-ship', 'ship.task.list');
+const messages = Messages.loadMessages('@sfship/plugin-ship', 'ship.task.list');
 
 /** Lists all available tasks. */
 export default class TaskList extends SfCommand<void> {

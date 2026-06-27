@@ -4,7 +4,7 @@ import { Messages } from '@salesforce/core';
 import { setGithubToken, requestDeviceCode, pollForToken, fetchGithubUser } from '../../../../core/service.github.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
-const messages = Messages.loadMessages('plugin-ship', 'service.connect.github');
+const messages = Messages.loadMessages('@sfship/plugin-ship', 'service.connect.github');
 
 /** Connects a GitHub account via OAuth device flow. */
 export default class ServiceConnectGithub extends SfCommand<void> {

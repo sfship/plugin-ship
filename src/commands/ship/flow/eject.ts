@@ -7,7 +7,7 @@ import { loadConfig, resolveProjectPaths } from '../../../core/config.loader.js'
 import { FlowRegistry, builtinsDir } from '../../../core/flow.registry.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
-const messages = Messages.loadMessages('plugin-ship', 'ship.flow.eject');
+const messages = Messages.loadMessages('@sfship/plugin-ship', 'ship.flow.eject');
 
 /** Copies a built-in flow into the project for customization. */
 export default class FlowEject extends SfCommand<void> {

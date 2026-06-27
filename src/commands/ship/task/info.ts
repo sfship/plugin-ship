@@ -6,7 +6,7 @@ import { TaskRegistry } from '../../../core/task.registry.js';
 import { formatTaskPreview } from '../../../core/task.view.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
-const messages = Messages.loadMessages('plugin-ship', 'ship.task.info');
+const messages = Messages.loadMessages('@sfship/plugin-ship', 'ship.task.info');
 
 /** Shows description, params, and outputs for a task. */
 export default class TaskInfo extends SfCommand<void> {

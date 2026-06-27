@@ -5,7 +5,7 @@ import { Messages } from '@salesforce/core';
 import { initProject } from '../../../core/project.init.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
-const messages = Messages.loadMessages('plugin-ship', 'ship.project.init');
+const messages = Messages.loadMessages('@sfship/plugin-ship', 'ship.project.init');
 
 export default class ProjectInit extends SfCommand<void> {
   public static readonly summary = messages.getMessage('summary');

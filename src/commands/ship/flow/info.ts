@@ -7,7 +7,7 @@ import { asError } from '../../../core/error.js';
 import { formatFlowPreview } from '../../../core/flow.view.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
-const messages = Messages.loadMessages('plugin-ship', 'ship.flow.info');
+const messages = Messages.loadMessages('@sfship/plugin-ship', 'ship.flow.info');
 
 /** Shows description, params, and steps for a flow. */
 export default class FlowInfo extends SfCommand<void> {

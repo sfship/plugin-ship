@@ -1,5 +1,5 @@
 {
-  "name": "plugin-ship",
+  "name": "@sfship/plugin-ship",
   "description": "Salesforce CLI plugin for managing the full development and release lifecycle of second-generation managed and unlocked packages.",
   "version": "1.0.0-beta.0",
   "dependencies": {

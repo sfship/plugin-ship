@@ -5,7 +5,7 @@ import { FlowRegistry } from '../../../core/flow.registry.js';
 import { renderTree } from '../../../core/tree.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
-const messages = Messages.loadMessages('plugin-ship', 'ship.flow.list');
+const messages = Messages.loadMessages('@sfship/plugin-ship', 'ship.flow.list');
 
 /** Lists all flows defined in ship.yml. */
 export default class FlowList extends SfCommand<void> {
