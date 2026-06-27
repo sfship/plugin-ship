@@ -1,3 +1,4 @@
+/* eslint-disable camelcase */
 import { join } from 'node:path';
 import { parse } from 'yaml';
 import { ensureDir, writeBinary } from './file.js';
@@ -76,6 +77,19 @@ type TokenPollResponse = {
 
 /** A GitHub user object. */
 export type GithubUser = { login: string };
+
+/** Fetches the authenticated user and their granted OAuth scopes. */
+export async function fetchGithubUser(token: string): Promise<{ user: GithubUser; scopes: string[] }> {
+  const resp = await fetch('https://api.github.com/user', {
+    headers: { Authorization: `Bearer ${token}`, 'User-Agent': 'plugin-ship' },
+  });
+  const user = (await resp.json()) as GithubUser;
+  const scopes = (resp.headers.get('x-oauth-scopes') ?? '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+  return { user, scopes };
+}
 
 // ---- API helpers -------------------------------------------------------------
 
@@ -272,7 +286,7 @@ export async function requestDeviceCode(): Promise<DeviceCodeResponse> {
   const resp = await fetch(DEVICE_CODE_URL, {
     method: 'POST',
     headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
-    // eslint-disable-next-line camelcase
+
     body: JSON.stringify({ client_id: CLIENT_ID, scope: SCOPE }),
   });
   return resp.json() as Promise<DeviceCodeResponse>;
@@ -285,11 +299,10 @@ export async function pollForToken(deviceCode: string, interval: number): Promis
     method: 'POST',
     headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      // eslint-disable-next-line camelcase
       client_id: CLIENT_ID,
-      // eslint-disable-next-line camelcase
+
       device_code: deviceCode,
-      // eslint-disable-next-line camelcase
+
       grant_type: 'urn:ietf:params:oauth:grant-type:device_code',
     }),
   });

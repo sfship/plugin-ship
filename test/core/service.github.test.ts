@@ -16,6 +16,7 @@ import type {
   gh as GhFn,
   fetchFirstCommitSha as FetchFirstCommitShaFn,
   resolveCommitSha as ResolveCommitShaFn,
+  fetchGithubUser as FetchGithubUserFn,
 } from '../../src/core/service.github.js';
 
 type GithubService = {
@@ -32,6 +33,7 @@ type GithubService = {
   gh: typeof GhFn;
   fetchFirstCommitSha: typeof FetchFirstCommitShaFn;
   resolveCommitSha: typeof ResolveCommitShaFn;
+  fetchGithubUser: typeof FetchGithubUserFn;
 };
 
 let getTokenStub: (service: string, alias: string) => string | null = () => null;
@@ -54,6 +56,7 @@ const {
   gh,
   fetchFirstCommitSha,
   resolveCommitSha,
+  fetchGithubUser,
 }: GithubService = await esmock('../../src/core/service.github.js', {
   '../../src/core/service.js': {
     getToken: (service: string, alias: string) => getTokenStub(service, alias),
@@ -467,6 +470,31 @@ describe('fetchFirstCommitSha', () => {
   it('returns null when the initial fetch fails', async () => {
     global.fetch = async () => ({ ok: false, status: 404 } as Response);
     assert.equal(await fetchFirstCommitSha('org/repo', 'ghp_test'), null);
+  });
+});
+
+// ---- fetchGithubUser --------------------------------------------------------
+
+describe('fetchGithubUser', () => {
+  it('returns the authenticated user and their scopes', async () => {
+    global.fetch = async () =>
+      ({
+        json: async () => ({ login: 'testuser' }),
+        headers: { get: (key: string) => (key === 'x-oauth-scopes' ? 'repo, user' : null) },
+      } as unknown as Response);
+    const { user, scopes } = await fetchGithubUser('ghp_test');
+    assert.equal(user.login, 'testuser');
+    assert.deepEqual(scopes, ['repo', 'user']);
+  });
+
+  it('returns an empty scopes array when the header is absent', async () => {
+    global.fetch = async () =>
+      ({
+        json: async () => ({ login: 'testuser' }),
+        headers: { get: () => null },
+      } as unknown as Response);
+    const { scopes } = await fetchGithubUser('ghp_test');
+    assert.deepEqual(scopes, []);
   });
 });
 
