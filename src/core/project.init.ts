@@ -127,7 +127,7 @@ function buildOrgDefs(packageName: string): Record<string, object> {
   };
 }
 
-export function initProject(options: InitOptions, projectDir: string): InitResult {
+export function initProject(options: InitOptions, projectDir: string, readmeExisted = false): InitResult {
   const result: InitResult = { created: [], skipped: [] };
 
   const orgsDir = join(projectDir, '.ship', 'orgs');
@@ -136,7 +136,15 @@ export function initProject(options: InitOptions, projectDir: string): InitResul
   patchSfdxProjectJson(projectDir, options);
   appendToGitignore(projectDir);
   appendToForceignore(projectDir);
-  writeIfAbsent(join(projectDir, 'README.md'), 'README.md', readText(join(templateDir, 'README.md')), result);
+  // project:generate always writes a README, so writeIfAbsent can't tell ours from the user's.
+  // readmeExisted reflects whether one was present *before* generate ran: if not, the only
+  // README is generate's boilerplate, so replace it with ship's; otherwise leave the user's.
+  if (readmeExisted) {
+    result.skipped.push('README.md');
+  } else {
+    writeText(join(projectDir, 'README.md'), readText(join(templateDir, 'README.md')));
+    result.created.push('README.md');
+  }
   // project:generate scaffolds config/project-scratch-def.json; ship manages orgs via .ship/orgs/ instead.
   removeDir(join(projectDir, 'config'));
   writeIfAbsent(join(projectDir, 'ship.yml'), 'ship.yml', buildShipYml(options), result);
