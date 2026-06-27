@@ -15,4 +15,7 @@
  */
 module.exports = {
   extends: ['eslint-config-salesforce-typescript', 'eslint-config-salesforce-license', 'eslint-config-prettier'],
+  rules: {
+    'header/header': 'off',
+  },
 };
