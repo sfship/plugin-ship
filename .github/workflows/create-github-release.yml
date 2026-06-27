@@ -1,0 +1,24 @@
+name: create-github-release
+
+on:
+  push:
+    branches:
+      - main
+      - prerelease/**
+    tags-ignore:
+      - '*'
+  workflow_dispatch:
+    inputs:
+      prerelease:
+        type: string
+        description: 'Name to use for the prerelease: beta, dev, etc. NOTE: If this is already set in the package.json, it does not need to be passed in here.'
+
+jobs:
+  release:
+    uses: salesforcecli/github-workflows/.github/workflows/create-github-release.yml@main
+    secrets: inherit
+    with:
+      prerelease: ${{ inputs.prerelease }}
+      # On a push, skip the release if there are no semantic commits.
+      # On a manual run, force a release even with no new semantic commits.
+      skip-on-empty: ${{ github.event_name == 'push' }}
