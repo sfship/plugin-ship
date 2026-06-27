@@ -13,7 +13,7 @@
  */
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { fileExists, ensureDir, readText, writeText, writeJson, appendText, removeFile } from './file.js';
+import { fileExists, ensureDir, readText, writeText, writeJson, appendText, removeDir } from './file.js';
 
 const templateDir = join(fileURLToPath(import.meta.url), '..', 'templates');
 
@@ -137,8 +137,8 @@ export function initProject(options: InitOptions, projectDir: string): InitResul
   appendToGitignore(projectDir);
   appendToForceignore(projectDir);
   writeIfAbsent(join(projectDir, 'README.md'), 'README.md', readText(join(templateDir, 'README.md')), result);
-  const legacyConfigDir = join(projectDir, 'config');
-  if (fileExists(legacyConfigDir)) removeFile(legacyConfigDir);
+  // project:generate scaffolds config/project-scratch-def.json; ship manages orgs via .ship/orgs/ instead.
+  removeDir(join(projectDir, 'config'));
   writeIfAbsent(join(projectDir, 'ship.yml'), 'ship.yml', buildShipYml(options), result);
 
   for (const [name, def] of Object.entries(buildOrgDefs(options.packageName))) {

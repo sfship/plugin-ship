@@ -76,6 +76,11 @@ export function removeFile(path: string): void {
   rmSync(path);
 }
 
+/** Recursively removes a directory and its contents. No-op if it does not exist. */
+export function removeDir(path: string): void {
+  rmSync(path, { recursive: true, force: true });
+}
+
 /** Canonicalizes a task or flow name into its registry key form: trimmed, lowercased, forward-slash separated, no leading slash. */
 export function normalizePath(name: string): string {
   return name.trim().toLowerCase().replaceAll('\\', '/').replace(/^\/+/, '');

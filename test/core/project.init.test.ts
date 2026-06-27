@@ -39,7 +39,7 @@ const { initProject }: Module = await esmock('../../src/core/project.init.js', {
     writeJson: (path: string, data: unknown) => {
       writtenJson.set(path, data);
     },
-    removeFile: (path: string) => {
+    removeDir: (path: string) => {
       removedPaths.push(path);
     },
   },
@@ -197,17 +197,10 @@ describe('initProject', () => {
     });
   });
 
-  describe('legacy config directory', () => {
-    it('removes the config directory when it exists', () => {
-      const configDir = join(DIR, 'config');
-      existingPaths.add(configDir);
+  describe('config directory', () => {
+    it('removes the generated config directory', () => {
       initProject(base, DIR);
-      assert.ok(removedPaths.includes(configDir));
-    });
-
-    it('does not remove config directory when it does not exist', () => {
-      initProject(base, DIR);
-      assert.equal(removedPaths.length, 0);
+      assert.ok(removedPaths.includes(join(DIR, 'config')));
     });
   });
 
