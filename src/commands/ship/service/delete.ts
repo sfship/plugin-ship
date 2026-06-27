@@ -25,7 +25,7 @@ export default class ServiceDelete extends SfCommand<void> {
     this.log('');
     this.styledHeader('Service Delete');
 
-    const alias = args.alias ?? 'default';
+    const alias = args.alias;
     const meta = getMeta(args.service, alias);
     if (!meta) {
       this.error(`No credential found for "${args.service}" with alias "${alias}".`, { exit: 1 });
