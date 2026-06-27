@@ -11,11 +11,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { basename, dirname, resolve } from 'node:path';
+import { basename, dirname, join, resolve } from 'node:path';
 import { input, select } from '@inquirer/prompts';
 import { SfCommand, Flags, StandardColors } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
 import { initProject } from '../../../core/project.init.js';
+import { fileExists } from '../../../core/file.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@sfship/plugin-ship', 'ship.project.init');
@@ -71,6 +72,8 @@ export default class ProjectInit extends SfCommand<void> {
     const repoUrl = repoUrlRaw.trim() || undefined;
 
     const cwd = resolve('.');
+    // Capture this before project:generate, which always writes its own README.
+    const readmeExisted = fileExists(join(cwd, 'README.md'));
     const generateArgs = ['--name', basename(cwd), '--template', flags.template, '--output-dir', dirname(cwd)];
     if (flags['api-version']) generateArgs.push('--api-version', flags['api-version']);
     if (flags['lwc-language']) generateArgs.push('--lwc-language', flags['lwc-language']);
@@ -78,7 +81,7 @@ export default class ProjectInit extends SfCommand<void> {
     this.log('');
     await this.config.runCommand('project:generate', generateArgs);
 
-    const { created, skipped } = initProject({ packageName, namespace, packageType, repoUrl }, cwd);
+    const { created, skipped } = initProject({ packageName, namespace, packageType, repoUrl }, cwd, readmeExisted);
 
     this.log('');
     for (const f of created) this.log(`  created  ${f}`);

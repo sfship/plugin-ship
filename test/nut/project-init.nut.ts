@@ -57,6 +57,11 @@ describe('ship project init (NUT)', () => {
     assert.ok(existsSync(join(projectDir, '.ship', 'orgs', 'dev.json')));
   });
 
+  it('replaces the generated README with the ship template', () => {
+    const readme = readFileSync(join(projectDir, 'README.md'), 'utf8');
+    assert.ok(readme.includes('# SF Ship Documentation'), 'ship README should replace project:generate boilerplate');
+  });
+
   it('removes the generated config directory', () => {
     assert.equal(existsSync(join(projectDir, 'config')), false);
   });
