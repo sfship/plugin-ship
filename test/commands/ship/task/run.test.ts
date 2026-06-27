@@ -70,6 +70,7 @@ describe('ship task run', () => {
     let receivedParams: Record<string, unknown> | undefined;
     resolveTaskResult = {
       ...baseTask,
+      params: [{ name: 'tag', type: 'string', required: false, description: 'Git tag' }],
       run: async ({ params }) => {
         receivedParams = params;
       },
