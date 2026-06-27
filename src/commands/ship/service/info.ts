@@ -25,7 +25,7 @@ export default class ServiceInfo extends SfCommand<void> {
 
     const { args } = await this.parse(ServiceInfo);
 
-    const meta = getMeta(args.service, args.alias ?? 'default');
+    const meta = getMeta(args.service, args.alias);
     if (!meta) {
       this.error(`No credential found for "${args.service}" with alias "${args.alias}".`, { exit: 1 });
     }
