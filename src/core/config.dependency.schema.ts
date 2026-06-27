@@ -1,0 +1,28 @@
+/* c8 ignore start */
+import { z } from 'zod';
+
+/** A plugin-ship GitHub repository dependency. Resolves via the annotated tag message on the latest (or pinned) release. */
+export const ShipGitHubDependencySchema = z.object({
+  /** GitHub repository as a full URL or `owner/repo` slug. */
+  github: z.string(),
+  /** Pin to a specific release tag instead of resolving to latest. */
+  tag: z.string().optional(),
+  /** Human-readable label for this dependency, used to name the repo's own package step in log output. */
+  name: z.string().optional(),
+});
+
+/** A plugin-ship package dependency identified by package version ID. */
+export const ShipPackageIdDependencySchema = z.object({
+  /** The 04t package version ID. */
+  versionId: z.string(),
+  /** Human-readable label used in log output. */
+  name: z.string().optional(),
+});
+
+/** A single entry in a `ship.yml` dependency list. */
+export const ShipDependencySchema = z.union([ShipGitHubDependencySchema, ShipPackageIdDependencySchema]);
+
+export type ShipGitHubDependency = z.infer<typeof ShipGitHubDependencySchema>;
+export type ShipPackageIdDependency = z.infer<typeof ShipPackageIdDependencySchema>;
+export type ShipDependency = z.infer<typeof ShipDependencySchema>;
+/* c8 ignore stop */

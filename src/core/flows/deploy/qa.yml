@@ -1,0 +1,51 @@
+description: Set up a QA environment using the latest beta managed package.
+steps:
+  create-org:
+    task: org/create/scratch
+    params:
+      scratch-def: qa
+      duration: 7
+      no-namespace: true
+  package-data:
+    task: git/release/fetch
+    params:
+      prerelease: true
+  update-dependencies:
+    task: package/install/dependencies
+    params:
+      target-org: ${{ steps.create-org.target-org }}
+  check-pre:
+    task: util/file/exists
+    params:
+      path: unpackaged/pre
+  deploy-pre:
+    if:
+      value: ${{ steps.check-pre.exists }}
+    task: project/deploy/start
+    params:
+      target-org: ${{ steps.create-org.target-org }}
+      source-dir: unpackaged/pre
+  install:
+    task: package/install
+    params:
+      target-org: ${{ steps.create-org.target-org }}
+      version-id: ${{ steps.package-data.version-id }}
+  check-post:
+    task: util/file/exists
+    params:
+      path: unpackaged/post
+  deploy-post:
+    if:
+      value: ${{ steps.check-post.exists }}
+    task: project/deploy/start
+    params:
+      target-org: ${{ steps.create-org.target-org }}
+      source-dir: unpackaged/post
+  assign-permsets:
+    task: org/assign/permsets
+    params:
+      target-org: ${{ steps.create-org.target-org }}
+  load-data:
+    task: data/import/tree
+    params:
+      target-org: ${{ steps.create-org.target-org }}

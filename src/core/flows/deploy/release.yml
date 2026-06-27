@@ -1,0 +1,38 @@
+description: Install the latest production release into a fresh scratch org and run Apex tests.
+steps:
+  create-org:
+    task: org/create/scratch
+    params:
+      scratch-def: release
+      duration: 1
+      no-namespace: true
+  find-release:
+    task: git/release/fetch
+    params:
+      prerelease: false
+  update-dependencies:
+    task: package/install/dependencies
+    params:
+      target-org: ${{ steps.create-org.target-org }}
+  install:
+    task: package/install
+    params:
+      target-org: ${{ steps.create-org.target-org }}
+      version-id: ${{ steps.find-release.version-id }}
+  assign-permsets:
+    task: org/assign/permsets
+    params:
+      target-org: ${{ steps.create-org.target-org }}
+  find-test-classes:
+    task: util/file/find
+    params:
+      path: force-app/main/default/classes
+      pattern: ${{ config.project.package.testPattern }}
+  run-tests:
+    if:
+      value: ${{ steps.find-test-classes.count }}
+    task: apex/run/test
+    params:
+      target-org: ${{ steps.create-org.target-org }}
+      class-names: ${{ steps.find-test-classes.files }}
+      namespace: ${{ config.project.package.namespace }}

@@ -1,0 +1,60 @@
+description: Simulate an upgrade from the latest production release to the latest beta, with full dependency and unpackaged metadata setup.
+steps:
+  create-org:
+    task: org/create/scratch
+    params:
+      scratch-def: regression
+      duration: 1
+      no-namespace: true
+  find-release:
+    task: git/release/fetch
+    params:
+      prerelease: false
+  find-beta:
+    task: git/release/fetch
+    params:
+      prerelease: true
+  update-dependencies:
+    task: package/install/dependencies
+    params:
+      target-org: ${{ steps.create-org.target-org }}
+  check-pre:
+    task: util/file/exists
+    params:
+      path: unpackaged/pre
+  deploy-pre:
+    if:
+      value: ${{ steps.check-pre.exists }}
+    task: project/deploy/start
+    params:
+      target-org: ${{ steps.create-org.target-org }}
+      source-dir: unpackaged/pre
+  install-release:
+    task: package/install
+    params:
+      target-org: ${{ steps.create-org.target-org }}
+      version-id: ${{ steps.find-release.version-id }}
+  install-beta:
+    task: package/install
+    params:
+      target-org: ${{ steps.create-org.target-org }}
+      version-id: ${{ steps.find-beta.version-id }}
+  assign-permsets:
+    task: org/assign/permsets
+    params:
+      target-org: ${{ steps.create-org.target-org }}
+  check-post:
+    task: util/file/exists
+    params:
+      path: unpackaged/post
+  deploy-post:
+    if:
+      value: ${{ steps.check-post.exists }}
+    task: project/deploy/start
+    params:
+      target-org: ${{ steps.create-org.target-org }}
+      source-dir: unpackaged/post
+  load-data:
+    task: data/import/tree
+    params:
+      target-org: ${{ steps.create-org.target-org }}

@@ -1,0 +1,26 @@
+description: Set up a scratch org as a development environment for unmanaged metadata.
+steps:
+  create-org:
+    task: org/create/scratch
+    params:
+      scratch-def: dev
+      duration: 30
+  update-dependencies:
+    task: package/install/dependencies
+    params:
+      target-org: ${{ steps.create-org.target-org }}
+  deploy:
+    task: project/deploy/start
+    params:
+      target-org: ${{ steps.create-org.target-org }}
+  assign-permsets:
+    task: org/assign/permsets
+    params:
+      target-org: ${{ steps.create-org.target-org }}
+  load-data:
+    task: data/import/tree
+    if:
+      value: ${{ steps.create-org.created }}
+      equals: true
+    params:
+      target-org: ${{ steps.create-org.target-org }}
