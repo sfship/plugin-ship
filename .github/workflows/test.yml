@@ -18,6 +18,7 @@ jobs:
     env:
       TESTKIT_AUTH_URL: ${{ secrets.TESTKIT_AUTH_URL }}
       SF_USE_GENERIC_UNIX_KEYCHAIN: true
+      HUSKY: '0'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
