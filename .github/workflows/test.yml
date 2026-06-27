@@ -6,7 +6,22 @@ on:
 
 jobs:
   unit-tests:
-    uses: salesforcecli/github-workflows/.github/workflows/unitTest.yml@main
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+      fail-fast: false
+    env:
+      HUSKY: '0'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: yarn
+      - run: yarn install --frozen-lockfile
+      - run: yarn build
+      - run: yarn test:only
 
   nuts:
     needs: unit-tests
@@ -18,6 +33,7 @@ jobs:
     env:
       TESTKIT_AUTH_URL: ${{ secrets.TESTKIT_AUTH_URL }}
       SF_USE_GENERIC_UNIX_KEYCHAIN: true
+      HUSKY: '0'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

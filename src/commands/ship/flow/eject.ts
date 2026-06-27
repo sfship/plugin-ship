@@ -1,3 +1,16 @@
+/*
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { existsSync, copyFileSync, mkdirSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { Args } from '@oclif/core';
@@ -7,7 +20,7 @@ import { loadConfig, resolveProjectPaths } from '../../../core/config.loader.js'
 import { FlowRegistry, builtinsDir } from '../../../core/flow.registry.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
-const messages = Messages.loadMessages('plugin-ship', 'ship.flow.eject');
+const messages = Messages.loadMessages('@sfship/plugin-ship', 'ship.flow.eject');
 
 /** Copies a built-in flow into the project for customization. */
 export default class FlowEject extends SfCommand<void> {
