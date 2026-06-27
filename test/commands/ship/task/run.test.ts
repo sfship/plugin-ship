@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+/* eslint-disable class-methods-use-this */
 
 import { strict as assert } from 'node:assert';
 import { TestContext } from '@salesforce/core/testSetup';
