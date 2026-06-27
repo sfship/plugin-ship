@@ -67,9 +67,8 @@ describe('initProject', () => {
       assert.equal(skipped.length, 0);
     });
 
-    it('reports README.md as skipped when it already exists', () => {
-      existingPaths.add(join(DIR, 'README.md'));
-      const { created, skipped } = initProject(base, DIR);
+    it('reports README.md as skipped when one already existed before generate', () => {
+      const { created, skipped } = initProject(base, DIR, true);
       assert.ok(skipped.includes('README.md'));
       assert.equal(created.includes('README.md'), false);
     });
