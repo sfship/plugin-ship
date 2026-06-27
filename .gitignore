@@ -12,7 +12,7 @@ yarn-error.log
 
 
 # compile source
-lib
+/lib
 
 # test artifacts
 *xunit.xml
@@ -41,9 +41,18 @@ oclif.lock
 .wireit
 node_modules
 
+# wireit stdout/stderr temp files
+stdout*.txt
+stderr*.txt
+
 # --
 # put files here you don't want cleaned with sf-clean
+
+# local dev/test project
+mock-project/
 
 # os specific files
 .DS_Store
 .idea
+
+.sfdx

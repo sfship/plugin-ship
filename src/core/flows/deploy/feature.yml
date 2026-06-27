@@ -1,0 +1,56 @@
+description: Build a managed package version, install it, and run Apex tests against a fresh scratch org.
+params:
+  - name: version-id
+    type: string
+    required: false
+    description: Existing 04t SubscriberPackageVersionId to install. If omitted, a new package version is built from the current commit.
+  - name: version-type
+    type: string
+    required: false
+    default: build
+    description: Which part of the version to bump relative to the latest released version. One of build, patch, minor, major.
+steps:
+  create-org:
+    task: org/create/scratch
+    params:
+      scratch-def: feature
+      duration: 1
+      no-namespace: true
+  resolve-next:
+    if-not:
+      value: ${{ params.version-id }}
+    task: package/version/resolve-next
+    params:
+      version-type: ${{ params.version-type }}
+  create-version:
+    if-not:
+      value: ${{ params.version-id }}
+    task: package/version/create
+    params:
+      code-coverage: false
+      skip-validation: true
+      version-number: ${{ steps.resolve-next.version-number }}
+  update-dependencies:
+    task: package/install/dependencies
+    params:
+      target-org: ${{ steps.create-org.target-org }}
+  install:
+    task: package/install
+    params:
+      target-org: ${{ steps.create-org.target-org }}
+      # Only one of these resolves per run: create-version's output if it ran,
+      # otherwise the version-id param. Mixed-string concat handles the empty side.
+      version-id: ${{ steps.create-version.version-id }}${{ params.version-id }}
+  find-test-classes:
+    task: util/file/find
+    params:
+      path: force-app/main/default/classes
+      pattern: ${{ config.project.package.testPattern }}
+  run-tests:
+    if:
+      value: ${{ steps.find-test-classes.count }}
+    task: apex/run/test
+    params:
+      target-org: ${{ steps.create-org.target-org }}
+      class-names: ${{ steps.find-test-classes.files }}
+      namespace: ${{ config.project.package.namespace }}

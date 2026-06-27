@@ -1,0 +1,25 @@
+description: Build a beta managed package version and release it on GitHub.
+params:
+  - name: version-type
+    type: string
+    required: false
+    default: minor
+    description: Which part of the version to bump relative to the latest released version. One of build, patch, minor, major.
+steps:
+  verify-dependencies:
+    task: package/dependencies/verify
+  resolve-next:
+    task: package/version/resolve-next
+    params:
+      version-type: ${{ params.version-type }}
+  create-version:
+    task: package/version/create
+    params:
+      code-coverage: true
+      version-number: ${{ steps.resolve-next.version-number }}
+  github-release:
+    task: git/release/create
+    params:
+      tag: v${{ steps.create-version.version-number }}
+      version-id: ${{ steps.create-version.version-id }}
+      prerelease: true

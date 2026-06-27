@@ -1,0 +1,16 @@
+description: Promote the latest beta to released and create a production GitHub release.
+steps:
+  find-beta:
+    task: git/release/fetch
+    params:
+      prerelease: true
+  promote:
+    task: package/version/promote
+    params:
+      version-id: ${{ steps.find-beta.version-id }}
+  github-release:
+    task: git/release/create
+    params:
+      tag: v${{ steps.find-beta.version-base }}
+      version-id: ${{ steps.promote.version-id }}
+      prerelease: false
