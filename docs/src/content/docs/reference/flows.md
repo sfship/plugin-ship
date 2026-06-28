@@ -1,6 +1,8 @@
 ---
 title: Flows
 description: Reference for all built-in flows.
+sidebar:
+  order: 2
 ---
 
 ## create/package

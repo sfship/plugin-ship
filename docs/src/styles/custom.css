@@ -10,7 +10,7 @@
 
 /* Dark theme (Starlight default) */
 :root {
-  --sl-content-width: 60rem;
+  --sl-content-width: 80rem;
 
   /* Accent */
   --sl-color-accent-low: var(--ship-deep);
@@ -26,6 +26,14 @@
   --sl-color-orange-low: #3d2200;
   --sl-color-orange: var(--ship-amber);
   --sl-color-orange-high: var(--ship-gold);
+}
+
+/* Keep Param/Key/Type columns from wrapping in reference tables */
+.sl-markdown-content table td:first-child,
+.sl-markdown-content table th:first-child,
+.sl-markdown-content table td:nth-child(2),
+.sl-markdown-content table th:nth-child(2) {
+  white-space: nowrap;
 }
 
 /* Light theme */

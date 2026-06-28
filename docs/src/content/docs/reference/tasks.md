@@ -1,6 +1,8 @@
 ---
 title: Tasks
 description: Reference for all built-in tasks.
+sidebar:
+  order: 3
 ---
 
 ## apex/run/test
