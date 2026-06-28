@@ -49,7 +49,7 @@ sf ship flow run release/beta --param version-type=patch
 | `major`        | Bumps the major version (e.g. `1.2.0 → 2.0.0`)           |
 
 :::note
-`release/beta` runs `package/dependencies/verify` as its first step. If your declared dependencies in `ship.yml` have drifted from `sfdx-project.json`, the flow will fail. Run [`dependencies/lock`](./managing-dependencies/) and commit the diff first.
+`release/beta` runs `package/dependencies/verify` as its first step. If your declared dependencies in `ship.yml` have drifted from `sfdx-project.json`, the flow will fail. Run [`dependencies/lock`](/plugin-ship/package-development/managing-dependencies/) and commit the diff first.
 :::
 
 ## Regression Testing

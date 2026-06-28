@@ -7,7 +7,7 @@ sidebar:
 
 ## Create a Dev Scratch Org
 
-The `deploy/dev` flow sets up a scratch org as a development environment. It creates the org, [installs dependencies](./managing-dependencies/), deploys your source, assigns permission sets, and imports data.
+The `deploy/dev` flow sets up a scratch org as a development environment. It creates the org, [installs dependencies](/plugin-ship/package-development/managing-dependencies/), deploys your source, assigns permission sets, and imports data.
 
 ```bash
 sf ship flow run deploy/dev
@@ -15,7 +15,7 @@ sf ship flow run deploy/dev
 
 ## Open Your Scratch Org
 
-The `deploy/dev` follows the alias naming convention `{project-name}:{environment}`, so `tutorial-package:dev` in this example. Normally, it should be set as the default scratch org, so it can be opened using the following command:
+The scratch org created by `deploy/dev` follows the alias naming convention `{project-name}:{environment}` — `tutorial-package:dev` in this example. It's normally set as the default org, so you can open it with:
 
 ```bash
 sf org open

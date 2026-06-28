@@ -32,7 +32,7 @@ sf ship service connect github
 
 ## Initialize Project
 
-Initializes a Salesforce project with `.ship/` directory and `ship.yml` configuration file.
+Initializes a Salesforce project with `.ship/` directory and `ship.yml` configuration file. From your empty project directory, run:
 
 ```bash
 sf ship project init

@@ -5,7 +5,7 @@ sidebar:
   order: 1
 ---
 
-Flows are YAML files placed in `.ship/flows/`. They are invoked by name with `sf ship flow run <name>` and can compose any combination of built-in and [custom tasks](./custom-tasks/).
+Flows are YAML files placed in `.ship/flows/`. They are invoked by name with `sf ship flow run <name>` and can compose any combination of built-in and [custom tasks](/plugin-ship/extending/tasks/).
 
 ## Shadowing Built-in Flows
 

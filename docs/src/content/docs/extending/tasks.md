@@ -45,14 +45,14 @@ Param values are accessed in `run` via `params['param-name']`.
 
 The `flow` object provides access to the broader execution environment:
 
-| Property                    | Description                                                                                |
-| --------------------------- | ------------------------------------------------------------------------------------------ |
-| `flow.log(msg)`             | Writes a timestamped message to the flow output.                                           |
-| `flow.config`               | The loaded `ship.yml` configuration. See the [ship.yml reference](../reference/ship-yml/). |
-| `flow.projectDir`           | Absolute path to the project root (where `ship.yml` lives).                                |
-| `flow.shipDir`              | Absolute path to the `.ship` directory.                                                    |
-| `flow.runCommand(id, argv)` | Invokes an SF CLI command in-process (e.g. `sf org list`).                                 |
-| `flow.hasFailures`          | `true` if any previous step failed with `ignore-failure: true`.                            |
+| Property                    | Description                                                                                          |
+| --------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `flow.log(msg)`             | Writes a timestamped message to the flow output.                                                     |
+| `flow.config`               | The loaded `ship.yml` configuration. See the [ship.yml reference](/plugin-ship/reference/ship-yml/). |
+| `flow.projectDir`           | Absolute path to the project root (where `ship.yml` lives).                                          |
+| `flow.shipDir`              | Absolute path to the `.ship` directory.                                                              |
+| `flow.runCommand(id, argv)` | Invokes an SF CLI command in-process (e.g. `sf org list`).                                           |
+| `flow.hasFailures`          | `true` if any previous step failed with `ignore-failure: true`.                                      |
 
 ## Outputs
 

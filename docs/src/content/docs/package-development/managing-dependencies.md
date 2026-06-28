@@ -5,7 +5,7 @@ sidebar:
   order: 3
 ---
 
-Dependencies are declared in `ship.yml` and locked into `sfdx-project.json` before building a package version. If declared, SF Ship will install dependencies into scratch orgs and declare them during package releases.
+Dependencies are declared in `ship.yml` and locked into `sfdx-project.json` before building a package version. Once declared, SF Ship installs them into scratch orgs and includes them when building package versions.
 
 ## Declaring Dependencies
 
@@ -90,7 +90,7 @@ This updates the `packageAliases` and `dependencies` fields in `sfdx-project.jso
   "name": "Mock-Ship-Project",
   "namespace": "",
   "sfdcLoginUrl": "https://login.salesforce.com",
-  "sourceApiVersion": "66.0",
+  "sourceApiVersion": "67.0",
   "defaultLwcLanguage": "typescript",
   "packageAliases": {
     "Tutorial Package": "0HoWU0000002WGj0AM",
