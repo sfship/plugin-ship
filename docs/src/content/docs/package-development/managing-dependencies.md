@@ -32,6 +32,8 @@ project:
 
 #### CumulusCI Dependency
 
+SF Ship is backwards compatible with CumulusCI (CCI) packages, such as NPSP.
+
 ```yaml title="ship.yml"
 project:
   package:
