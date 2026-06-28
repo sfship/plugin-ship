@@ -8,8 +8,11 @@ Flows and tasks are defined in a `ship.yml` config file. Flows are sequences of 
 
 ## Install
 
+> [!WARNING]
+> This plugin is in beta. Do not use in production!
+
 ```bash
-sf plugins install @sfship/plugin-ship
+sf plugins install @sfship/plugin-ship@beta
 ```
 
 ## Setup
