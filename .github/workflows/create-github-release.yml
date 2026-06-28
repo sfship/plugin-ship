@@ -3,7 +3,6 @@ name: create-github-release
 on:
   push:
     branches:
-      - main
       - prerelease/**
     tags-ignore:
       - '*'
