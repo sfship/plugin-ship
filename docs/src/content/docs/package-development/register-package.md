@@ -1,6 +1,6 @@
 ---
 title: Register Package
-description: Salesforce CLI plugin for the full package development and release lifecycle.
+description: Register your 2GP package on the Dev Hub and write its ID into sfdx-project.json.
 sidebar:
   order: 1
 ---

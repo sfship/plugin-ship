@@ -10,6 +10,8 @@
 
 /* Dark theme (Starlight default) */
 :root {
+  --sl-content-width: 60rem;
+
   /* Accent */
   --sl-color-accent-low: var(--ship-deep);
   --sl-color-accent: var(--ship-indigo);

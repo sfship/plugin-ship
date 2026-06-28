@@ -1,6 +1,6 @@
 ---
 title: Feature Testing
-description: Salesforce CLI plugin for the full package development and release lifecycle.
+description: Build a package version, install it into a scratch org, and run Apex tests against it.
 sidebar:
   order: 4
 ---

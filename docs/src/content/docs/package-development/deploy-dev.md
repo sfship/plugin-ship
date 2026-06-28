@@ -7,7 +7,7 @@ sidebar:
 
 ## Create a Dev Scratch Org
 
-The `deploy/dev` flow sets up a scratch org as a development environment. It creates the org, [installs dependencies](./dependencies/), deploys your source, assigns permission sets, and imports data.
+The `deploy/dev` flow sets up a scratch org as a development environment. It creates the org, [installs dependencies](./managing-dependencies/), deploys your source, assigns permission sets, and imports data.
 
 ```bash
 sf ship flow run deploy/dev

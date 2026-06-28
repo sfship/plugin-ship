@@ -38,6 +38,8 @@ Initializes a Salesforce project with `.ship/` directory and `ship.yml` configur
 sf ship project init
 ```
 
+## Verify Installation
+
 ```bash
 sf ship flow list
 ```

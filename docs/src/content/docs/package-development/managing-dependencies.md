@@ -2,7 +2,7 @@
 title: Managing Dependencies
 description: Declare package dependencies in ship.yml and lock them into sfdx-project.json for validated package version builds.
 sidebar:
-  order: 4
+  order: 3
 ---
 
 Dependencies are declared in `ship.yml` and locked into `sfdx-project.json` before building a package version. If declared, SF Ship will install dependencies into scratch orgs and declare them during package releases.
