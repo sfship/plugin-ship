@@ -1,5 +1,5 @@
 ---
-title: Tasks
+title: Task Reference
 description: Reference for all built-in tasks.
 sidebar:
   order: 3

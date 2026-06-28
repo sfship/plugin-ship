@@ -1,5 +1,5 @@
 ---
-title: ship.yml
+title: Ship Config
 description: Complete reference for the ship.yml configuration file.
 sidebar:
   order: 1

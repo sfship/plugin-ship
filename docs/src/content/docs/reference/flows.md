@@ -1,5 +1,5 @@
 ---
-title: Flows
+title: Flow Reference
 description: Reference for all built-in flows.
 sidebar:
   order: 2

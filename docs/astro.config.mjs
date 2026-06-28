@@ -24,6 +24,7 @@ export default defineConfig({
           ],
         },
         { label: 'Package Development', autogenerate: { directory: 'package-development' } },
+        { label: 'Extending', autogenerate: { directory: 'extending' } },
         { label: 'Reference', autogenerate: { directory: 'reference' } },
       ],
     }),
