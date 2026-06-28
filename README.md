@@ -1,6 +1,6 @@
 # plugin-ship
 
-[![NPM](https://img.shields.io/npm/v/plugin-ship.svg?label=plugin-ship)](https://www.npmjs.com/package/plugin-ship) [![License](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](https://opensource.org/license/apache-2-0)
+[![NPM](https://img.shields.io/npm/v/@sfship/plugin-ship.svg?label=@sfship/plugin-ship)](https://www.npmjs.com/package/@sfship/plugin-ship) [![License](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](https://opensource.org/license/apache-2-0)
 
 A Salesforce CLI plugin for managing the full development and release lifecycle of second-generation managed and unlocked packages.
 
@@ -9,7 +9,7 @@ Flows and tasks are defined in a `ship.yml` config file. Flows are sequences of 
 ## Install
 
 ```bash
-sf plugins install plugin-ship
+sf plugins install @sfship/plugin-ship
 ```
 
 ## Setup
