@@ -22,9 +22,6 @@ yarn-error.log
 coverage
 test_session*
 
-# generated docs
-docs
-
 # ignore sfdx-trust files
 *.tgz
 *.sig
@@ -47,6 +44,10 @@ stderr*.txt
 
 # --
 # put files here you don't want cleaned with sf-clean
+
+# astro docs site build output
+docs/dist
+docs/.astro
 
 # local dev/test project
 mock-project/
