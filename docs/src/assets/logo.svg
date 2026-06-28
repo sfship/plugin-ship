@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="SF Ship">
+  <rect width="200" height="200" rx="34" fill="#25216b"/>
+
+  <!-- flame -->
+  <path d="M88 150 C88 172 100 178 100 188 C100 178 112 172 112 150 Z" fill="#ff9e40"/>
+  <path d="M95 151 C95 167 100 172 100 180 C100 172 105 167 105 151 Z" fill="#ffd23f"/>
+
+  <!-- fins: duotone (left light, right base) -->
+  <path d="M82 118 L48 158 L82 146 Z" fill="#cdc7ff"/>
+  <path d="M118 118 L152 158 L118 146 Z" fill="#6d5ef7"/>
+
+  <!-- body: duotone via vertical split -->
+  <defs>
+    <clipPath id="body">
+      <path d="M100 30 C84 44 76 68 76 100 L76 140 Q76 152 88 152 L112 152 Q124 152 124 140 L124 100 C124 68 116 44 100 30 Z"/>
+    </clipPath>
+  </defs>
+  <g clip-path="url(#body)">
+    <rect x="0" y="0" width="100" height="200" fill="#cdc7ff"/>
+    <rect x="100" y="0" width="100" height="200" fill="#6d5ef7"/>
+  </g>
+
+  <!-- porthole knockout -->
+  <circle cx="100" cy="86" r="14" fill="#25216b"/>
+</svg>
