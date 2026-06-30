@@ -21,5 +21,8 @@
       "files": ["test/**/*.ts", "src/**/*.ts", "**/tsconfig.json", ".mocha*", "!*.nut.ts", ".nycrc"],
       "output": []
     }
+  },
+  "scripts": {
+    "docs": "yarn --cwd docs dev"
   }
 }

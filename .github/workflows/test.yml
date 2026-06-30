@@ -1,7 +1,7 @@
 name: tests
 on:
-  push:
-    branches-ignore: [main]
+  pull_request:
+    branches: [main, 'prerelease/**']
   workflow_dispatch:
 
 jobs:

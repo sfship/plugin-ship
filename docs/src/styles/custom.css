@@ -1,0 +1,55 @@
+/* SF Ship palette — indigo duotone + flame (matches the logo) */
+:root {
+  --ship-deep: #25216b; /* logo tile / deepest indigo */
+  --ship-indigo: #6d5ef7; /* primary (base tone) */
+  --ship-lavender: #cdc7ff; /* light tone */
+  --ship-amber: #ff9e40; /* flame */
+  --ship-gold: #ffd23f; /* flame core */
+  --ship-cloud: #edf0f7; /* light text / paper */
+}
+
+/* Dark theme (Starlight default) */
+:root {
+  --sl-content-width: 80rem;
+
+  /* Accent */
+  --sl-color-accent-low: var(--ship-deep);
+  --sl-color-accent: var(--ship-indigo);
+  --sl-color-accent-high: var(--ship-lavender);
+
+  /* note callout → indigo (harmonizes with accent instead of clashing) */
+  --sl-color-blue-low: #1a1850;
+  --sl-color-blue: var(--ship-indigo);
+  --sl-color-blue-high: var(--ship-lavender);
+
+  /* caution callout → amber flame */
+  --sl-color-orange-low: #3d2200;
+  --sl-color-orange: var(--ship-amber);
+  --sl-color-orange-high: var(--ship-gold);
+}
+
+/* Keep Param/Key/Type columns from wrapping in reference tables */
+.sl-markdown-content table td:first-child,
+.sl-markdown-content table th:first-child,
+.sl-markdown-content table td:nth-child(2),
+.sl-markdown-content table th:nth-child(2) {
+  white-space: nowrap;
+}
+
+/* Light theme */
+:root[data-theme='light'] {
+  /* Accent */
+  --sl-color-accent-low: #e2defc;
+  --sl-color-accent: #5a4be0;
+  --sl-color-accent-high: #2a2076;
+
+  /* note callout */
+  --sl-color-blue-low: #e2defc;
+  --sl-color-blue: #5a4be0;
+  --sl-color-blue-high: #2a2076;
+
+  /* caution callout */
+  --sl-color-orange-low: #fff0dd;
+  --sl-color-orange: #c86a00;
+  --sl-color-orange-high: #7a3a00;
+}
