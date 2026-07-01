@@ -1,0 +1,51 @@
+name: Bug report
+description: Report something that isn't working as expected.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for filing a bug! Please fill out the sections below so we can reproduce it.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear description of the bug and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: The exact command(s) you ran, plus any relevant `ship.yml` or flow/task definitions.
+      placeholder: |
+        1. Run `sf ship flow run ...`
+        2. ...
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Output / logs
+      description: Paste any error output. Re-running with `SF_LOG_LEVEL=debug` often helps.
+      render: shell
+  - type: input
+    id: plugin-version
+    attributes:
+      label: Plugin version
+      description: The `@sfship/plugin-ship` line from `sf plugins`.
+    validations:
+      required: true
+  - type: input
+    id: cli-version
+    attributes:
+      label: Salesforce CLI version
+      description: Output of `sf --version`.
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
+      placeholder: e.g. macOS 14, Windows 11, Ubuntu 24.04
+    validations:
+      required: true
