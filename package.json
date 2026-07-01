@@ -102,7 +102,7 @@
     "clean": "sf-clean",
     "clean-all": "sf-clean all",
     "compile": "wireit",
-    "docs": "placeholder",
+    "docs": "yarn --cwd docs dev",
     "fix-license": "eslint src test --fix --rule \"header/header: [2]\"",
     "format": "wireit",
     "link-check": "wireit",
