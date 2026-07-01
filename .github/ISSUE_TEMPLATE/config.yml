@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Documentation
+    url: https://sfship.github.io/plugin-ship/
+    about: Guides and full command reference — check here first.
+  - name: Questions & ideas
+    url: https://github.com/sfship/plugin-ship/discussions
+    about: Ask a question or float an idea.
