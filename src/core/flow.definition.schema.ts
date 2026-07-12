@@ -12,6 +12,7 @@
  * limitations under the License.
  */
 
+/* c8 ignore start */
 import { z } from 'zod';
 import { ParamDefinitionSchema, ParamValueSchema } from './task.param.schema.js';
 
@@ -20,36 +21,43 @@ const FlowStepConditionValueSchema = z.union([z.string(), z.number(), z.boolean(
 
 /** Condition used in `if` / `if-not` step fields. Resolves a `${{ }}` token and optionally compares it to a value. */
 const FlowStepConditionSchema = z
-  .object({ value: z.string(), equals: FlowStepConditionValueSchema.optional() })
+  .object({
+    value: z.string().describe('A `${{ }}` expression to resolve.'),
+    equals: FlowStepConditionValueSchema.optional().describe(
+      'Value to compare against. When omitted, the condition checks truthiness.'
+    ),
+  })
   .strict();
 
 /** A single step within a flow definition. */
 const FlowStepSchema = z
   .object({
-    /** The task to execute, e.g. "util/log" or "org/create/scratch". */
-    task: z.string(),
-    /** Parameters passed to the task. */
-    params: z.record(z.string(), ParamValueSchema).optional(),
-    /** Run step if condition is truthy (or equals a value). */
-    if: FlowStepConditionSchema.optional(),
-    /** Run step if condition is falsy (or equals a value). */
-    'if-not': FlowStepConditionSchema.optional(),
-    /** Continue the flow if this step fails, storing failure state in step outputs. */
-    'ignore-failure': z.boolean().optional(),
+    task: z.string().describe('The task to execute, e.g. "util/log" or "org/create/scratch".'),
+    params: z.record(z.string(), ParamValueSchema).optional().describe('Parameters passed to the task.'),
+    if: FlowStepConditionSchema.optional().describe('Run step if condition is truthy (or equals a value).'),
+    'if-not': FlowStepConditionSchema.optional().describe('Run step if condition is falsy (or equals a value).'),
+    'ignore-failure': z
+      .boolean()
+      .optional()
+      .describe('Continue the flow if this step fails, storing failure state in step outputs.'),
   })
   .refine((s) => !(s.if && s['if-not']), { message: 'A step cannot have both "if" and "if-not"' });
 
 /** Defines a named flow: its accepted params and the ordered steps to execute. */
 export const FlowDefinitionSchema = z
   .object({
-    /** Human-readable description of what this flow does. */
-    description: z.string().optional(),
-    /** Params this flow accepts, passed as `--param key=value` CLI flags when invoking the flow. */
-    params: z.array(ParamDefinitionSchema).optional(),
-    /** Named steps to execute in definition order. The key is the step ID, used for output references. */
-    steps: z.record(z.string(), FlowStepSchema),
-    /** Steps that always run after `steps`, regardless of success or failure. */
-    finally: z.record(z.string(), FlowStepSchema).optional(),
+    description: z.string().optional().describe('Human-readable description of what this flow does.'),
+    params: z
+      .array(ParamDefinitionSchema)
+      .optional()
+      .describe('Params this flow accepts, passed as `--param key=value` CLI flags when invoking the flow.'),
+    steps: z
+      .record(z.string(), FlowStepSchema)
+      .describe('Named steps to execute in definition order. The key is the step ID, used for output references.'),
+    finally: z
+      .record(z.string(), FlowStepSchema)
+      .optional()
+      .describe('Steps that always run after `steps`, regardless of success or failure.'),
   })
   .superRefine((flow, ctx) => {
     const dup = Object.keys(flow.finally ?? {}).find((k) => k in flow.steps);

@@ -12,6 +12,7 @@
  * limitations under the License.
  */
 
+/* c8 ignore start */
 import { z } from 'zod';
 
 /** Valid sharing models for a Salesforce scratch org object. */

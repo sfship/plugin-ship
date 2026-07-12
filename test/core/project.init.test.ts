@@ -12,6 +12,7 @@
  * limitations under the License.
  */
 import { strict as assert } from 'node:assert';
+import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import esmock from 'esmock';
 import type { initProject as InitProjectFn, InitOptions } from '../../src/core/project.init.js';
@@ -88,6 +89,16 @@ describe('initProject', () => {
   });
 
   describe('ship.yml', () => {
+    it('starts with a schema modeline pinned to the plugin version', () => {
+      initProject(base, DIR);
+      const content = written.get(join(DIR, 'ship.yml')) ?? '';
+      const pkg = JSON.parse(readFileSync(new URL('../../package.json', import.meta.url), 'utf8')) as {
+        version: string;
+      };
+      assert.ok(content.startsWith('# yaml-language-server: $schema='));
+      assert.ok(content.includes(`@sfship/plugin-ship@${pkg.version}/lib/schemas/ship.schema.json`));
+    });
+
     it('includes packageName and packageType', () => {
       initProject(base, DIR);
       const content = written.get(join(DIR, 'ship.yml')) ?? '';
@@ -200,6 +211,28 @@ describe('initProject', () => {
     it('removes the generated config directory', () => {
       initProject(base, DIR);
       assert.ok(removedPaths.includes(join(DIR, 'config')));
+    });
+  });
+
+  describe('task types', () => {
+    it('writes .ship/tasks/types.d.ts even when it already exists', () => {
+      existingPaths.add(join(DIR, '.ship', 'tasks', 'types.d.ts'));
+      const { created } = initProject(base, DIR);
+      assert.ok(created.includes('.ship/tasks/types.d.ts'));
+      assert.ok(written.has(join(DIR, '.ship', 'tasks', 'types.d.ts')));
+    });
+
+    it('writes a jsconfig.json with checkJs enabled', () => {
+      initProject(base, DIR);
+      const raw = written.get(join(DIR, '.ship', 'tasks', 'jsconfig.json')) ?? '{}';
+      const jsconfig = JSON.parse(raw) as { compilerOptions: { checkJs: boolean } };
+      assert.equal(jsconfig.compilerOptions.checkJs, true);
+    });
+
+    it('does not overwrite an existing jsconfig.json', () => {
+      existingPaths.add(join(DIR, '.ship', 'tasks', 'jsconfig.json'));
+      const { skipped } = initProject(base, DIR);
+      assert.ok(skipped.includes('.ship/tasks/jsconfig.json'));
     });
   });
 

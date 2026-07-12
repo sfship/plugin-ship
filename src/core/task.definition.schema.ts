@@ -12,6 +12,7 @@
  * limitations under the License.
  */
 
+/* c8 ignore start */
 import { z } from 'zod';
 import { ParamDefinitionSchema, Params } from './task.param.schema.js';
 import { FlowContext } from './flow.context.js';

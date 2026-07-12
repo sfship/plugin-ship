@@ -14,6 +14,7 @@
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { fileExists, ensureDir, readText, writeText, writeJson, appendText, removeDir } from './file.js';
+import { schemaModeline } from './schema.ref.js';
 
 const templateDir = join(fileURLToPath(import.meta.url), '..', 'templates');
 
@@ -39,7 +40,7 @@ function writeIfAbsent(absPath: string, relPath: string, content: string, result
 }
 
 function buildShipYml({ packageName, namespace, packageType, repoUrl }: InitOptions): string {
-  const lines = ['project:', '  package:', `    name: ${packageName}`];
+  const lines = [schemaModeline('ship'), 'project:', '  package:', `    name: ${packageName}`];
   if (namespace) lines.push(`    namespace: ${namespace}`);
   lines.push(`    type: ${packageType}`);
   lines.push('  git:', '    defaultBranch: main');
@@ -131,7 +132,9 @@ export function initProject(options: InitOptions, projectDir: string, readmeExis
   const result: InitResult = { created: [], skipped: [] };
 
   const orgsDir = join(projectDir, '.ship', 'orgs');
+  const tasksDir = join(projectDir, '.ship', 'tasks');
   ensureDir(orgsDir);
+  ensureDir(tasksDir);
 
   patchSfdxProjectJson(projectDir, options);
   appendToGitignore(projectDir);
@@ -148,6 +151,19 @@ export function initProject(options: InitOptions, projectDir: string, readmeExis
   // project:generate scaffolds config/project-scratch-def.json; ship manages orgs via .ship/orgs/ instead.
   removeDir(join(projectDir, 'config'));
   writeIfAbsent(join(projectDir, 'ship.yml'), 'ship.yml', buildShipYml(options), result);
+  // Plugin-managed type declarations for custom tasks; always rewritten so re-init refreshes them.
+  writeText(join(tasksDir, 'types.d.ts'), readText(join(templateDir, 'types.d.ts')));
+  result.created.push('.ship/tasks/types.d.ts');
+  // Gives the editor a project scope for .ship/tasks so the ambient Ship types resolve without imports.
+  const tasksJsconfig = {
+    compilerOptions: { module: 'nodenext', moduleResolution: 'nodenext', target: 'es2022', checkJs: true },
+  };
+  writeIfAbsent(
+    join(tasksDir, 'jsconfig.json'),
+    '.ship/tasks/jsconfig.json',
+    JSON.stringify(tasksJsconfig, null, 2) + '\n',
+    result
+  );
 
   for (const [name, def] of Object.entries(buildOrgDefs(options.packageName))) {
     writeIfAbsent(
