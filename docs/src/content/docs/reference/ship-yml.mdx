@@ -5,7 +5,15 @@ sidebar:
   order: 1
 ---
 
+import SchemaModeline from '../../../components/SchemaModeline.astro';
+
 `ship.yml` tells the plugin what it's building, what it depends on, and where to publish it. It should be at the root of your project and committed to source-control.
+
+## Schema Validation
+
+The plugin publishes a JSON Schema for `ship.yml`, and `sf ship project init` writes a `yaml-language-server` modeline as the file's first line — pinned to the plugin version that scaffolded it. Editors with a YAML language server (in VS Code, the [YAML extension](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml)) use it for validation, autocompletion, and hover documentation for every field on this page.
+
+<SchemaModeline schema="ship" />
 
 ## Top-level
 

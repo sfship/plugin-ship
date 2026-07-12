@@ -7,6 +7,7 @@ description: Install the plugin and connect your GitHub account.
 
 - [Salesforce CLI](https://developer.salesforce.com/tools/salesforcecli) installed and configured
 - [Salesforce Extensions for VS Code](https://developer.salesforce.com/tools/vscode) (recommended)
+- [YAML extension for VS Code](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml) (recommended) — enables validation and autocompletion for `ship.yml` and flow files
 
 :::note
 This plugin leans heavily on the standard sf cli commands, some of whose commands will appear throughout the documentation. See [Salesforce CLI Command Reference](https://developer.salesforce.com/docs/platform/salesforce-cli-reference/guide/cli_reference.html) for a complete reference.
