@@ -1,0 +1,13 @@
+---
+import { Code } from '@astrojs/starlight/components';
+import { pluginVersion } from '../lib/plugin-version';
+
+interface Props {
+  schema: 'ship' | 'flow';
+}
+
+const { schema } = Astro.props;
+const code = `# yaml-language-server: $schema=https://cdn.jsdelivr.net/npm/@sfship/plugin-ship@${pluginVersion}/lib/schemas/${schema}.schema.json`;
+---
+
+<Code lang="yaml" code={code} />

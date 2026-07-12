@@ -12,6 +12,7 @@ Custom tasks are ESM JavaScript files placed in `.ship/tasks/`. They are referen
 A task is a file that exports a default object with a `description`, optional `params` and `outputs` declarations, and a `run` function:
 
 ```js title=".ship/tasks/my-org/setup.mjs"
+/** @type {Ship.TaskDefinition} */
 export default {
   description: 'Sets up the org with custom configuration.',
   params: [
@@ -24,6 +25,22 @@ export default {
     // ... your logic here
     output.set('status', 'done');
   },
+};
+```
+
+## Type Checking
+
+`sf ship project init` scaffolds two files into `.ship/tasks/` that give task files type checking and autocompletion in any editor backed by the TypeScript language service (VS Code included):
+
+- `types.d.ts` — declarations for the task API, available everywhere under the ambient `Ship` namespace. This file is plugin-managed: re-running `sf ship project init` refreshes it, so don't edit it.
+- `jsconfig.json` — enables `checkJs` for the directory. This file is yours to keep or tune.
+
+Annotate the default export with the type Ship.TaskDefinition for typehints:
+
+```js
+/** @type {Ship.TaskDefinition} */
+export default {
+  // ...
 };
 ```
 
