@@ -21,7 +21,7 @@ import { mockCommand } from '../../mock-command.js';
 let builtinSourceResult: string | null = '/builtins/deploy.yml';
 let destExists = false;
 let mkdirCalled = false;
-let copyArgs: [string, string] | undefined;
+let writeArgs: [string, string] | undefined;
 
 const FlowEject = await mockCommand('ship/flow/eject.js', {
   'config.loader.js': {
@@ -41,8 +41,9 @@ const FlowEject = await mockCommand('ship/flow/eject.js', {
     mkdirSync: () => {
       mkdirCalled = true;
     },
-    copyFileSync: (src: string, dest: string) => {
-      copyArgs = [src, dest];
+    readFileSync: () => 'steps: {}\n',
+    writeFileSync: (dest: string, content: string) => {
+      writeArgs = [dest, content];
     },
   },
 });
@@ -56,7 +57,7 @@ describe('ship flow eject', () => {
     builtinSourceResult = '/builtins/deploy.yml';
     destExists = false;
     mkdirCalled = false;
-    copyArgs = undefined;
+    writeArgs = undefined;
   });
 
   it('shows the Flow Eject header', async () => {
@@ -80,11 +81,13 @@ describe('ship flow eject', () => {
     );
   });
 
-  it('copies the built-in file to the ship flows directory', async () => {
+  it('writes the built-in flow to the ship flows directory with a schema modeline', async () => {
     await FlowEject.run(['deploy']);
-    assert.ok(copyArgs, 'copyFileSync called');
-    assert.equal(copyArgs[0], '/builtins/deploy.yml');
-    assert.ok(copyArgs[1].includes('flows'), 'dest is inside flows/');
+    assert.ok(writeArgs, 'writeFileSync called');
+    assert.ok(writeArgs[0].includes('flows'), 'dest is inside flows/');
+    assert.ok(writeArgs[1].startsWith('# yaml-language-server: $schema='));
+    assert.ok(writeArgs[1].includes('/lib/schemas/flow.schema.json'));
+    assert.ok(writeArgs[1].endsWith('steps: {}\n'), 'original content follows the modeline');
   });
 
   it('creates the destination directory before copying', async () => {

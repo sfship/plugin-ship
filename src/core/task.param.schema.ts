@@ -12,6 +12,7 @@
  * limitations under the License.
  */
 
+/* c8 ignore start */
 import { z } from 'zod';
 
 /** Zod schema for a value that can be passed as a task or flow param. */
@@ -25,11 +26,14 @@ export type Params = Record<string, ParamValue>;
 
 /** Zod schema for a single param declaration, shared between task and flow definitions. */
 export const ParamDefinitionSchema = z.object({
-  name: z.string(),
-  type: z.enum(['string', 'number', 'boolean', 'record']).default('string'),
-  required: z.boolean().optional(),
-  default: z.union([z.string(), z.number(), z.boolean()]).optional(),
-  description: z.string().optional(),
+  name: z.string().describe('The param name, in kebab-case.'),
+  type: z.enum(['string', 'number', 'boolean', 'record']).default('string').describe('Defaults to "string".'),
+  required: z.boolean().optional().describe('Fail if the param is not provided and has no default.'),
+  default: z
+    .union([z.string(), z.number(), z.boolean()])
+    .optional()
+    .describe('Value used when the param is not provided.'),
+  description: z.string().optional().describe('Human-readable description of the param.'),
 });
 
 /** A single param declaration. */

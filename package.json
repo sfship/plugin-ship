@@ -123,7 +123,20 @@
       "dependencies": [
         "compile",
         "lint",
-        "copy-assets"
+        "copy-assets",
+        "schemas"
+      ]
+    },
+    "schemas": {
+      "command": "node scripts/generate-schemas.mjs",
+      "dependencies": [
+        "compile"
+      ],
+      "files": [
+        "scripts/generate-schemas.mjs"
+      ],
+      "output": [
+        "lib/schemas/**"
       ]
     },
     "copy-assets": {

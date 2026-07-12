@@ -11,13 +11,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { existsSync, copyFileSync, mkdirSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { Args } from '@oclif/core';
 import { SfCommand, Flags, StandardColors } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
 import { loadConfig, resolveProjectPaths } from '../../../core/config.loader.js';
 import { FlowRegistry, builtinsDir } from '../../../core/flow.registry.js';
+import { schemaModeline } from '../../../core/schema.ref.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@sfship/plugin-ship', 'ship.flow.eject');
@@ -58,7 +59,7 @@ export default class FlowEject extends SfCommand<void> {
     }
 
     mkdirSync(dirname(dest), { recursive: true });
-    copyFileSync(src, dest);
+    writeFileSync(dest, `${schemaModeline('flow')}\n${readFileSync(src, 'utf8')}`);
     this.log(StandardColors.success('✓') + ` Ejected flow to: ${dest}`);
     this.log('');
   }

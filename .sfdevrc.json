@@ -4,7 +4,13 @@
   },
   "wireit": {
     "build": {
-      "dependencies": ["compile", "lint", "copy-assets"]
+      "dependencies": ["compile", "lint", "copy-assets", "schemas"]
+    },
+    "schemas": {
+      "command": "node scripts/generate-schemas.mjs",
+      "dependencies": ["compile"],
+      "files": ["scripts/generate-schemas.mjs"],
+      "output": ["lib/schemas/**"]
     },
     "copy-assets": {
       "command": "node -e \"const fs=require('fs');fs.cpSync('src/core/flows','lib/core/flows',{recursive:true,force:true});fs.cpSync('src/core/templates','lib/core/templates',{recursive:true,force:true})\"",
