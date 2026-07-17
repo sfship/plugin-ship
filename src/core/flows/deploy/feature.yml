@@ -34,6 +34,17 @@ steps:
     task: package/install/dependencies
     params:
       target-org: ${{ steps.create-org.target-org }}
+  check-pre:
+    task: util/file/exists
+    params:
+      path: unpackaged/pre
+  deploy-pre:
+    if:
+      value: ${{ steps.check-pre.exists }}
+    task: project/deploy/start
+    params:
+      target-org: ${{ steps.create-org.target-org }}
+      source-dir: unpackaged/pre
   install:
     task: package/install
     params:
@@ -41,6 +52,17 @@ steps:
       # Only one of these resolves per run: create-version's output if it ran,
       # otherwise the version-id param. Mixed-string concat handles the empty side.
       version-id: ${{ steps.create-version.version-id }}${{ params.version-id }}
+  check-post:
+    task: util/file/exists
+    params:
+      path: unpackaged/post
+  deploy-post:
+    if:
+      value: ${{ steps.check-post.exists }}
+    task: project/deploy/start
+    params:
+      target-org: ${{ steps.create-org.target-org }}
+      source-dir: unpackaged/post
   find-test-classes:
     task: util/file/find
     params:
