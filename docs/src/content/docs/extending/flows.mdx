@@ -26,6 +26,7 @@ This copies the built-in flow to `.ship/flows/deploy/dev.yml`, which immediately
 ## Flow Structure
 
 ```yaml
+# yaml-language-server: $schema=https://cdn.jsdelivr.net/npm/@sfship/plugin-ship@beta/lib/schemas/flow.schema.json
 description: A brief description of what this flow does.
 params:
   - name: my-param
@@ -45,9 +46,9 @@ steps:
 
 ## Schema Validation
 
-The plugin publishes a JSON Schema for flow definitions, and ejected flows start with a `yaml-language-server` modeline pointing at it — pinned to the plugin version that ejected the file. Editors with a YAML language server (in VS Code, the [YAML extension](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml)) use it for validation, autocompletion, and hover documentation.
+The plugin publishes a JSON Schema for flow definitions, and ejected flows start with a `yaml-language-server` modeline pointing at it. Editors with a YAML language server (in VS Code, the [YAML extension](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml)) use it for validation, autocompletion, and hover documentation.
 
-For flows you create by hand, add the modeline as the first line. This shows the latest release — if you're on an older plugin version (shown by `sf plugins`), substitute yours:
+For flows you create by hand, add the modeline as the first line:
 
 <SchemaModeline schema="flow" />
 
@@ -80,6 +81,7 @@ Use `${{ }}` to reference dynamic values anywhere in a step's `params`:
 Steps can be skipped at runtime using `if` or `if-not`. Both take a `value` expression and an optional `equals` comparison. When `equals` is omitted, the condition checks for truthiness.
 
 ```yaml
+# yaml-language-server: $schema=https://cdn.jsdelivr.net/npm/@sfship/plugin-ship@beta/lib/schemas/flow.schema.json
 steps:
   check-file:
     task: util/file/exists
@@ -107,6 +109,7 @@ A step cannot have both `if` and `if-not`.
 By default, any step failure stops the flow. Set `ignore-failure: true` on a step to continue regardless:
 
 ```yaml
+# yaml-language-server: $schema=https://cdn.jsdelivr.net/npm/@sfship/plugin-ship@beta/lib/schemas/flow.schema.json
 steps:
   risky-step:
     task: util/log
@@ -120,6 +123,7 @@ steps:
 Steps declared under `finally` always run after `steps` complete — whether the flow succeeded or failed. Useful for cleanup:
 
 ```yaml
+# yaml-language-server: $schema=https://cdn.jsdelivr.net/npm/@sfship/plugin-ship@beta/lib/schemas/flow.schema.json
 steps:
   do-work:
     task: util/log

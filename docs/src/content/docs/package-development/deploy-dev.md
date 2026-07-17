@@ -13,6 +13,8 @@ The `deploy/dev` flow sets up a scratch org as a development environment. It cre
 sf ship flow run deploy/dev
 ```
 
+The org carries your package namespace. Contributors without access to the namespace-linked Dev Hub can pass `--param no-namespace=true` — see [Unnamespaced Development](/plugin-ship/package-development/unnamespaced-development/).
+
 ## Open Your Scratch Org
 
 The scratch org created by `deploy/dev` follows the alias naming convention `{project-name}:{environment}` — `tutorial-package:dev` in this example. It's normally set as the default org, so you can open it with:

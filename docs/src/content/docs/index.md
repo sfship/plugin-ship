@@ -12,6 +12,7 @@ A Salesforce CLI plugin for the full development and release lifecycle of second
 Leverage built-in orchestration flows and tasks, or define your own flows in YAML and tasks as JavaScript modules.
 
 ```yaml title=".ship/flows/tutorial/greeting.yml"
+# yaml-language-server: $schema=https://cdn.jsdelivr.net/npm/@sfship/plugin-ship@beta/lib/schemas/flow.schema.json
 description: An example custom flow to show in the tutorial.
 params:
   - name: name
@@ -25,6 +26,7 @@ steps:
 ```
 
 ```js title=".ship/tasks/tutorial/greet.mjs"
+/** @type {Ship.TaskDefinition} */
 export default {
   description: 'Logs a greeting message.',
   params: [{ name: 'name', type: 'string', required: false }],

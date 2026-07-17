@@ -310,6 +310,31 @@ Resets local and remote source tracking for an org. Passthrough for `sf project 
 
 ---
 
+## util/env/get
+
+Reads an environment variable into step outputs, for use in later steps or `if` gates.
+
+| Param  | Type   | Required | Description                    |
+| ------ | ------ | :------: | ------------------------------ |
+| `name` | string |    ✓     | The environment variable name. |
+
+**Outputs**
+
+- `value` — The variable value, or an empty string when unset.
+- `exists` — `true` if the variable is set, even to an empty string.
+
+---
+
+## util/env/set
+
+Sets environment variables for the remainder of the flow run. Useful with `sfdx-project.json` [`replacements`](/plugin-ship/package-development/unnamespaced-development/) entries that use `replaceWithEnv`.
+
+| Param  | Type   | Required | Description                                                               |
+| ------ | ------ | :------: | ------------------------------------------------------------------------- |
+| `vars` | record |    ✓     | Map of environment variable names to values. Values may be empty strings. |
+
+---
+
 ## util/file/exists
 
 Checks whether a file or directory exists. Outputs `exists` for use in step `if` gates.

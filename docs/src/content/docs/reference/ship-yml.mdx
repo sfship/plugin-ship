@@ -11,7 +11,7 @@ import SchemaModeline from '../../../components/SchemaModeline.astro';
 
 ## Schema Validation
 
-The plugin publishes a JSON Schema for `ship.yml`, and `sf ship project init` writes a `yaml-language-server` modeline as the file's first line — pinned to the plugin version that scaffolded it. Editors with a YAML language server (in VS Code, the [YAML extension](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml)) use it for validation, autocompletion, and hover documentation for every field on this page.
+The plugin publishes a JSON Schema for `ship.yml`, and `sf ship project init` writes a `yaml-language-server` modeline as the file's first line. Editors with a YAML language server (in VS Code, the [YAML extension](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml)) use it for validation, autocompletion, and hover documentation for every field on this page.
 
 <SchemaModeline schema="ship" />
 
@@ -70,6 +70,7 @@ Each entry in `project.package.dependencies` is one of two forms.
 ## Full Example
 
 ```yaml title="ship.yml"
+# yaml-language-server: $schema=https://cdn.jsdelivr.net/npm/@sfship/plugin-ship@beta/lib/schemas/ship.schema.json
 dir: .ship
 
 project:
