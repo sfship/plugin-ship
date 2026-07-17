@@ -10,6 +10,7 @@ sidebar:
 Register the 2GP package on the Dev Hub and write its ID into `sfdx-project.json`. Run once per project before any release or `deploy/feature` flow.
 
 ```yaml
+# yaml-language-server: $schema=https://cdn.jsdelivr.net/npm/@sfship/plugin-ship@beta/lib/schemas/flow.schema.json
 description: Register the 2GP package on the Dev Hub and write its 0Ho into sfdx-project.json. Run once per project before any release or deploy/feature flow.
 params:
   - name: path
@@ -37,6 +38,7 @@ steps:
 Resolve `ship.yml` dependencies into `sfdx-project.json`. Run whenever your dependencies change and commit the diff before cutting a release.
 
 ```yaml
+# yaml-language-server: $schema=https://cdn.jsdelivr.net/npm/@sfship/plugin-ship@beta/lib/schemas/flow.schema.json
 description: Resolve ship.yml dependencies into sfdx-project.json. Run whenever your dependencies change, then commit the diff before cutting a release.
 steps:
   lock:
@@ -47,9 +49,10 @@ steps:
 
 ## deploy/beta
 
-Install the latest beta package into a fresh scratch org and run Apex tests.
+Install the latest beta package into a fresh scratch org, with unpackaged pre/post metadata, and run Apex tests.
 
 ```yaml
+# yaml-language-server: $schema=https://cdn.jsdelivr.net/npm/@sfship/plugin-ship@beta/lib/schemas/flow.schema.json
 description: Install the latest beta into a fresh scratch org and run Apex tests.
 steps:
   create-org:
@@ -66,11 +69,33 @@ steps:
     task: package/install/dependencies
     params:
       target-org: ${{ steps.create-org.target-org }}
+  check-pre:
+    task: util/file/exists
+    params:
+      path: unpackaged/pre
+  deploy-pre:
+    if:
+      value: ${{ steps.check-pre.exists }}
+    task: project/deploy/start
+    params:
+      target-org: ${{ steps.create-org.target-org }}
+      source-dir: unpackaged/pre
   install:
     task: package/install
     params:
       target-org: ${{ steps.create-org.target-org }}
       version-id: ${{ steps.find-beta.version-id }}
+  check-post:
+    task: util/file/exists
+    params:
+      path: unpackaged/post
+  deploy-post:
+    if:
+      value: ${{ steps.check-post.exists }}
+    task: project/deploy/start
+    params:
+      target-org: ${{ steps.create-org.target-org }}
+      source-dir: unpackaged/post
   assign-permsets:
     task: org/assign/permsets
     params:
@@ -94,24 +119,54 @@ steps:
 
 ## deploy/dev
 
-Set up a scratch org as a development environment — creates the org, installs dependencies, deploys source, assigns permission sets, and imports data.
+Set up a scratch org as a development environment — creates the org, installs dependencies, deploys [unpackaged metadata](/plugin-ship/package-development/unpackaged-metadata/) and source, assigns permission sets, and imports data.
 
 ```yaml
+# yaml-language-server: $schema=https://cdn.jsdelivr.net/npm/@sfship/plugin-ship@beta/lib/schemas/flow.schema.json
 description: Set up a scratch org as a development environment for unmanaged metadata.
+params:
+  - name: no-namespace
+    type: boolean
+    required: false
+    default: false
+    description: Create the scratch org without the project namespace, for contributors without access to the namespace-linked Dev Hub.
 steps:
   create-org:
     task: org/create/scratch
     params:
       scratch-def: dev
       duration: 30
+      no-namespace: ${{ params.no-namespace }}
   update-dependencies:
     task: package/install/dependencies
     params:
       target-org: ${{ steps.create-org.target-org }}
+  check-pre:
+    task: util/file/exists
+    params:
+      path: unpackaged/pre
+  deploy-pre:
+    if:
+      value: ${{ steps.check-pre.exists }}
+    task: project/deploy/start
+    params:
+      target-org: ${{ steps.create-org.target-org }}
+      source-dir: unpackaged/pre
   deploy:
     task: project/deploy/start
     params:
       target-org: ${{ steps.create-org.target-org }}
+  check-post:
+    task: util/file/exists
+    params:
+      path: unpackaged/post
+  deploy-post:
+    if:
+      value: ${{ steps.check-post.exists }}
+    task: project/deploy/start
+    params:
+      target-org: ${{ steps.create-org.target-org }}
+      source-dir: unpackaged/post
   assign-permsets:
     task: org/assign/permsets
     params:
@@ -129,9 +184,10 @@ steps:
 
 ## deploy/feature
 
-Build a managed package version from the current commit, install it into a fresh scratch org, and run Apex tests.
+Build a managed package version from the current commit, install it into a fresh scratch org with unpackaged pre/post metadata, and run Apex tests.
 
 ```yaml
+# yaml-language-server: $schema=https://cdn.jsdelivr.net/npm/@sfship/plugin-ship@beta/lib/schemas/flow.schema.json
 description: Build a managed package version, install it, and run Apex tests against a fresh scratch org.
 params:
   - name: version-id
@@ -168,11 +224,33 @@ steps:
     task: package/install/dependencies
     params:
       target-org: ${{ steps.create-org.target-org }}
+  check-pre:
+    task: util/file/exists
+    params:
+      path: unpackaged/pre
+  deploy-pre:
+    if:
+      value: ${{ steps.check-pre.exists }}
+    task: project/deploy/start
+    params:
+      target-org: ${{ steps.create-org.target-org }}
+      source-dir: unpackaged/pre
   install:
     task: package/install
     params:
       target-org: ${{ steps.create-org.target-org }}
       version-id: ${{ steps.create-version.version-id }}${{ params.version-id }}
+  check-post:
+    task: util/file/exists
+    params:
+      path: unpackaged/post
+  deploy-post:
+    if:
+      value: ${{ steps.check-post.exists }}
+    task: project/deploy/start
+    params:
+      target-org: ${{ steps.create-org.target-org }}
+      source-dir: unpackaged/post
   find-test-classes:
     task: util/file/find
     params:
@@ -195,6 +273,7 @@ steps:
 Set up a QA environment using the latest beta, with unpackaged pre/post metadata and sample data.
 
 ```yaml
+# yaml-language-server: $schema=https://cdn.jsdelivr.net/npm/@sfship/plugin-ship@beta/lib/schemas/flow.schema.json
 description: Set up a QA environment using the latest beta managed package.
 steps:
   create-org:
@@ -255,6 +334,7 @@ steps:
 Simulate an upgrade from the latest production release to the latest beta, with full dependency and unpackaged metadata setup.
 
 ```yaml
+# yaml-language-server: $schema=https://cdn.jsdelivr.net/npm/@sfship/plugin-ship@beta/lib/schemas/flow.schema.json
 description: Simulate an upgrade from the latest production release to the latest beta, with full dependency and unpackaged metadata setup.
 steps:
   create-org:
@@ -324,6 +404,7 @@ steps:
 Install the latest production release into a fresh scratch org and run Apex tests.
 
 ```yaml
+# yaml-language-server: $schema=https://cdn.jsdelivr.net/npm/@sfship/plugin-ship@beta/lib/schemas/flow.schema.json
 description: Install the latest production release into a fresh scratch org and run Apex tests.
 steps:
   create-org:
@@ -371,6 +452,7 @@ steps:
 Build a validated beta managed package version and publish it as a GitHub prerelease.
 
 ```yaml
+# yaml-language-server: $schema=https://cdn.jsdelivr.net/npm/@sfship/plugin-ship@beta/lib/schemas/flow.schema.json
 description: Build a beta managed package version and release it on GitHub.
 params:
   - name: version-type
@@ -405,6 +487,7 @@ steps:
 Promote the latest beta to a released package version and publish it as a GitHub release.
 
 ```yaml
+# yaml-language-server: $schema=https://cdn.jsdelivr.net/npm/@sfship/plugin-ship@beta/lib/schemas/flow.schema.json
 description: Promote the latest beta to released and create a production GitHub release.
 steps:
   find-beta:

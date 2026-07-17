@@ -91,6 +91,7 @@ Because custom tasks are standard ESM modules, they can import any npm package i
 ```js title=".ship/tasks/util/check-odd.mjs"
 import isOdd from 'is-odd';
 
+/** @type {Ship.TaskDefinition} */
 export default {
   description: 'Determines if a given number is odd.',
   params: [{ name: 'number', type: 'number', required: true }],
