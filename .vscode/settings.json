@@ -1,0 +1,14 @@
+{
+  // SchemaStore's catalog matches Kestra's "**/flows/*.yml" pattern against our
+  // built-in flow files, so the catalog is disabled and every schema is explicit.
+  "yaml.schemaStore.enable": false,
+  "yaml.schemas": {
+    "lib/schemas/flow.schema.json": ["src/core/flows/**/*.yml"],
+    "https://json.schemastore.org/github-workflow.json": [".github/workflows/*.yml"],
+    "https://json.schemastore.org/github-issue-forms.json": [
+      ".github/ISSUE_TEMPLATE/bug_report.yml",
+      ".github/ISSUE_TEMPLATE/feature_request.yml"
+    ],
+    "https://json.schemastore.org/github-issue-config.json": [".github/ISSUE_TEMPLATE/config.yml"]
+  }
+}
