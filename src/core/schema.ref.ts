@@ -21,10 +21,14 @@ const { version } = readJson<{ version: string }>(
   join(fileURLToPath(import.meta.url), '..', '..', '..', 'package.json')
 );
 
+// A dist-tag URL serves the schema of the channel's latest release, so scaffolded
+// modelines track plugin updates without edits. Prereleases publish under `beta`.
+const channel = version.includes('-') ? 'beta' : 'latest';
+
 /**
- * yaml-language-server modeline pointing at the JSON Schema published with this
- * plugin version, so editors validate and autocomplete scaffolded YAML.
+ * yaml-language-server modeline pointing at the published JSON Schema for this
+ * plugin's release channel, so editors validate and autocomplete scaffolded YAML.
  */
 export function schemaModeline(schema: 'ship' | 'flow'): string {
-  return `# yaml-language-server: $schema=https://cdn.jsdelivr.net/npm/@sfship/plugin-ship@${version}/lib/schemas/${schema}.schema.json`;
+  return `# yaml-language-server: $schema=https://cdn.jsdelivr.net/npm/@sfship/plugin-ship@${channel}/lib/schemas/${schema}.schema.json`;
 }
