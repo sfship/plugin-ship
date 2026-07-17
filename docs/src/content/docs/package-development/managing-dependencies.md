@@ -20,6 +20,7 @@ The package version ID will be resolved from the annotated tag message of the la
 #### SF Ship Dependency
 
 ```yaml title="ship.yml"
+# yaml-language-server: $schema=https://cdn.jsdelivr.net/npm/@sfship/plugin-ship@beta/lib/schemas/ship.schema.json
 project:
   package:
     dependencies:
@@ -35,6 +36,7 @@ project:
 SF Ship is backwards compatible with CumulusCI (CCI) packages, such as NPSP.
 
 ```yaml title="ship.yml"
+# yaml-language-server: $schema=https://cdn.jsdelivr.net/npm/@sfship/plugin-ship@beta/lib/schemas/ship.schema.json
 project:
   package:
     dependencies:
@@ -48,6 +50,7 @@ project:
 For any other managed package, declare it by specifying its `04t` version ID:
 
 ```yaml title="ship.yml"
+# yaml-language-server: $schema=https://cdn.jsdelivr.net/npm/@sfship/plugin-ship@beta/lib/schemas/ship.schema.json
 project:
   package:
     dependencies:
