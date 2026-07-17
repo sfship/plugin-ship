@@ -89,14 +89,15 @@ describe('initProject', () => {
   });
 
   describe('ship.yml', () => {
-    it('starts with a schema modeline pinned to the plugin version', () => {
+    it('starts with a schema modeline for the release channel', () => {
       initProject(base, DIR);
       const content = written.get(join(DIR, 'ship.yml')) ?? '';
       const pkg = JSON.parse(readFileSync(new URL('../../package.json', import.meta.url), 'utf8')) as {
         version: string;
       };
+      const channel = pkg.version.includes('-') ? 'beta' : 'latest';
       assert.ok(content.startsWith('# yaml-language-server: $schema='));
-      assert.ok(content.includes(`@sfship/plugin-ship@${pkg.version}/lib/schemas/ship.schema.json`));
+      assert.ok(content.includes(`@sfship/plugin-ship@${channel}/lib/schemas/ship.schema.json`));
     });
 
     it('includes packageName and packageType', () => {
