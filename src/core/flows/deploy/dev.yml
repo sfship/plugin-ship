@@ -1,10 +1,17 @@
 description: Set up a scratch org as a development environment for unmanaged metadata.
+params:
+  - name: no-namespace
+    type: boolean
+    required: false
+    default: false
+    description: Create the scratch org without the project namespace, for contributors without access to the namespace-linked Dev Hub.
 steps:
   create-org:
     task: org/create/scratch
     params:
       scratch-def: dev
       duration: 30
+      no-namespace: ${{ params.no-namespace }}
   update-dependencies:
     task: package/install/dependencies
     params:
