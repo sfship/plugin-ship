@@ -1,4 +1,6 @@
 /*
+ * Copyright 2025, Salesforce, Inc.
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -97,7 +99,7 @@ describe('validateParams', () => {
     it('throws when an array is passed as a param value', () => {
       const defs: ParamDefinition[] = [{ name: 'env', type: 'string', required: true }];
       assert.throws(
-        () => validateParams({ env: [] as unknown as string }, defs),
+        () => validateParams({ env: [] as unknown }, defs),
         /must be a string, number, boolean, or record/
       );
     });
