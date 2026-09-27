@@ -22,16 +22,22 @@
   "devDependencies": {
     "@oclif/plugin-command-snapshot": "^5.3.15",
     "@salesforce/cli-plugins-testkit": "^5.3.50",
-    "@salesforce/dev-scripts": "^11.0.4",
+    "@salesforce/dev-scripts": "^14.0.0",
+    "@types/chai": "^4.3.17",
     "@types/dedent": "^0.7.2",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "^18",
+    "@types/sinon": "^10.0.20",
     "c8": "^11.0.0",
     "dedent": "^1.7.2",
+    "eslint": "^10.4.0",
+    "eslint-config-salesforce-typescript": "^6.0.0",
     "eslint-plugin-sf-plugin": "^1.20.32",
     "esmock": "^2.7.3",
     "oclif": "^4.22.96",
     "ts-node": "^10.9.2",
     "tsx": "^4.21.0",
-    "typescript": "~5.5.4"
+    "typescript": "^6.0.0"
   },
   "resolutions": {
     "typescript": "~5.5.4"
@@ -170,6 +176,7 @@
         "src/**/*.ts",
         "test/**/*.ts",
         "messages/**",
+        "**/eslint.config.*",
         "**/.eslint*",
         "**/tsconfig.json"
       ],
