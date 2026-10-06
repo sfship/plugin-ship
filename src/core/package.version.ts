@@ -11,6 +11,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import type { FlowContext } from './flow.context.js';
+import { withSuppressedStdout } from './stdout.js';
+
 export type PackageVersion = {
   SubscriberPackageVersionId: string;
   Version?: string;
@@ -25,6 +28,21 @@ export function selectLatest(versions: PackageVersion[], wantReleased: boolean):
   if (matching.length === 0) return null;
   matching.sort((a, b) => (a.CreatedDate < b.CreatedDate ? 1 : -1));
   return matching[0];
+}
+
+/** Whether the dev hub has a released version of the package. Also false when the hub doesn't own the package. */
+export async function hasReleasedVersion(flow: FlowContext, packageName: string, devHub: string): Promise<boolean> {
+  const versions = (await withSuppressedStdout(() =>
+    flow.runCommand('package:version:list', [
+      '--packages',
+      packageName,
+      '--released',
+      '--target-dev-hub',
+      devHub,
+      '--json',
+    ])
+  )) as PackageVersion[] | undefined;
+  return (versions?.length ?? 0) > 0;
 }
 
 export function extractVersionBase(version: string): string | undefined {
