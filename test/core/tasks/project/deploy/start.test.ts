@@ -18,22 +18,30 @@ import { runTask } from '../../run-task.js';
 import deployStart from '../../../../../src/core/tasks/project/deploy/start.js';
 
 describe('project:deploy:start', () => {
-  it('targets the deploy command and defaults source-dir to force-app', async () => {
+  it('runs a tracked deploy when no source-dir is given', async () => {
     const { logs, commands } = await runTask(deployStart, {
       runCommand: async () => ({ success: true, files: [] }),
     });
 
     const [call] = commands;
     assert.equal(call.id, 'project:deploy:start');
-    assert.ok(call.argv.includes(join('/proj', 'force-app')));
+    assert.ok(!call.argv.includes('--source-dir'));
     assert.deepEqual(logs, ['Deployed successfully.']);
   });
 
-  it('treats "No local changes to deploy" as a skip, not a failure', async () => {
+  it('resolves source-dir against the project directory', async () => {
+    const { commands } = await runTask(deployStart, {
+      params: { 'source-dir': 'unpackaged/post' },
+      runCommand: async () => ({ success: true, files: [] }),
+    });
+
+    const { argv } = commands[0];
+    assert.equal(argv[argv.indexOf('--source-dir') + 1], join('/proj', 'unpackaged/post'));
+  });
+
+  it('skips when a tracked deploy has no local changes', async () => {
     const { logs } = await runTask(deployStart, {
-      runCommand: () => {
-        throw new ExpectedError('No local changes to deploy.');
-      },
+      runCommand: async () => ({ status: 'Nothing to deploy', files: [] }),
     });
 
     assert.deepEqual(logs, ['Nothing to deploy — skipping.']);
@@ -68,7 +76,7 @@ describe('project:deploy:start', () => {
     );
   });
 
-  it('re-throws non-skip command errors unchanged', async () => {
+  it('re-throws command errors unchanged', async () => {
     await assert.rejects(
       () =>
         runTask(deployStart, {
