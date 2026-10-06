@@ -15,6 +15,10 @@ sf ship flow run deploy/dev
 
 The org carries your package namespace. Contributors without access to the namespace-linked Dev Hub can pass `--param no-namespace=true` — see [Unnamespaced Development](/plugin-ship/package-development/unnamespaced-development/).
 
+Rerunning `deploy/dev` against an existing org deploys only the package source you've changed locally since the last deploy, using Salesforce source tracking. Changes made directly in the org are left alone unless you've also changed the same component locally. That's a conflict, and the deploy stops. Retrieve anything from the org you want to keep, then rerun with `--param ignore-conflicts=true` to overwrite the org with your local source.
+
+[Unpackaged metadata](/plugin-ship/package-development/unpackaged-metadata/) sits outside source tracking, so `unpackaged/pre` and `unpackaged/post` deploy in full on every run and overwrite their components in the org.
+
 ## Open Your Scratch Org
 
 The scratch org created by `deploy/dev` follows the alias naming convention `{project-name}:{environment}` — `tutorial-package:dev` in this example. It's normally set as the default org, so you can open it with:

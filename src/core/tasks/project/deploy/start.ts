@@ -28,7 +28,8 @@ type DeployFile = {
 };
 
 type DeployResult = {
-  success: boolean;
+  success?: boolean;
+  status?: string;
   files: DeployFile[];
 };
 
@@ -45,7 +46,8 @@ export default {
       name: 'source-dir',
       type: 'string',
       required: false,
-      description: 'Path to local source files to deploy. Defaults to "force-app".',
+      description:
+        'Path to local source files to deploy. When omitted, deploys local changes tracked since the last deploy (or all package directories if the org has no source tracking).',
     },
     {
       name: 'manifest',
@@ -105,20 +107,20 @@ export default {
   ],
   async run({ flow, params }: TaskContext): Promise<void> {
     const alias = flow.orgs.resolveAlias(params['target-org'] as string | undefined);
+    const sourceDir = params['source-dir'] as string | undefined;
     const argv = resolvePassthroughArgs(params, {
       '--target-org': alias ?? null,
-      '--source-dir': join(flow.projectDir, (params['source-dir'] as string | undefined) ?? 'force-app'),
+      '--source-dir': sourceDir ? join(flow.projectDir, sourceDir) : null,
     });
 
-    let result: DeployResult;
-    try {
-      result = await withSuppressedStdout(() => flow.runCommand('project:deploy:start', argv) as Promise<DeployResult>);
-    } catch (err) {
-      if (err instanceof ExpectedError && err.message.includes('No local changes to deploy')) {
-        flow.log('Nothing to deploy — skipping.');
-        return;
-      }
-      throw err;
+    const result = await withSuppressedStdout(
+      () => flow.runCommand('project:deploy:start', argv) as Promise<DeployResult>
+    );
+
+    // A tracked deploy with no local changes returns this status instead of a deploy result.
+    if (result.status === 'Nothing to deploy') {
+      flow.log('Nothing to deploy — skipping.');
+      return;
     }
 
     if (!result.success) {

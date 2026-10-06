@@ -5,6 +5,11 @@ params:
     required: false
     default: false
     description: Create the scratch org without the project namespace, for contributors without access to the namespace-linked Dev Hub.
+  - name: ignore-conflicts
+    type: boolean
+    required: false
+    default: false
+    description: Deploy local source even if it overwrites changes made in the org since the last deploy.
 steps:
   create-org:
     task: org/create/scratch
@@ -27,10 +32,12 @@ steps:
     params:
       target-org: ${{ steps.create-org.target-org }}
       source-dir: unpackaged/pre
+      ignore-conflicts: ${{ params.ignore-conflicts }}
   deploy:
     task: project/deploy/start
     params:
       target-org: ${{ steps.create-org.target-org }}
+      ignore-conflicts: ${{ params.ignore-conflicts }}
   check-post:
     task: util/file/exists
     params:
@@ -42,6 +49,7 @@ steps:
     params:
       target-org: ${{ steps.create-org.target-org }}
       source-dir: unpackaged/post
+      ignore-conflicts: ${{ params.ignore-conflicts }}
   assign-permsets:
     task: org/assign/permsets
     params:

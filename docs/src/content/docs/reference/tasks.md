@@ -286,7 +286,7 @@ Deploys metadata to a target org. Passthrough for `sf project deploy start`.
 | Param              | Type    | Required | Description                                                                                                    |
 | ------------------ | ------- | :------: | -------------------------------------------------------------------------------------------------------------- |
 | `target-org`       | string  |          | Org alias or username. Defaults to the SF CLI default target-org.                                              |
-| `source-dir`       | string  |          | Path to local source files to deploy. Defaults to `force-app`.                                                 |
+| `source-dir`       | string  |          | Path to local source files to deploy. When omitted, deploys local changes tracked since the last deploy.       |
 | `manifest`         | string  |          | Full file path for a manifest (`package.xml`) of components to deploy.                                         |
 | `metadata`         | string  |          | Metadata component names to deploy.                                                                            |
 | `metadata-dir`     | string  |          | Root of a directory or zip file of metadata-formatted files to deploy.                                         |
