@@ -27,6 +27,9 @@ jobs:
   npm:
     uses: salesforcecli/github-workflows/.github/workflows/npmPublish.yml@main
     needs: [getDistTag]
+    permissions:
+      id-token: write
+      contents: read
     with:
       tag: ${{ needs.getDistTag.outputs.tag || 'latest' }}
       githubTag: ${{ github.event.release.tag_name || inputs.tag }}
