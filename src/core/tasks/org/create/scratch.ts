@@ -16,24 +16,6 @@ import { resolve, basename, extname } from 'node:path';
 import { scratchOrgCreate, Org, ConfigAggregator, OrgConfigProperties } from '@salesforce/core';
 import type { TaskContext, TaskDefinition } from '../../../task.definition.schema.js';
 import { ExpectedError } from '../../../error.js';
-import type { FlowContext } from '../../../flow.context.js';
-import { readSfdxProject, defaultPackageDirectory } from '../../../sfdx-project.js';
-import { hasReleasedVersion } from '../../../package.version.js';
-
-/**
- * sf's scratch org create fails on ancestorVersion HIGHEST until the package has a released
- * version (package version create doesn't), so new packages must skip ancestors until then.
- */
-async function isAncestorUnresolvable(flow: FlowContext, hubUsername: string): Promise<boolean> {
-  const packageDir = defaultPackageDirectory(readSfdxProject(flow.projectDir));
-  if (!packageDir?.package || packageDir.ancestorVersion !== 'HIGHEST') return false;
-  if (await hasReleasedVersion(flow, packageDir.package, hubUsername)) return false;
-
-  flow.log(
-    `No released version of ${packageDir.package} found in dev hub ${hubUsername} (not released yet, or this hub doesn't own it); creating scratch org without ancestors.`
-  );
-  return true;
-}
 
 export default {
   description: 'Creates a scratch org, or skips if a healthy one already exists under the same alias.',
@@ -83,7 +65,7 @@ export default {
       type: 'boolean',
       required: false,
       description:
-        'Skip package ancestors from sfdx-project.json. Defaults to false. Applied automatically when ancestorVersion is HIGHEST and no released version exists yet.',
+        'Create the scratch org without package ancestors from sfdx-project.json. Defaults to false. Ancestors are also skipped when no-namespace is true.',
     },
   ],
   async run({ flow, params, output }: TaskContext): Promise<void> {
@@ -140,11 +122,6 @@ export default {
       orgConfig.namespace = namespace;
     }
 
-    // nonamespace already ignores ancestors, so only check when it's off.
-    const noAncestors =
-      params['no-ancestors'] === true ||
-      (!wantNoNamespace && (await isAncestorUnresolvable(flow, hubOrg.getUsername() as string)));
-
     const result = await scratchOrgCreate({
       hubOrg,
       orgConfig,
@@ -153,7 +130,7 @@ export default {
       durationDays: duration,
       // core resolves ignoreAncestorIds as `nonamespace ?? noancestors`, so a literal false would mask noancestors.
       nonamespace: wantNoNamespace || undefined,
-      noancestors: noAncestors,
+      noancestors: params['no-ancestors'] === true,
     });
 
     for (const warning of result.warnings) flow.log(warning);

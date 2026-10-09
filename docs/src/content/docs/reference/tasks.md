@@ -113,15 +113,15 @@ Assigns permission sets and/or permission set groups to a user.
 
 Creates a scratch org, or skips if a healthy one already exists under the same alias.
 
-| Param            | Type    | Required | Description                                                                                                                         |
-| ---------------- | ------- | :------: | ----------------------------------------------------------------------------------------------------------------------------------- |
-| `scratch-def`    | string  |    ✓     | Scratch org def alias (resolved from `<shipDir>/orgs/`) or path to a `.json` def file.                                              |
-| `alias`          | string  |          | Override the org alias. Defaults to the def name prefixed by the project slug.                                                      |
-| `duration`       | number  |          | Duration in days. Defaults to 1.                                                                                                    |
-| `target-dev-hub` | string  |          | Dev hub alias or username. Defaults to the SF CLI default target-dev-hub.                                                           |
-| `set-default`    | boolean |          | Set as default org after creation. Defaults to `true`.                                                                              |
-| `no-namespace`   | boolean |          | Create the scratch org without the project namespace. Defaults to `false`.                                                          |
-| `no-ancestors`   | boolean |          | Skip package ancestors. Defaults to `false`. Applied automatically when `ancestorVersion` is `HIGHEST` and nothing is released yet. |
+| Param            | Type    | Required | Description                                                                                                                      |
+| ---------------- | ------- | :------: | -------------------------------------------------------------------------------------------------------------------------------- |
+| `scratch-def`    | string  |    ✓     | Scratch org def alias (resolved from `<shipDir>/orgs/`) or path to a `.json` def file.                                           |
+| `alias`          | string  |          | Override the org alias. Defaults to the def name prefixed by the project slug.                                                   |
+| `duration`       | number  |          | Duration in days. Defaults to 1.                                                                                                 |
+| `target-dev-hub` | string  |          | Dev hub alias or username. Defaults to the SF CLI default target-dev-hub.                                                        |
+| `set-default`    | boolean |          | Set as default org after creation. Defaults to `true`.                                                                           |
+| `no-namespace`   | boolean |          | Create the scratch org without the project namespace. Defaults to `false`.                                                       |
+| `no-ancestors`   | boolean |          | Create the scratch org without package ancestors. Defaults to `false`. Ancestors are also skipped when `no-namespace` is `true`. |
 
 **Outputs**
 

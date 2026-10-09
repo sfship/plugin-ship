@@ -13,7 +13,7 @@
  */
 import { strict as assert } from 'node:assert';
 import esmock from 'esmock';
-import { runTask, type RunTaskOptions } from '../../run-task.js';
+import { runTask } from '../../run-task.js';
 import { ExpectedError } from '../../../../../src/core/error.js';
 import type { Task } from '../../../../../src/core/task.definition.schema.js';
 import type { ShipConfig } from '../../../../../src/core/config.ship.schema.js';
@@ -29,8 +29,6 @@ let removeCalled = false;
 let capturedCreate: Record<string, unknown> | undefined;
 let scratchCreateResult: { username?: string; warnings: string[] } = { username: 'new@scratch.org', warnings: [] };
 let devHubConfigValue: string | undefined = 'default-hub@devhub.org';
-let packageDir: Record<string, unknown> | undefined;
-let releasedVersions: unknown[] = [];
 
 const hubOrg: OrgLike = { getUsername: () => 'hub@devhub.org' };
 const existingOrg: OrgLike = {
@@ -73,9 +71,6 @@ const { default: scratchTask }: { default: Pick<Task, 'run'> } = await esmock(
       },
       OrgConfigProperties: { TARGET_DEV_HUB: 'target-dev-hub' },
     },
-    '../../../../../src/core/sfdx-project.js': {
-      readSfdxProject: () => ({ packageDirectories: packageDir ? [packageDir] : [] }),
-    },
   }
 );
 
@@ -85,13 +80,9 @@ beforeEach(() => {
   capturedCreate = undefined;
   scratchCreateResult = { username: 'new@scratch.org', warnings: [] };
   devHubConfigValue = 'default-hub@devhub.org';
-  packageDir = { path: 'force-app', package: 'MyPkg', ancestorVersion: 'HIGHEST' };
-  releasedVersions = [{ SubscriberPackageVersionId: '04tAAA', IsReleased: true, CreatedDate: '2026-01-01' }];
 });
 
 const baseParams = { 'scratch-def': 'my-scratch.json', alias: 'my-org', 'target-dev-hub': 'my-devhub' };
-
-const listVersions: RunTaskOptions['runCommand'] = async () => releasedVersions;
 
 const configWithNamespace = (namespace?: string): ShipConfig => ({
   project: {
@@ -163,54 +154,14 @@ describe('org/create/scratch', () => {
     assert.equal(outputs['created'], true);
   });
 
-  it('skips ancestors when ancestorVersion is HIGHEST and nothing is released', async () => {
-    releasedVersions = [];
-    const { logs, commands } = await runTask(scratchTask, { params: baseParams, runCommand: listVersions });
+  it('keeps ancestors by default', async () => {
+    await runTask(scratchTask, { params: baseParams });
+    assert.equal(capturedCreate?.['noancestors'], false);
+  });
 
+  it('passes no-ancestors through', async () => {
+    await runTask(scratchTask, { params: { ...baseParams, 'no-ancestors': true } });
     assert.equal(capturedCreate?.['noancestors'], true);
     assert.equal(capturedCreate?.['nonamespace'], undefined);
-    assert.deepEqual(commands, [
-      {
-        id: 'package:version:list',
-        argv: ['--packages', 'MyPkg', '--released', '--target-dev-hub', 'hub@devhub.org', '--json'],
-      },
-    ]);
-    assert.ok(logs.some((l) => l.includes('No released version of MyPkg found in dev hub hub@devhub.org')));
-  });
-
-  it('keeps ancestors when ancestorVersion is HIGHEST and a released version exists', async () => {
-    const { logs } = await runTask(scratchTask, { params: baseParams, runCommand: listVersions });
-    assert.equal(capturedCreate?.['noancestors'], false);
-    assert.ok(!logs.some((l) => l.includes('No released version')));
-  });
-
-  it('does not query the dev hub when ancestorVersion is pinned', async () => {
-    packageDir = { path: 'force-app', package: 'MyPkg', ancestorVersion: '1.2.3.0' };
-    const { commands } = await runTask(scratchTask, { params: baseParams, runCommand: listVersions });
-    assert.equal(commands.length, 0);
-    assert.equal(capturedCreate?.['noancestors'], false);
-  });
-
-  it('does not query the dev hub when there is no package', async () => {
-    packageDir = undefined;
-    const { commands } = await runTask(scratchTask, { params: baseParams, runCommand: listVersions });
-    assert.equal(commands.length, 0);
-  });
-
-  it('does not query the dev hub when no-namespace already ignores ancestors', async () => {
-    const { commands } = await runTask(scratchTask, {
-      params: { ...baseParams, 'no-namespace': true },
-      runCommand: listVersions,
-    });
-    assert.equal(commands.length, 0);
-  });
-
-  it('passes no-ancestors through without querying the dev hub', async () => {
-    const { commands } = await runTask(scratchTask, {
-      params: { ...baseParams, 'no-ancestors': true },
-      runCommand: listVersions,
-    });
-    assert.equal(commands.length, 0);
-    assert.equal(capturedCreate?.['noancestors'], true);
   });
 });
