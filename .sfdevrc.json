@@ -29,7 +29,8 @@
     }
   },
   "scripts": {
-    "docs": "yarn --cwd docs dev"
+    "docs": "yarn --cwd docs dev",
+    "prepack": "yarn build && oclif manifest && oclif lock"
   },
   "license": "Apache-2.0"
 }
