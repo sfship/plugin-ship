@@ -142,6 +142,7 @@ steps:
       scratch-def: dev
       duration: 30
       no-namespace: ${{ params.no-namespace }}
+      no-ancestors: true
   update-dependencies:
     task: package/install/dependencies
     params:
