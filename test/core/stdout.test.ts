@@ -1,4 +1,6 @@
 /*
+ * Copyright 2025, Salesforce, Inc.
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -49,8 +51,8 @@ describe('withSuppressedStdout', () => {
       written.push(String(s));
       return true;
     };
-    process.stdout.write = capture as typeof process.stdout.write;
-    process.stderr.write = capture as typeof process.stderr.write;
+    process.stdout.write = capture;
+    process.stderr.write = capture;
     await withSuppressedStdout(async () => {});
     process.stdout.write('after-stdout');
     process.stderr.write('after-stderr');
@@ -64,8 +66,8 @@ describe('withSuppressedStdout', () => {
       written.push(String(s));
       return true;
     };
-    process.stdout.write = capture as typeof process.stdout.write;
-    process.stderr.write = capture as typeof process.stderr.write;
+    process.stdout.write = capture;
+    process.stderr.write = capture;
     await assert.rejects(() =>
       withSuppressedStdout(async () => {
         throw new Error('boom');
