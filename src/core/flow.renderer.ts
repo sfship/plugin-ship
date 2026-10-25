@@ -1,4 +1,6 @@
 /*
+ * Copyright 2025, Salesforce, Inc.
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -56,7 +58,7 @@ export class FlowRenderer {
     }
     // The renderer owns presentation, so it takes over the context logger to
     // timestamp lines and prefix them with the step that emitted them.
-    // eslint-disable-next-line no-param-reassign
+     
     ctx.log = (message: string): void => this.logLine(message);
   }
 
