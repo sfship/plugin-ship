@@ -1,4 +1,6 @@
 /*
+ * Copyright 2025, Salesforce, Inc.
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -31,12 +33,12 @@ describe('handleError', () => {
     const original = process.exit.bind(process);
     process.exit = (() => {
       throw new Error('exit');
-    }) as never;
+    });
     try {
       assert.throws(() => handleError(new ExpectedError('bad input'), (msg) => logged.push(msg)), /exit/);
       assert.deepEqual(logged, ['bad input']);
     } finally {
-      process.exit = original as never;
+      process.exit = original;
     }
   });
 
