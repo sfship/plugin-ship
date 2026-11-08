@@ -1,4 +1,6 @@
 /*
+ * Copyright 2025, Salesforce, Inc.
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -161,7 +163,7 @@ export default {
       const steps = await resolveDependencies(deps);
       for (const step of steps) {
         if (step.kind === 'package-id') {
-          // eslint-disable-next-line camelcase
+           
           depsForAnnotation.push({ version_id: step.versionId, package_name: step.name });
         }
       }
