@@ -1,4 +1,6 @@
 /*
+ * Copyright 2025, Salesforce, Inc.
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -42,7 +44,7 @@ function loadFromPath(flowPath: string): FlowDefinition {
   const parsed = parse(raw) as unknown;
   const result = FlowDefinitionSchema.safeParse(parsed);
   if (!result.success)
-    throw new ExpectedError(`Invalid flow definition at ${flowPath}:\n${formatZodError(result.error as ZodError)}`);
+    throw new ExpectedError(`Invalid flow definition at ${flowPath}:\n${formatZodError(result.error)}`);
   return result.data;
 }
 
