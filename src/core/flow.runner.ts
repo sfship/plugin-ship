@@ -1,4 +1,6 @@
 /*
+ * Copyright 2025, Salesforce, Inc.
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -92,7 +94,7 @@ async function runSteps(
         renderer.stepIgnored(stepId, error);
         store.set(stepId, 'failed', true);
         store.set(stepId, 'error', error.message);
-        // eslint-disable-next-line no-param-reassign
+         
         context.hasFailures = true;
         continue;
       }
@@ -100,7 +102,7 @@ async function runSteps(
       renderer.stepFailed(stepId);
       store.set(stepId, 'failed', true);
       store.set(stepId, 'error', error.message);
-      // eslint-disable-next-line no-param-reassign
+       
       context.hasFailures = true;
 
       error.message =
@@ -146,7 +148,7 @@ export async function runFlow(flowName: string, flow: FlowDefinition, context: F
 
   if (flow.params?.length) {
     try {
-      // eslint-disable-next-line no-param-reassign
+       
       context.params = validateParams(context.params, flow.params);
     } catch (err) {
       renderer.failedBeforeStart(asError(err));
